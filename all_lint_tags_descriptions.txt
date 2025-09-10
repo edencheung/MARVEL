@@ -1,0 +1,1255 @@
+checkMultipleDrivers: Only tristate pins may be WORed (multiple drivers only allowed, if all driving pins are of type tristate)
+checkNetDriver: Each internal net must have at least one driver
+delayLineDependentCkt: List all delay line dependent circuits as violations
+FloatingInputs: Floating Input to a combinatorial gate
+FlopClockUndriven: Flip-flop clock pin not driven
+FlopDataUndriven: Flip-flop data pin not driven
+DisabledAnd: Reports disabled AND or NAND gates 
+DisabledOr: Reports disabled OR or NOR gates 
+FlopClockConstant: Reports flip-flop clock pin driven by a constant value
+FlopDataConstant: Reports flip-flop data pin driven by a constant value 
+FlopEConst: Reports permanently disabled or enabled flip-flop enable pins
+FlopSRConst: Reports permanently enabled flip-flop set or reset pins
+LatchDataConstant: Reports latch data pins driven by a constant value
+LatchDataUndriven: Latch data pin not driven
+LatchEnableConstant: Reports latch-enable pin driven by a constant value
+TristateConst: Reports tristate gate-enable pins driven by a constant value
+checkPinConnectedToSupply: Reports IO or output pins of cells or modules that are connected to supply signals 
+checkTristateBuses: Reports tristate signals that are not connected to busholder cells 
+NoContAssign: Continuous assignment statement present in technology-mapped netlist 
+MuxSelConst: Reports MUX select pins driven by a constant value 
+listTristateBuses: Lists all tristate buses used in the design
+OutNotUsed: No output of a gate is used
+FlopClockX: Flip-flop clock pin driven by an indeterminate value
+FlopDataX: Flip-flop data pin driven by an indeterminate value
+FlopSREX: Flip-flop set, reset or enable pin driven by an indeterminate value
+NearOverload: Load on Gate output is close to recommended maximum .565xxixSynopsys, Inc.Feedback
+Overload: Load on Gate output exceeds recommended maximum
+Underload: Load on Gate output falls below recommended minimum 
+checkNetReceiver: Each internal net must have at least one receiver
+LatchDataX: Latch data pin driven by an indeterminate value 
+LatchEnableX: Latch enable pin driven by an indeterminate value 
+LatchEnableUndriven: Latch enable pin not driven 
+noCombinatorialFeedBack: No combinatorial feedback loops allowed
+pwrdnPinConnToSeqOrIOCells: PWRDN pins of cells should be connected to either IO cells or sequential elements
+resetPinConnectedToResetNet: “Reset Pins” of cells may only be connected to signals predefined in a list of reset nets 
+setPinConnectedToSetNet: “Set Pins” of cells may only be connected to signals predefined in a list of set nets 
+clockPinsConnectedToClkNets: “Clock pins” of cells may only be connected to signals predefined in a list of clock-nets 
+checkOPPinConnectedToNet_a: At least one output port of a cell must be connected to a net
+checkOPPinConnectedToNet_b: All the output ports of the cell must be connected to a net
+elementsAllowedPerScanChain: List all scan chains, which contain more than n elements, as violating scan chains
+ClockEdges: Reports design units that use both labels of the clock to drive latches 
+LatchFeedback: Reports a latch in which a combinational feedback path exists from output pin to data or enable pin 
+LatchGatedClock: Reports latches driven by gated or internally generated clock
+LatchReset: Reports design units in which the reset pins are used both synchronously and asynchronously
+W122L: Variable read inside a latch always block should be inside sensitivity list
+W442bL: Asynchronous reset condition can only use simple condition
+W450L: Reports multi-bit expression used as latch enable condition 
+W336L: Blocking assignment to latch output should be avoided 
+W392aL: Do not use both edges of an asynchronous reset
+W392bL: Do not use both edges of a synchronous reset
+W428L: Task should not be called inside a sequential always block
+W442aL: First statement in an asynchronous always block should be an `if` statement
+W429L: Task should not be called inside a combinational always block
+W449L: Expression used as latch enable may not be synthesizable
+GatedReset: Do not use gated or internally generated resets to reset the latches
+AllocExpr: Identifies the allocator expressions which are not synthesizable
+ArrayEnumIndex: Identifies the arrays using enumeration type as index
+AssertStmt: Assertion statements have no significance in synthesis 
+badimplicitSM1: Identifies the sequential logic in a non-synthesizable modelling style where clock and reset cannot be inferred 
+badimplicitSM2: Identifies the implicit sequential logic in a non-synthesizable modeling style where states are not updated on the same clock phase 
+badimplicitSM4: Identifies the non-synthesizable implicit sequential logic where event control expressions have multiple edges 
+BlockHeader: Identifies ports and generics in the block statement header which are not synthesizable
+bothedges: Identifies the variable whose both the edges are used in an event control list
+BothPhase: Identifies the processes that are driven by both the edges of a clock 
+ClockStyle: A clocking style is used which may not be synthesizable
+DisconnSpec: Identifies the disconnection specification constructs which are not synthesizable 
+EntityStmt: Statements in entity block may be ignored by some synthesis tools 
+ForLoopWait: Identifies the WAIT statements used in FOR-loop constructs which are not synthesizable
+IncompleteType: Identifies the incomplete type declarations which are not synthesizable
+infiniteloop: While/forever loop has no break control 
+InitPorts: Default initial value of in/out/inout port may be ignored by some synthesis tools
+IntGeneric: Identifies the non-integer type used in the declaration of a xxxiSynopsys, Inc.Feedbackgeneric which is not synthesizable
+LinkagePort: Identifies the linkage ports which are not synthesizable
+LoopBound: Identifies the for loop range bounds that are not locally or globally static
+mixedsenselist: Mixed conditions in sensitivity list may not be synthesizable (Verilog)Edge and level conditions are mixed in if statement (VHDL)
+MultipleWait: Identifies multiple wait statements having the same clock expression which are not synthesizable
+NoTimeOut: Identifies the timeout expression in a wait statement, which is not synthesizable
+PortType: Identifies ports of unconstrained types which are not synthesizable 
+PhysicalTypes: Identifies the physical constructs which are not synthesizable 
+PreDefAttr: Identifies the pre-defined attributes which are not synthesizable 
+readclock: Unsynthesizable implicit sequential logic: clock read inside always block
+ResFunction: Identifies the resolution functions which are not synthesizable 
+SigVarInit: Identifies the initial values of signals and variables which are not synthesizable
+SynthIfStmt: Identifies the IF statements which are not synthesizable
+UserDefAttr: Identifies the user-defined attributes which are not synthesizable 
+W107: Do not make bus connections to primitive gates (and, or, xor, nand, nor, xnor)
+W110: Identifies a module instance port connection that has incompatible width as compared to the port definition 
+W110a: Use same port index bounds in component instantiation and entity declaration
+W111: Not all elements of an array are read 
+W116: Identifies the unequal length operands in the bit-wise logical, arithmetic, and ternary operators
+W120: A variable has been defined but is not used (Verilog)A signal/variable has been declared but is not used (VHDL)
+W121: A variable name collides with and may shadow another variable
+W122: A signal is read inside a combinational always block but is not included in the sensitivity list (Verilog)A signal is read inside a combinational process but is not included in the sensitivity list (VHDL) 
+W123: Identifies the signals and variables that are read but not set
+W127: Delay values should not contain X (unknown value) or Z (high-impedance state)
+W126: Do not use non-integer delays 
+W162: Extension of bits in constant integer conversion 
+W164c: LHS width is greater than RHS width of assignment (Extension) 
+W242: This Tag has been deprecated (Verilog)A function is calling itself; that is, it is recursive (VHDL) 
+W328: Truncation in constant conversion, without loss of data
+W341: Constant will be 0-extended 
+W446: Output port signal is being read (within the module)
+W456: A signal is included in the sensitivity list of a combinational always block but not all of its bits are read in that block (Verilog)A signal is included in the sensitivity list of a process but not all of its bits are read in that block (VHDL) 
+W488: A bus variable appears in the sensitivity list but not all bits of the bus are read in the contained block (Verilog)An array signal appears in the sensitivity list but not all bits of the array are read in the process (VHDL)
+W494a: Input port is not used
+W494b: Output port is not used
+W500: A connection to a clock port is not a simple name
+W526: Use case statements rather than if/else, where feasible, if performance is important
+W529: `ifdef is not supported by all tools
+W128: Avoid using negative delays 
+W129: Variable delay values should be avoided 
+W143: Macro has been redefined 
+W146: Use named-association rather than positional association to connect to an instance 
+W154: Do not declare nets implicitly
+W156: Do not connect buses in reverse order
+W159: Condition contains a constant expression
+W163: Truncation of bits in constant integer conversion
+W164a: Identifies assignments in which the LHS width is less than the RHS width 
+W164a_a: LHS width is less than RHS width of assignment (Hard Mismatch) 
+W164a_b: LHS width is less than RHS width of assignment (Soft Mismatch)
+W164b: Identifies assignments in which the LHS width is greater than the RHS width 
+W167: Module has no input or output ports
+W17: Prefer full range of a bus/array in sensitivity list. Avoid bits or slices
+W171: Case label is non-constant
+W175: A parameter/generic has been defined but is not used
+W18: Do not infer latches 
+W182c: Identifies the time declarations which are not synthesizable
+W182g: Identifies the tri0 net declarations which are not synthesizable 
+W182h: Reports tri1 net declarations that are not synthesizable 
+W182k: Reports trireg declarations that are not synthesizable 
+W182n: Reports MOS switches, such as cmos, pmos, and nmos, that are not synthesizable
+W187: The 'default' or 'others' clause should be the last clause in a case statement
+W188: Do not write to input ports
+W189: Nested Synopsys translate_off comments 
+W19: Reports the truncation of extra bits
+W190: Task or procedure declared but not used 
+W191: Function declared but not used
+W192: Empty block
+W193: Empty statement
+W208: Nested Synopsys translate_on comments 
+W210: Number of connections made to an instance does not match number of ports on master 
+W213: Reports PLI tasks or functions that are not synthesizable 
+W215: Reports inappropriate bit-selects of integer or time variables 
+W216: Reports inappropriate range select for integer or time variable
+W218: Reports multi-bit signals used in sensitivity list 
+W224: Multi-bit expression found when one-bit expression expected 
+W226: Case select expression is constant
+W238: Mixing combinational and sequential styles
+W239: Reports hierarchical references that are not synthesizable 
+W240: An input has been declared but is not read
+W241: Output is never set 
+W243: Recursive task enable
+W245: Probably intended "or", not "|" or "||" in sensitivity list 
+W250: Reports disable statements that are not synthesizable 
+W253: Data event has an edge
+W254: Reference event does not have an edge
+W256: A notifier must be a one-bit register 
+W257: Synthesis tools ignore delays
+W259:  Signal has multiple drivers 
+W263: Reports a case expression width that does not match case select expression width
+W280: A delay has been specified in a nonblocking assignment
+W287a: Some inputs to instance are not driven or unconnected
+W287b: Output port to an instance is not connected
+W287c: Inout port of an instance is not connected or connected net is hanging
+W289: Reports real operands that are used in logical comparisons
+W292: Reports the comparison of real operands 
+W293: Reports functions that return real values
+W294: Reports real variables that are unsynthesizable
+W295: Reports event variables that are not synthesizable 
+W306: Converting integer to real 
+W307: Converting unsigned (reg type) to real 
+W308: Converting real to integer 
+W309: Converting unsigned (reg type) to integer 
+W310: Converting integer to unsigned (reg type) 
+W311: Converting real to unsigned (reg type) 
+W312: Converting real to single bit 
+W313: Converting integer to single bit
+W314: Converting multi-bit reg type to single bit 
+W316: Reports extension of extra bits in integer conversion 
+W317: Reports assignment to a supply net
+W323: Multiply driven inout net 
+W326: Event variable appearing in a posedge/negedge expression 
+W332: Not all cases are covered - default clause will be used 
+W333: Unused UDP
+W336: Blocking assignment should not be used in a sequential block (may lead to shoot through)
+W337: Reports illegal case construct labels 
+W339a: Case equal operator (===) and case not equal (!==) operators may not be synthesizable 
+W34: Macro defined but never used 
+W342: Reports constant assignments that are X-extended 
+W343: Reports constant assignments that are Z-extended 
+W345: Presence of an event control in a task or procedure body may not be synthesizable
+W346: Task may be unsynthesizable because it contains multiple event controls
+W348: Unspecified width for integer expression in a concatenation
+W350: A control character appears inside a string 
+W351: A control character appears inside a comment 
+W352: Reports “for” constructs with condition expression
+W362: Reports an arithmetic comparison operator with unequal length
+W372: A PLI function ($something) not recognized 
+W373: A PLI task ($something) is used but not recognized
+W391: Reports modules driven by both edges of a clock 
+W392: Reports reset or set signals used with both positive and negative polarities within the same design unit
+W395: Multiple asynchronous resets or sets in a process or always may not be synthesizable
+W396: A process statement has clock signal, but no asynchronous reset signal
+W397: Destination of an assignment is an IN port 
+W398: Reports a case choice when it is covered more than once in a case statement
+W401: Clock signal is not an input to the design unit 
+W402: If you internally generate reset signals, do so in a single module instantiated at the top-level of the design 
+W402a: Synchronous reset signal is not an input to the module
+W402b: Asynchronous set/reset signal is not an input to the module 
+W414: Reports nonblocking assignment in a combinational block 
+W415: Reports variable/signals that do not infer a tristate and have xxxviSynopsys, Inc. Feedbackmultiple simultaneous drivers 
+W415a: Signal may be multiply assigned (beside initialization) in the same scope 
+W416: Width of return type and return value of a function should be same (Verilog). Reports functions in which the range of the return type and return value of a function are not same (VHDL) 
+W421: Reports “always” or “process” constructs that do not have an event control 
+W422: Unsynthesizable block or process: event control has more than one clock 
+W422L: Multiple clocks in the event control list of latch is not allowed
+W423: A port with a range is redeclared with a different range
+W424: Ensure that a function or a sub-program does not sets a global signal/variable
+W425: Ensure that a function or a sub-program does not uses a global signal/variable
+W426: Ensure that the task does not sets a global variable
+W427: Ensure that a task does not uses a global variable
+W428: Ensure that a task is not called inside a combinational block 
+W429: Task called in a sequential block 
+W43: Reports unsynthesizable wait statements 
+W430: The "initial" statement is not synthesizable
+W433: More than one top-level design unit
+W438: Ensure that a tristate is not used below top-level of design
+W442a: Ensure that for unsynthesizable reset sequence, first statement in the block must be an if statement 
+W442b: Ensure that for unsynthesizable reset sequence, reset condition is not too complex
+W442c: Ensure that the unsynthesizable reset sequence are modified only by ! or ~ in the if condition
+W442f: Ensure that the unsynthesizable reset sequence is compared using only ==  and != binary operator in the if condition 
+W443: 'X' value used
+W444: 'Z' or '?' value used
+W448: Reset/set is used both synchronously and asynchronously
+W453: Large case constructs should not be used
+W456a: A signal is included in the sensitivity list of a combinational always block but none of its bits are read in that block (Verilog)xxxviiSynopsys, Inc.FeedbackA signal is included in the sensitivity list of a combinational process block but none of its bits are read in that block (VHDL)
+W464: Ensure that the unrecognized synthesis directive is not used in the design
+W467: Use of don’t-care except in case labels may lead to simulation/synthesis mismatch
+W468: Index variable is too short 
+W474: Variable assigned but not deassigned 
+W475: Variable deassigned but not assigned 
+W476: Variable forced but not released 
+W477: Variable released but not forced 
+W479: Checks if loop step statement variables are not properly incremented or decremented
+W480: Ensure that the loop index is of integer type
+W481a: Ensure that a for loop uses the same step variable as used in the condition 
+W481b: Ensure that a for loop uses the same initialization variable as used in the condition 
+W484: Possible loss of carry or borrow due to addition or subtraction 
+W486: Reports shift overflow operations
+W489: The last statement in a function does not assign to the function (Verilog)The last statement in a function does not assign to the function (VHDL)
+W490: A control expression/sub-expression is a constant
+W491: Reports case expression with a width greater than the specified value 
+W493: A variable is not declared in the local scope, that is, it assumes global scope
+W494: Inout port is not used
+W495: Inout port is never set
+W496a: Reports comparison to a tristate in a condition expression
+W496b: Reports comparison to a tristate in a case statement
+W497: Not all bits of a bus are set 
+W498: Not all bits of a bus are read 
+W499: Ensure that all bits of a function are set
+W501: A connection to a reset port should not be a static name
+W502: Ensure that a variable in the sensitivity list is not modified inside the xxxviiiSynopsys, Inc. Feedbackalways block 
+W503: An event variable is never triggered 
+W504: Integer is used in port expression 
+W505: Ensure that the signals or variables have consistent value
+W527: Dangling else in sequence of if conditions. Make sure nesting is correct 
+W528: A signal or variable is set but never read
+W546: Duplicate design unit
+W551: Ensure that a case statement marked full_case or a priority/unique case statement does not have a default clause
+W552: Different bits of a bus are driven in different sequential blocks
+W553: Different bits of a bus are driven in different combinational blocks
+W561: A zero-width-based number may be evaluated as 32-bit number
+W563: Reduction of a single-bit expression is redundant 
+W575: Logical NOT operating on a vector
+W576: Logical operation on a vector
+W66: Ensure that a repeat construct has a static control expression
+W69: Ensure that a case statement specifies all possible cases and has a default clause
+W701: Included file is not used
+W71: Ensure that a case statement or a selected signal assignment has a default or OTHERS clause
+W86: Not all elements of an array are set
+W88: All elements of a memory are not set 
+WhileInSubProg: Reports unsynthesizable While statements used inside subprograms
+W541: A tristate is inferred 
+LINT_MULTIASSIGN_BLOCKING_SIG: Signal may be multiply assigned in blocking manner (beside initialization) in the same scope
+LINT_MULTIASSIGN_NONBLOCKING_SIG: Signal may be multiply assigned in non-blocking manner (beside initialization) in the same scope
+ConstSig: Signal has a constant value or can only switch to a constant value
+DeadCode: Code does not contribute to functionality of the design
+Mux01: Connected MUXes should not have a common select
+Reset_check11: Reports asynchronous resets that are used as both active-high and active-low 
+SVConstructSanityChecks:  Reports SVConstructs that are not supported by VC SpyGlass 
+AlwaysCombExhaustive-ML: The conditions of an if/unique-if/priority-if construct inside an always_comb block should be exhaustive
+AlwaysFalseTrueCond-ML: Checks the use of always-false and always-true conditions 
+AMSKeyword-ML: Verilog-AMS keyword found
+AnsiPort-ML: The module declaration should use Verilog ANSI style ports only 
+ArrayPortConnect-ML: Detect port connections used in multidimensional signals with non-static indexes 
+ArrayAscending-ML: Unpacked ranges should be declared in an ascending order 
+ArrayUsedInSensList-ML: Arrays should not be used in the sensitivity list
+AsgnNextSt-ML: Next state variable is not assigned in the default state of Finite-state machine (FSM) 
+AsgnToOneBit-ML: Assigning a 0 or 1 (32-bits) to a 1 bit is not allowed 
+AsgnOverflow-ML: Detects assignment overflow 
+AssignPatInInst-ML: Detect assignment patterns in parameter override or port connection area 
+AutomaticFuncOnly-ML: Detects non-automatic functions
+AutomaticFuncTask-ML: Use automatic functions/tasks in modules and interfaces 
+AvoidShortedPort-ML: Avoid connecting one net to different logical inputs of a same instance, except GND, VDD nets 
+BitDataType-ML: Bit data type signal has been used in the design
+BitRangeUsedParam-ML: Bit Range Specified for Parameter
+BitOrder-ML: Bit order specification should follow recommended convention
+BitwiseOpOnSingleBit-ML: Reports vector operators on single bit expressions
+BreakInMultiDimForeach-ML: Reports if break or continue statement is xlSynopsys, Inc. Feedbackused in a multi-dimensional foreach loop
+CAPA-ML: Copy-paste should not be done within a design file
+CaseWithDontCare-ML: Casex and Casez constructs should not have labels containing more than one don't care(X), ?, or Z values 
+CheckAnalogPin-ML: Analog output pins should be connected to analog input pins only
+CGFromSpecifedCell-ML: Clock gated only with user specified cells
+CGFromSpecifedLib-ML: Clock gated only with a cell from user specified library 
+CheckAsyncHold-ML: Report violations for flop with an asynchronous hold
+CheckAlwaysCombSenseList-ML: Report violations for signal which are read in side an always comb block and not in the implicit sense list of that always_comb block
+CheckComplexForStmt-ML: For-loops nesting within complex structure elements must not exceed the given maximum value 
+CheckEnumMethodUsage-ML: Reports next(N) and prev(N) enum method calls 
+CheckFileName-ML: Reports violations for source file names that do not match the naming convention
+CheckLocalParam-ML: Reports violation if parameters are used in modules or interfaces 
+CheckImplicitPort-ML: Reports if instances are using implicit port connections in the design
+CheckModulesWithoutPorts-ML: Reports violation for modules without any port
+CheckPortType-ML: Complex port types are not allowed in module interface
+CheckRegAndWire-ML: All reg / wire uses logic, but excluding multi-drive signals
+CheckShiftOperator-ML: Logical and arithmetic shift operation detection on signed and unsigned operand(s) or expression(s) respectively
+CheckSignedFunc-ML: Most significant bit should not be concatenated with 0 or 1 in signed function
+CheckTimeUnitandPrecision-ML: Delay used without timeunit and timeprecision in module
+ChkCarriageReturn-ML: Carriage return should be last line of a file 1429xliSynopsys, Inc.Feedback
+CheckAssignToVecBits-ML: Use explicit assignments only for bit-selects, part-selects and full vectors
+CheckDeclKeywords-ML: Variable declarations within a block requires 'auto' keywords 
+CheckDelayTimescale-ML: Delay used without timescale compiler directive 
+CheckParamSensList-ML: Always block uses parameters in the sensitivity list
+CheckParenthesesOfMacroOP-ML: Macro value includes a binary operator which should be enclosed within parenthese 
+CheckSyncReset-ML: Synthesis directive sync_set_reset must be set for all synchronous reset description
+CheckSynthPragma-ML: Pragma option must be set on the command line if translate_on/off blocks are present in a testcase
+ChkSensExprPar-ML: Expression uses parenthesis '()' in the sensitivity list
+CheckSwappedIndex-ML: Do not use bus signals with swapped indexes while instantiation
+ChkUndefMacro-ML: Macro is not defined before undefining it
+ClockName-ML: Clock name does not follow the naming convention 
+ClockSignalInSenseList-ML: Signal other than clock [or reset] should not be in the sensitivity list of a sequential always/process 
+ConstBitCase-ML: Detect constant bits in case expression and case items
+ConstDrivenNet-ML: All internal net of module should not be assigned a constant value
+ConstWithoutValue-ML: Avoid constants with unspecified value (deferred constants)
+CloseCaseWithX-ML: Others clause does not have X assignment to destination signals 
+ComplexExpr-ML: Complex Expression should be avoided
+ConcatenationInArrayAssign-ML: Use assignment patterns in unpacked array assignments 
+CommonSubproduct-ML: Common subproduct term used multiple times
+CondSigAsgnDelay-ML: Delays should not be used in conditional signal assignment
+ConflictVar-ML: Flag where conflicting variable names across different processes are used 
+CoveragePragma-ML: The coverage off pragma should have corresponding the coverage on pragma
+FSMCurrentStateName-ML: Current state vector of FSM does not follow the naming convention 
+DeclarationComment-ML: Add comments for declarations
+DetectHardVerification-ML: Reports violation if there is possibility of hard verification issue for Formality tool
+DetectNonStaticCaseLabels-ML: Detect case constructs with non-static case label expression(s) which are not using the unique/priority case construct
+DetectParamTruncate-ML: Parameter value is truncated 
+DefineTypeDefStructure-ML: Always define a typedef when using a structure or union 
+DetectBlackBoxes-ML: Black box instance detected
+DetectInvalidSignedAssignment-ML: Usage of ‘1 instead of 1 or -1 for signed values need to detected early at the RTL development/ LINTING stage
+DetectUnderAndOverFlows-ML: Capture underflows and overflows due to castings 
+DisallowSignalType-ML: Do not use net types triand, trior, wor, trireg, wand, tri0 and tri1 
+DiffDelayInNonBlock-ML: Checks if all the non-blocking assignments have delays and those delays are equal 
+DisallowForceOnEquiNet-ML: Reports equivalent hierarchical signals due to which multiple drivers happen on same signal
+DisallowForceOnPortConn-ML: Reports simulation synthesis mismatch due to force assignment
+DisallowModules-ML: Reports all instantiations of the specified modules per specified labels in a design
+DisallowSVAlwaysLatch-ML: Reports the usage of SystemVerilog always_latch 
+DiffTimescaleUsed-ML: Design should not have different timescales for different modules
+DirectiveCheck-ML: Dumps information about ifdef, undef, and include directives used in design
+DisallowCaseX-ML: Do not use casex constructs in the design
+DisallowCaseZ-ML: Do not use casez constructs in the design 
+DisallowDWComp-ML: Do not instantiate DesignWare component used for multiplication, division 
+DisallowMult-ML: Multiplication operator (*) should not be used in the design
+DisallowSignalType-ML: Do not use net types triand, trior, wor, trireg, wand, tri0 and tri
+DisallowTimeArr-ML: Array of time is not allowed 
+DisallowVal-ML: Flag where the values 'U', '-', 'W', 'H' and 'L' are used
+DisallowXInCaseZ-ML: Do not use "x" in casez statements
+DuplicateCase-ML: The conditions of a case/unique-case/priority-case construct should not be duplicated
+DuplicateInclude-ML: Reports when the same file is included more than once from the same file 
+DuplicateCaseLabel-ML: Ensure that a case construct does not have duplicate case clauses with the parallel_case pragma specified 
+DuplicateLabelInUniqueCase-ML: Ensure that there is no duplicate case label in unique case/casez/casex/case inside statements
+DuplicatePort-ML: Do not define duplicated ports 
+EnableXPropagation-ML: Use "?:" construct instead of "if/else" construct to enable X-propagation 
+EntityCompMismatch-ML: Inconsistent case between entity/module name vs component name 
+EnumBaseComparison-ML: Ensures that two variables of different enumerated data types are not compared 
+EnumDeclInGenerate-ML: Report all enumeration declaration inside generate (for, case, if), nested generate 
+EnumOutOfRangeCast-ML: Reports if a cast occurred into an enumerated type with a value which does not lie inside its range
+EnumStateDecl-ML: The Finite-state machine’s (FSM) enum states parameter declaration should appear before the reg declaration
+EnumTypeUsedWithRange-ML: Report violation for ENUM variable which is bit or range select in an expression
+EscapeSpace-ML: Report backslash followed by space 
+EnumValueName-ML: Enum value name does not follow the naming convention
+EventControlInRHS-ML: RHS of assignment statement has a event control 
+ExplicitSignExtend-ML: Reports explicit sign extension 
+ExprInSenseList-ML: Reports expression used in the sensitivity list 
+ExplicitParamDefine-ML: Reports parameters/localparams that are defined without any type or range values
+ExplicitTwosCompliment-ML: Report explicit two's compliment 
+ExternalVarUsage-ML: Usage of external/shared variable detected in the designs
+FindStringsInComment-ML: Required string present in commented lines
+FSMNextStateName-ML: State name prefix or suffix 
+FSMNonConstDefault-ML: Checks whether the next state of FSM is specified as a constant expression in the default branch
+FsmUsage-ML: Finite State machine used 
+FuncTaskUsedBeforeDefine-ML: Identifies the functions and tasks that have been used before the definition 
+FunctionCallUsed-ML: Reports violation for any function or task call within another function or task
+FuncFileName-ML: FileName should be '<functionname>.v' or '<functionname>.sv' for a file which contains only function definition(s) 
+FlopFeedbackRace-ML: Reports potential race conditions between flip-flop output and its clock/reset pin 
+GenerateName-ML: Generate name does not follow the naming convention
+GenIndexNonInt-ML: Avoid use of non-integer indexes inside GENERATE constructs
+GenvarUsage-ML: Genvar variable has been defined but not used
+GenvarDeclaration-ML: For-Loop variable defined by using genvar must be declared outside of generate block
+GlobalDataTypeDefined-ML: Data type objects (user-defined type declarations and definitions of identifiers) should not be present or visible in global Scope
+GroupOFAsgn-ML: Verilog treats differently C-like groups of assignments
+HierarchyReport-ML: Tag will generate a report with hierarchies of usage of global Verilog entities
+HierarchicalFunctionTask-ML: Do not use Hierarchical function and task
+HierarchicalModule-ML: Hierarchical modules should contain only instantiations of modules 
+IfOverlap-ML: The conditions of an if-construct (including unique-if and priority-if) should not overlap (Verilog)The conditions of an if-construct should not overlap (VHDL) 
+IfWithoutElse-ML: An "if" clause does not have a corresponding "else" clause and is not preceded by assignment of target signal
+ImplicitParamImports-ML: Report re-definition of a localparam implicitly imported from a package
+ImplicitAlways-ML: Reports violations for implicit always blocks (always@*) that will never trigger during simulation 
+ImproperRangeIndex-ML: Possible discrepancy in the range index or slice of an array
+InActiveReset-ML: Do not use inactive sets/resets on flip-flops 
+IncludeFileForEachModule-ML: Checks if include file is explicitly included in each child module 
+Indentation-ML: Reports incorrect indentation of statements in the begin-end, if, and case blocks 
+InefficientRounding-ML: Inefficient way of rounding 
+InlineComment-ML: Detect absence of space before/after an inline comment
+InoutNotRead-ML: Inout port is set but not read
+InvalidMacroCall-ML: Space between the ` symbol and macro name is not allowed
+InstanceComment-ML: Report if no comment precedes an instance 
+InstNameSameAsMaster-ML: Do not use an instance name identical to involved master name 
+InstNameStyle-ML: Preferably name instances as per <instance_prefix><component_name><instance_suffix>
+InterfaceNameConflicts-ML: Interface Signal Name conflicts with other signal name 
+InterfaceWithoutModport-ML: Interfaces should make use of modport declarations
+IntRange-ML: It is necessary to specify a range for integer/real signal
+InstPortConnType-ML: Output and inout port connection in instantiation should not be of type, reg
+InvalidNetType-ML: Invalid net type detected
+InvalidRepeatCondition-ML: X or Z values are not allowed in repeat condition 
+InvalidReverseIndexing-ML: There should not be reverse indexing assignments within design
+InvalidTypedefName-ML: Invalid typedef name detected
+LINT_INVALID_FILENAME: Reports file names that match with the specified regular expression or exceed the specified length 
+LeftShiftTrunc-ML: Reports the result when a left shift expression is truncated to match the length of the assignment result or expression context
+LINT_FF_DRIVEN_TRISTATE: Reports violations for the Tristate elements that are not driven from the output net of a flip-flop
+LINT_CLOCK_CONNECTED_TO_INOUT: Checks if clock pins are connected to the inout ports
+LINT_NON_RST_SIGNAL_STYLE: Reports non-reset signals that do not follow the specified naming convention 
+LINT_INVALID_ENTITY_NAME: Reports entity names that match with the specified regular expressions
+LiteralOverflow-ML: Check if the given bit string literal is of a length longer than specified by the width specification
+LiteralUnderflow-ML: Check if the given bit string literal is of a length shorter than specified by the width specification
+InvalidVariedTypedefNameStyle-ML: Reports type names defined by typedefs of struct, union, enum, or other that do not follow a specified or default naming style pattern
+LogicEnumBase-ML: Always declare enum base type explicitly as sized logic type
+LongHierName-ML: Long hierarchical name inferred for the construct 
+MacroWithoutUndef-ML: Macro is not undefined 
+MacroFileName-ML: FileName should be '<macroname>.v' or '<macroname>.sv' for a file, which contains only macro definition(s) 
+MismatchPortTypeInFuncTaskUse-ML: Reports type mismatches between the inner and outer connections of output ports in function/task calls
+MissingPortInModport-ML: All the ports of interface should be used in modport declarations
+MergeFlops-ML: Flip-flops likely to be merged in synthesis 
+MissingPinFunctionCall-ML: Use input pin for all read signals, which are xlviiSynopsys, Inc.Feedbacknot declared within function scope 
+MixedLangBoundaryMismatch-ML: Report violation if entity/module name and its component/instance name has inconsistent case. Case inconsistency between port connections are also flagged
+MixedResetEdges-ML: Do not use same asynchronous reset with different polarities inside same process block 
+MaxDelay-ML: Delay is more than the threshold value 
+MaxFaninLogic-ML: Reports a violation on all flops that have drivers greater than ALLOWED_DRIVER_LIMIT
+MismatchPortTypeInFunctTaskUse-ML: Inconsistency between the actual arguments of the task enable/function call and its formal arguments in the task/function definition 
+ModuleName-ML: Module name does not follow the naming convention
+MultiAssignConcat-ML: Concatenation expressions in the LHS of assignments should not include the same signal multiple times
+MultiDimArrayUsed-ML: Multi-dimensional array detected
+MultiModuleInCellDefine-ML: There are more than one module definitions in between a single `celldefine and `endcelldefine 
+MultiDimInterfaceInstantiation-ML: Detects multi-dimensional interface instantiations
+MultipleInterfaceInstancesInFuncTaskCall-ML: Detects multiple instantiations of the same interface during a function or task call
+MultiplicationOpTrunc-ML: Reports the result when a multiplication expression is truncated to match the length of the assignment result or expression context 
+MultiOpInModule-ML: Circuit of multiple operators are generated in the same module 
+MultOperVar-ML: Avoid multiple operations on variable in the same expression 
+MultipleRangeDefine-ML: Multiple range definitions found 
+MultipleBitsInReset-ML: Reset/Set used for the sequential element should be scalar 
+MultipleFilesCellDefine-ML: Scope of `celldefine spans across multiple files. 
+MultipleSignDefine-ML: Multiple Sign definitions found 
+NegativeIndex-ML: Do not use negative or enum array index 
+NestedInterfaceInst-ML: Detect interface instances in interfaces
+NeverExecutingForLoop-ML: Zero loop count
+NoArithOp-ML: Arithmetic Operators should be avoided
+NoArithShiftInConcat-ML: Tag will report violation for arithmetic operations inside concatenation
+NoArray-ML: Detects usage of arrays in design 
+NoBitArray-ML: Do not use one-pin buses
+NoConstSourceInAlways-ML: Checks the use of constant/inferred constants in RHS always block 
+NoExitInFSM-ML: Do not have states without exit in FSMs 
+NoFuncOrProc-ML: Avoid use of functions and procedures 
+NoGenericMap-ML: Instantiation must have generic map for a generic declared in the entity/component
+NonConstCompare-ML: Right operand of the wildcard equality/inequality operator (==?, !=?) and inside operator is not constant
+NonConstValueInShift-ML: Avoid shifting by a non-constant value
+NoLibCellInst-ML: Do not instantiate library cells in the design. (Verilog)Do not directly instantiate cells in the design (VHDL) 
+NoOpen-ML: Flag where open keyword is used
+NoOverlappingCaseLabel-ML: No overlapping case labels in the unique or inside case blocks
+NoVerilogPrims-ML: Verilog primitives are prohibited
+NoUnsizedNUnbasedNum-ML: Detects assignments where value 1 (unsized single-bit 1) is assigned to parameters without specifying the size
+NonBlockingCounters-ML: Non-blocking counter assignment found 
+NonConstShift-ML: Checks whether there is any non-constant shift expression (Right operand)
+NoFeedThrus-ML: Do not use feedthrough signals
+NonLocalLoopIndex-ML: Catches loop indexes that are not locally defined
+NonOverridenParams-ML: Tag reports violation for non-overridden parameters 
+NonSynthRepeat-ML: Repeat statements are non-synthesizable
+NonVoidFunction-ML:  Checks if the function is explicitly casted to void 
+NoValueX-ML: 'X' value used 
+OneLineComm-ML: Use one-line comments 
+OperShortCircuit-ML: Checks if operator short circuiting occurs across the function call 
+OverCasting-ML: Detects over casting in a design
+PackageName-ML: Package name does not follow the naming convention
+ParameterCheck-ML: Do not use parameters
+ParamValueOverride-ML: Detect overridden parameters in RTL design
+PortConnectToFixedVal-ML: Port of a module connected to a fixed value
+PortNameSameAsModule-ML: Do not use a port name identical to the unit name
+PortIndex-ML: Use same port index bounds in component instantiation and declaration 
+PortRange-ML: Top level output port is driven by a constant
+PortUsedBeforeDefine-ML: Port used before defining
+PortWithoutDirection-ML: Port is defined without direction 
+PortWithoutType-ML: Port is defined without type
+PortIOConnectionSanity-ML: Checks if primary input/output ports are connected to a valid input/output PAD cell pin 
+ProhibitedDataTypes-ML: Checks for prohibited data types being used directly
+RealValueUsed-ML: Checks if real literals are used 
+RecursiveFunction-ML: Do not use recursive functions 
+RedundantGenBlock-ML: Detect generate blocks not having 'if' or 'case' or 'for'
+RedundantLogicalOp-ML: Logical operation result is same as one of the operands or is a constant
+RedundantLogicalOpInExpr-ML: Redundant expressions in logical expressions
+RepeatedLogic-ML: Report cases when arithmetic or bitwise expressions inside 'conditions in loops' or 'condition bodies' can be placed outside
+ReportCompOperator-ML: Operator <= or >= used in binary expressions with std_logic, std_ulogic, , std_logic_vector or std_ulogic_vector type operands
+ReportCppKeyWords-ML: Do not use C or C++ keyword for port or signal names
+RegisterInfo-ML: Generate a report which includes all registers in RTL design 
+ResetPortConnectedToSupply-ML: Do not have reset connected to static value in instantiation 
+RightShiftTrunc-ML: Reports the result when a right shift expression is truncated to match the length of the assignment result or expression context
+SafeLatch-ML: Identifies the unsafe latch triplets 
+SingleRangeInUnpacked-ML: Unpacked vector range specified with a single range bound
+ScopedVarUsedBeforeDefine-ML: Reports scoped variables that are used before defining
+SepTFMacro-ML: Task/functions/macros should be defined in separate file
+SignalDrivenByConst-ML: Signals should not be driven by constants 
+SignedBitPartSelect-ML: Part/Bit select is not allowed in signed variables
+SignedType-ML: Report any declaration using the "signed" keyword 
+SignRange-ML: Range select of a signed signal should not be used
+SignCastInSelfDetermined-ML: Sign cast in self-determined expressions
+SimSynthMismatchInVarInit-ML: Simulation - synthesis mismatch in variable initialization
+SigAsgnDelay-ML: Delays should not be used in Signal assignment
+SigAssignX-ML: Signal driven by X
+SigAssignZ-ML: Signal driven by Z
+SignalModifiedAfterRead-ML: Report, if signal is set after it is read in the always_comb block
+SignedPackedMDA-ML: Reports if a signed packed multi-dimensional array is used 
+SimSynthMismatchInVarInit-ML: Simulation - synthesis mismatch in variable initialization
+SingleEntInFile-ML: There should be only one entity or one entity and its architecture in a file 
+SpareCaseExprBit-ML: Detect redundant bits in case expression 
+SpecifyBlockUsed-ML: Specify blocks are not supported
+StringUsage-ML: Incorrect usages of string
+SyncRstFirstUse-ML: Synchronous reset should be used in first if liSynopsys, Inc.Feedbackcondition of always block 
+SynchValueUsed-ML: Synchronized value should not be used asynchronously 
+SynthElabDuName-ML: Synthesized module name is longer than required limit
+SVConstruct-ML: SystemVerilog construct used
+TwoStateData-ML: Avoid using two state data type signals in RTL 
+TypedefNameConflict-ML: Ensures that variable name are not same as that of the System Verilog type-defined name 
+UncoveredEnumCase-ML: All enum items should be defined in case statement
+UniqueWithOneBranch-ML: Avoid using unique or priority if or case with one branch 
+UniqueIfMissingCond-ML: Reports violation if priority/unique type if/case statement is used but all the conditions are not covered 
+UnInitParam-ML: A parameterized module/entity has been instantiated but parameters/generics are not explicitly specified
+UnInitTopDuParam-ML: Top level module/entity has parameters/generics but the parameters/generics are not explicitly specified on the command line
+UnifiedNetList-ML: Preferably have "UNIQUIFIED" netlist 
+UnInitializedReset-ML: Ensure that there are no uninitialized signals in reset block of a flip-flop
+UniqueCase-ML: Unique, Unique0, or priority case constructs used with full_case or parallel_case or both
+UniquePriorityMisuse-ML: Detects if unique, unique0, and priority keywords are misused in case constructs 
+UnreachableStatesInFSM-ML: Next state assignment is not reached 
+UnsuppCompDir-ML: `ifdef, `resetall, `default_nettype and `unconnected_drive are not supported by all tools 
+UnUsedFunctionInput-ML: Function input has been declared but it is not read
+UnpackedStructUsed-ML: Do not declare unpacked structure outside the package 
+UseBusWidth-ML: Bits of a bus should be specified when a bus is used as a whole 
+UseImplicitAlways-ML: Sensitivity list must be implicit in combinational always blocks
+UseLogic-ML: Checks for reg and wire usage in the design
+UseSystemTaskFunction-ML: Do not use standard or non-standard system tasks and functions 
+UseSVCasting-ML: Checks if System Verilog casting constructs are used for assigning a packed bit vector to a packed structure 
+VarInCaseInside-ML: Variable or function call in case-inside item
+V2KConstruct-ML: Verilog 2001 construct used 
+ValueSizeOverFlow-ML: Input value should not be greater than size specified in IEEE conversion functions
+ValueAssignInDeclaration-ML: Signal declared with assignment 
+WrapInstance-ML: Black box cell should not be contained on its own in a wrapper module
+ZeroReplicationMultiplier-ML: Reports replications with a zero replication multiplier in Verilog
+MemConflict-ML: Possible memory conflict (overwrite) detected 
+MultiAssign-ML: Signal or Variable may be multiply assigned (beside initialization) in the same process scope
+NestedCaseStmt-ML: Nesting depth of case construct exceeds specified depth
+NestedCellDefine-ML: There is a `celldefine in the source before a `endcelldefine to close the previous `celldefine
+NestedComment-ML: Reports block comment that appears within another comment 
+NoAssignX-ML: Ensure RHS of the assignment does not contains 'X' 
+NoDisableInFunc-ML: Disable statements in functions may not be synthesizable 
+NoDisableInTask-ML: Disable statements in tasks may not be synthesizable 
+NoExprInPort-ML: Port connections in instances should not contain expressions
+NoGenLabel-ML: Unnamed generate block or duplicate generate block names used in module
+NoInoutPort-ML: Do not use bi-directional ports
+NonConstReset-ML: Signals must be reset to constant values
+NonStaticMacro-ML: Macro evaluates to non-static value
+NonWireSignal-ML: The signal used in a design should preferably be a wire net
+NoOthersInAsgn-ML: Flag other constructs in assignment for slice of a vector 
+NoParamMultConcat-ML: Do not use parameter as left operand in multiple concatenation expression
+NoRealFunc-ML: Functions of type real are not synthesizable 
+NoSigCaseX-ML: Do not use signals in casex and casez constructs 
+NoStrengthInput-ML: Synthesis tools ignore strength inputs 
+NoWidthInBasedNum-ML: Width should be specified for all based numbers
+NoXInCase-ML: Ensure that case expression and case choices do not have 'X' 
+NullOthers-ML: Others clause of a case statement should not have null statement
+NullPort-ML: Null Ports should not be defined 
+OneModule-ML: At most one module per file 
+ParamOverrideMismatch-ML: Mismatch in the number of parameter over-rides and number of parameters in the instantiated module
+ParamWidthMismatch-ML: Parameter width does not match with the value assigned 
+PartConnPort-ML: Port is unconnected or partially connected 
+PartSelectRange-ML: Vector part select is probably wrongly written, use '+:' instead of ':+' 
+PragmaComments-ML: Detects Pragma Comments 
+RealValueUsed-ML: Checks if real literals are used 
+RegInput-ML: Module input port should be registered
+ReportPortInfo-ML: Generate a report of all ports of top level block and black box instances
+ReserveNameSystemVerilog-ML: SystemVerilog IEEE-1800 reserved word used 
+ReserveNameV2K-ML: Verilog 2001 reserved word used
+SameDu-ML: Same design unit in Verilog and VHDL
+SameLabelsInGenerate-ML: Flag violation when same labels are used inside different generate block
+SameLoopIndexUsed-ML: Do not use same for-loop index variable inside different always @* blocks
+SelfAssignment-ML: Same operand on both sides of combinational assignment detected 
+SelfDeterminedExpr-ML: Self determined expression present in the design
+SensListRepeat-ML: A signal is repeated multiple times in the sensitivity livSynopsys, Inc. Feedbacklist 
+SetBeforeRead-ML: Variable may not be set before being read (VHDL)Signal is read before being set (Verilog)
+SetResetConverge-ML: Fan-in cone of Set and Reset pin of a flip-flop/latch converge
+SingleBitMemory-ML: Memory word size is one bit 
+SingleBitVector-ML: Vector length is one bit 
+SignedUnsignedExpr-ML: Do not mix signed & unsigned variables/constants in expressions 
+SynchReset-ML: Do not use synchronous reset in the design 
+TaskFileName-ML: FileName should be '<taskname>.v' or '<taskname>.sv' for a file, which contains only task definition(s)
+UnConstrLoop-ML: Number of iterations in <for | while> -loop exceeds max limit (Verilog)Unconstrained loops should not be used (VHDL)
+UnrecSynthDir-ML:  Synthesis directive is not recognized 
+UseSVAlways-ML: Checks the use of System Verilog constructs for modeling of procedural combinatorial and sequential logic 
+WrapInstance-ML: Black box cell should not be contained on its own in a wrapper module
+ConstantInput-ML: Input to a particular module is tied to a constant value
+HangingInstInput-ML: Net connected to input port of instance is undriven
+HangingInst-ML: Block is not connected 
+HangingInstOutput-ML: Net connected to output port of instance is unconnected 
+NoBusPartClock-ML: Bus bits or slices should not be used as clocks 
+NoFeedThrus-ML: Block should not contain feed-throughs
+ReEntrantOutput-ML: The re-entrant outputs should be avoided 
+RegInputOutput-ML: Register the module output and input ports
+ResetFlop-ML: All the flip-flops should have either asynchronous set/reset or synchronous set/reset 
+RptNegEdgeFF-ML: Negative edged flip-flops should not be used in the design
+SameControlNDataNet-ML: Control (set/reset) signal used as data for the same flip-flop
+TristatePort-ML: Tristate port detected
+TristateSig-ML: Tristate signal detected
+Undriven-ML: Undriven nets/terminals detected in the design
+UndrivenInTerm-ML: Detects undriven but loaded input terminal of an instance 
+UndrivenNet-ML: Undriven but loaded net is detected in the design 
+UndrivenNUnloaded-ML: Undriven and Unloaded nets/terminals detected in the design
+UndrivenOutPort-ML: Undriven but loaded output port of a module detected
+UndrivenOutTermNLoaded-ML: Undriven output pins connected to instance input 
+UniqueInputOutputSampling-ML: Checks the existence of unique output flip-flops to output interface and unique input flip-flops to input interface
+UnloadedInPort-ML: Unloaded but driven input port of a module detected
+UnloadedNet-ML: Unloaded but driven net detected in the design
+UnloadedOutTerm-ML: Unloaded but driven output terminal of an instance detected 
+CheckKeywordsOfCaseStmt-ML: tag will check the usage of unique/unique0/priority keyword with case, casez, casex and case inside statements 
+ComplexModport-ML: Detects complex modport declarations
+ConcatUnsizedNumbers-ML: tag will report violations for concatenation of unsized numbers
+DetectNonBlockGenFor-ML: For-loop inside generate statements must have a begin/end block 
+DirectTopInputToInout-ML: Checks the connection between top input and inout ports
+ShiftRegister-ML: Reports case coding style shift register 
+UseParamWidthInOverriding-ML: Parameters should not be overridden without specifying the width in instantiations
+IncompatibleSVAssign-ML: SV assign operators should not be used in expressions
+IncrementalForLoop-ML: Tag will report violations for usage of ++ and - operators in the for loop
+DisallowUnknownInCase-ML: Tag will check the usage of 'x', 'z' or '?' in all case statements
+DivideByConstant-ML: Unverifiable formality issue due to division of lviSynopsys, Inc. Feedbackvariable signal by constant
+NoAbsolutePathName-ML: Include files must be specified with relative path names. (Verilog)
+NoOutputPort-ML: Module with no output
+FuncWithIntReturn-ML: Function with integer return value 
+InoutPortConnectionSanity-ML: Checks if inout port is connected to right type of IO cell pin
+InstanceNameRequired-ML: Instance without name 
+HangingFlopOutput-ML: Report unused flip-flops in the design 
+LoopVarFreeAssign-ML: Loop variable independent assignments need optimization
+LoopVarInAlways-ML: For-Loop variable defined by using integer must be declared outside of always block
+NonReusableParametricModule-ML: This tag categorizes parameters based on the usage of the parameter
+PackedArrayInRange-ML: Packed arrays should not be used as range values in a range
+SameAssignment-ML: Report same assignment expression in different branches of a conditional block
+SupplyNet-ML: Signal is defined as Supply0/
+SV09Construct-ML: System Verilog 2009 construct used 
+TimescaleUsed-ML: Timescale usage found in the design
+PortTypeMismatch-ML: Port type mismatch between module declaration and net connection in the instantiation
+ConcatInUnpacked-ML: Unpacked array concatenation must be avoided
+MaxFanoutCount-ML: High fan-out detected for internal node
+PortConnectedToMux-ML: MUX detected in fan-in cone of specified pin
+Unreachable-ML: Reports an assignment in the default branch of a case statement that is unreachable, except if the assignment is to 'x'
+UnUsedFlopOutput-ML: Unreachable sequential element must be removed from the design 
+UseParamInsteadDefine-ML: Report define name used in compiler directive that matches a parameter 
+ResetPreventSRL-ML: Reset used in shift register will prevent SRL inference 
+LINT_DETECT_EMPTY_MODULE: Reports violations for empty modules lviiSynopsys, Inc.Feedbackin RTL design
+LINT_IMPROPER_RANGE_INDEX: Possible discrepancy in the range index or slice of an array 
+LINT_INSTANCE_WITHOUT_NAME: Instance without name 
+LINT_LOOP_THRU_FLOP_WITHOUT_SETRESET: Avoid synchronous loops that contain flip-flops without any set/reset
+LINT_LOGICAL_EXPR_USED_IN_SENS_LIST: Logic expression used in sensitivity list
+LINT_ALL_BITS_SHIFT_OUT: All bits shifted out 
+LINT_MACRO_MODULE_USED: Macromodules are not synthesizable 
+LINT_DETECT_UNSYNTHESIZABLE_NET: Net type not synthesizable
+LINT_SV_STRING_USED_IN_DESIGN: Avoid using SystemVerilog string in the design 
+LINT_SNPS_DIRECTIVE_USED: Synopsys directive translate_off/translate_on used
+LINT_FSM_WITHOUT_EXIT_STATE: Do not have states without exit in FSMs
+LINT_FSM_UNREACHABLE_STATES: Do not have unreachable states in FSMs
+LINT_FSM_WITHOUT_INITIAL_STATE: Do not have FSM without the initial state 
+LINT_GTECH_CELL_USED: GTECH cell is used
+LINT_SUB_MODULE_NAMING_STYLE: Checks the naming convention of sub-modules 
+LINT_INVALID_NET_TYPE_IN_MODULE_INSTANTIATION: REG output port is assigned to a WIRE port connection
+LINT_UNSPECIFIED_MACRO_NAME: Macro name is unspecified in`ifdef,`ifndef,`elsif usage
+LINT_UNDEFINED_MACRO_USED: Macro is defined after it is used
+LINT_INVALID_NET_TYPE_IN_DU_INSTANTIATION: REG output port is assigned to a WIRE port connection
+LINT_CLKGEN_AVOID_CONTASSIGN: Use of continuous assign statement in clock generator module
+LINT_CLKGEN_AVOID_SEQSTMT: Use of sequential process statement in clock generator module
+LINT_RSTGEN_AVOID_SEQSTMT: Use of sequential process statement in reset generator module
+LINT_NONSTANDARD_LIB_USED: Report direct use of library cell in the RTL
+XOrZInCompare-ML: Do not use 'X' ,'Z' in left operand of ==? Comparator
+ZeroExtension-ML: Report violations for explicit zero extensions of an argument in an arithmetic operation
+ActLowName: Active-low signal name does not follow the naming convention
+AlwaysComment: Always block is not commented
+ConstantComment: Constant declaration does not have a comment 
+ArrayIndex: Bus signals are declared with low-order bit first
+CaseOverIf: Use case statements instead of if/else, where feasible, if performance is important. (Verilog)Use case statements instead of if/else, where feasible, if performance is important. (VHDL)
+ConsCase: Name not used consistently with same case
+ConstName: Constant does not follow recommended naming convention 
+DefaultState: Finite-state machine does not have a defined default state
+ExprParen: Parenthesize complex expressions to force evaluation precedence in the order you intend
+FileHdr: Standard header not found at the top of source file 
+FuncName: Function/procedure does not follow recommended naming convention
+FunctionComment: Function is not commented 
+HardConst: Do not use hard-coded constants other than 0 or 1 
+Indent: Code is not correctly indented 
+InstName: Instance name does not follow the naming convention 
+InferFF: Flip-flop inferred
+InstNameLength: Instance name length does not follow the convention 
+InvSigType: Signal type is type bit or bit_vector
+LineLength: Line-length exceeds defined limit 
+NamedAssoc: Use named-association rather than positional association to connect to an instance
+NoDup: Signal, variable, entity or other named object names are duplicated
+NotInSens: A signal is read inside a combinational always block but is not included in the sensitivity list (Verilog)A signal is read inside a combinational process block but is not included in the sensitivity list (VHDL)
+NotReqSens: A signal is included in the sensitivity list of a combinational always block but not all (or none) of its bits are read in that block (Verilog) A signal is included in the sensitivity list of a process block but only some or none of its bits are read in that block (VHDL) 
+RegOutName: Register output signal does not follow naming convention
+NoTab: Tab detected in design 
+NoDefine: Macro definitions should not appear in files containing module definitions
+NoGates: Directly instantiated gate detected
+NoTopGates: Gates instantiated at the top-level of the design
+NoTopLogic: Logic inferred at the top level of the design
+OnePortLine: No more than one port should be declared per line
+OneStmtLine: More than one statement detected on a line 
+PortComment: Port is not commented 
+PortGroups: No blank line between connections to input ports and output ports
+PortOrder_A: Ports not declared in recommended order
+SigHierName: Non-clock signal does not preserve a similar name through the hierarchy 
+SignalComment: Signal declaration does not have a comment
+SigType: Signal type is not a type or subtype of std_logic or std_logic_vector 
+TriStateName: Tristate signal does not follow naming convention
+TypeComment: Type/Sub-type is not commented 
+TypeCount: Excessive number of subtypes created 
+VariableComment: Variable declaration does not have a comment
+ParamName: Parameter/generic name does not follow the naming convention
+PortGrpComment: Port group is not commented 
+PortName: Port name does not follow the naming convention 
+ProcessComment: Process is not commented
+SigName: Signal name does not follow the naming convention 
+TaskComment: A comment does not appear immediately before a task lxSynopsys, Inc. Feedbackdefinition 
+TypeName: Type or sub-type does not follow recommended naming convention
+UseDefine: Hard constants used to encode finite-state machine
+VarName: Variable does not follow recommended naming convention
+BufClock: Detects clock buffers 
+ClkHierName: Clock signal does not keep the same name through the hierarchy 
+ClkName: Clock name does not follow the naming convention
+CombLoop: Detects combinational loops
+GatedClock: Gated/generated clocks are generated from more than one block in the design 
+InferLatch: Latch inferred 
+IntClock: Internally generated clock detected
+IntReset: Detects internally generated resets
+NoMixedSynch: Do not mix synchronous and asynchronous logic in one module
+NonBlockAssign: Do not use blocking assignments in sequential blocks 
+RegOutputs: Some output ports from a top module are not registered 
+ResetName: Reset name does not follow the naming convention
+UseMuxBusses: Detect tristate nets 
+NoVar: Use Signals instead of variables to avoid simulation/synthesis mismatch
+SepFSMLogic: Finite-state machine (FSM) and non-FSM logic is mixed in one module
+SepStateMachine: Combinational and sequential parts of a finite-state machine are combined in one process
+ArchHdr: Standard header not found before architecture declaration 
+ArchName: Architecture does not follow recommended naming convention
+AsyncName: Asynchronous signals do not follow naming convention 
+AvoidAsync: Asynchronous reset used 
+ClockDomain: More than one clock domain in a module
+ClockPhase: Both positive and negative edges of a clock are used in this design 
+DesgPack: Constants and function definitions defined in design file. . 2801lxiSynopsys, Inc.Feedback
+EntHdr: Standard header not found before entity declaration
+GateClockAtTop: Gated/generated clocks exist in the designs that are not all generated from one top-level block 
+GateResetAtTop: Gated/generated resets exist in the design that are not all generated from one top-level block 
+IEEEType: Signal type is not an IEEE type 
+ModConst: Modification of constant parameter in subprogram 
+NoBlock: Block Statement detected 
+NameLength: Name length is inconsistent with convention 
+NoGenerate: Generate Statement detected 
+NoScripts: Synthesis script detected 
+OneFile: Some of the design units (entity, architectures, configurations, packages) relating to an entity are not found in the same source file
+PackHdr: Standard header not found before package declaration 
+ProcName: Process label does not follow the naming convention 
+ReserveName: A reserve name has been used
+PortOrder_C: Ports not declared in recommended order
+SepClock: Both positive and negative edge clocks are used in the same module
+Uniq8Char: Signal, variable, port or other named object is not unique up to defined character limit 
+sim_loop01: Possible mismatch in gate-RTL simulation due to simulation event loops
+sim_race04: Avoid Event Counting Code 
+sim_race05: Avoid Time Zero race 
+sim_race01: Reports signals that are assigned and used in the same simulation cycle
+sim_race02: Reports signals that have multiple assignments in the same simulation cycle
+sim_race03: Avoid assigning flip-flop outputs in blocking manner
+sim_race06: Flip-flop data path should not be entirely blocking
+sim_race07: Non-blocking assignment should not be used in clock or enable path 
+sim_race08: Control signals of a sequential device should not be multiply driven. 
+STARC05-1.1.1.1: Source file name should be same as the name of the lxiiSynopsys, Inc. Feedbackmodule in the file. (Verilog)File names containing entities should be <entity_name>.vhd or .vhdl (VHDL) 
+STARC05-1.1.1.2: Names should follow recommended naming convention
+STARC05-1.1.1.5: Do not use case variants of names in the same scope. (Verilog)Do not use names that differ in case only, within the same scope (VHDL)
+STARC05-1.1.4.1va: File name containing package(s) must end strings specified by parameter starc2005_ext_string_vhdl. (VHDL)
+STARC05-1.1.4.4: Macros defined outside a module must not be used in the module. (Verilog) 
+STARC05-1.1.4.4v: Constants should not be redefined. (VHDL) 
+STARC05-1.1.4.6a: Fixed value should not be connected directly to the output ports
+STARC05-1.1.5.1: Register output signal name should end with '_<reg-name>' (specified by the parameter 'starc2005_regname') or '_<clk-name>' or '_r' or '_R' 
+STARC05-1.1.5.2a: Clock signal names should follow recommended naming convention
+STARC05-1.2.1.1a: Design should use only one edge of a clock 
+STARC05-1.2.1.1b: Design should have only a single clock
+STARC05-1.2.1.3: Remove combinational loops 
+STARC05-1.3.1.6: Signals must not be used both as asynchronous reset and synchronous reset
+STARC05-1.3.1.7: A flip-flop must not have both asynchronous set and asynchronous reset 
+STARC05-1.3.2.1b: Reset must be generated in separate module instantiated at top-level
+STARC05-1.3.2.2: Flip-flop outputs must not be used as reset signals
+STARC05-1.4.1.1: Preferably get all clock nets from primary or centrally generated clock 
+STARC05-1.4.3.1c: Both clock edges should not be used in the same module
+STARC05-1.4.4.2: One hierarchical level should have a single clock only. (Verilog)
+STARC05-1.6.1.2: Modules instantiating basic blocks must not contain lxiiiSynopsys, Inc.Feedbacklogic gates 
+STARC05-1.6.2.1: Top-level module outputs should be directly driven by flip-flops
+STARC05-1.6.2.2: Combinatorial Path should not span more than specified number of modules
+STARC05-1.6.3.2: Keep timing paths within three sub-blocks inside each basic block
+STARC05-2.1.1.1v: Package IEEE.std_logic_1164 must be included in each entity. (VHDL) 
+STARC05-2.1.1.2: A function description must assign return values to all possible states of the function. (Verilog) 
+STARC05-2.1.2.1: Function statement should not be used for asynchronous reset line logic in an always construct for FF inference. (Verilog) 
+STARC05-2.1.2.1v: Use std_logic or std_logic_vector data types to describe ports of an entity. (VHDL) 
+STARC05-2.1.2.2: Do not use nonblocking assignment in function description. (Verilog)
+STARC05-2.1.2.2v: Use std_logic, std_logic_vector, integer, Boolean, unsigned, signed, time, or user-defined data type inside the architecture. (VHDL) 
+STARC05-2.1.2.3: Global signals must not be read in a function description. (Verilog)
+STARC05-2.1.2.4: task constructs should not be used in the design. (Verilog)
+STARC05-2.1.2.4v: Do not use bit and bit_vector data types in the design. (VHDL)
+STARC05-2.1.2.5: Clock edges should not be used in a task description. (Verilog)
+STARC05-2.1.2.5v: Do not use attribute enum_encoding. (VHDL)
+STARC05-2.1.3.1: Ensure that the bit-width of the function arguments match the bit-width of the corresponding function inputs.(Verilog) 
+STARC05-2.1.3.4: Return value assignment statement must be the last statement in function description. (Verilog) 
+STARC05-2.1.3.4v: Input port must not be described with initial value. (VHDL)
+STARC05-2.1.4.1: Parenthesis should be used in expressions with multiple operators. (Verilog)
+STARC05-2.1.4.5: Use bit-wise operators instead of logic operators in multi-bit operations
+STARC05-2.1.5.1: Conditional operators (?:) should not be nested. (Verilog)
+STARC05-2.1.5.3: Ensure that conditional expressions evaluate to a scalar
+STARC05-2.1.6.1v: Specification of one-dimensional array should be downto (VHDL)
+STARC05-2.1.6.2: LSB of vectors/memory should be zero. (Verilog)LSB of one-dimensional arrays should be zero. (VHDL) 
+STARC05-2.1.6.5: Do not use x and z for an array index
+STARC05-2.2.1.2: Design should not have latches
+STARC05-2.3.1.1: Blocking assignment must not be used in sequential always blocks. (Verilog)Variable assignment statement must not be used in flip-flop description (VHDL)
+STARC05-2.3.2.2v: Variable assignment statement should not be used in a process block. (VHDL)
+STARC05-2.4.1.4: Avoid combinational loops that contain latches 
+STARC05-2.5.2.1: Logic directly driven by tristate nets should be in a separate module
+STARC05-2.5.1.6: Inout port should not be directly connected to input/output
+STARC05-2.10.1.3: Comparison should not be made with X, H, L, U, W, - or Z. (VHDL) 
+STARC05-2.10.1.4a: Signals must not be compared with X or Z. (Verilog)
+STARC05-2.10.1.4b: Signals must not be compared with values containing X or Z. (Verilog) 
+STARC05-2.10.1.4c: Signals must not be compared with values containing X or Z in case statement. (Verilog)
+STARC05-2.10.1.4v: Do not assign 'X' except for the others choice of case statements (VHDL) 
+STARC05-2.10.1.5: Do not use values including 'X','Z','U','-','W','H','L'. (VHDL)
+STARC05-2.10.1.6: Constants must not contain X or Z. (Verilog) 
+STARC05-2.10.2.3: Do not perform logical negation on vectors
+STARC05-2.10.3.1v: Bit-width of the operands of relational operator should match. (VHDL) 
+STARC05-2.10.3.2b: LHS and RHS bit-widths in signal assignments must match. (Verilog) 
+STARC05-2.10.3.2b_sa: RHS width is greater than LHS width in assignment
+STARC05-2.10.3.2b_sb: RHS width is lesser than LHS width in assignment
+STARC05-2.10.3.7: Match the bit-width with the base number part. (Verilog)
+STARC05-2.10.4.1: Do not use data types other than reg, wire, and integer. (Verilog) 
+STARC05-2.10.4.4: Negative value should not be assigned to integer. (VHDL)
+STARC05-2.10.4.5: Integer objects must not be assigned negative values. (Verilog)
+STARC05-2.10.4.6: Signals should not be assigned negative values. (Verilog)
+STARC05-2.10.4.6v: Signed data type must be used in signed operation. (VHDL)
+STARC05-2.10.8.1: Do not use arithmetic and logical expressions at the right and left sides of the division or modules operator
+STARC05-2.11.3.1: Ensure that the sequential and combinational parts of an FSM description should be in separate always blocks. (Verilog)Ensure that the sequential and combinational parts of an FSM description should be separated (VHDL)
+STARC05-2.2.2.3a: Multiple event Expressions should not be described with always constructs. (Verilog) 
+STARC05-2.2.3.3: Do not assign over the same signal in an always construct for sequential circuits 
+STARC05-2.3.1.2a: Do not use quasi-continuous assignments. (Verilog)
+STARC05-2.3.1.2b: Do not use deassign statements. (Verilog) 
+STARC05-2.3.1.2c: Do not use unsynthesizable User-Defined Primitives (UDPs)
+STARC05-2.3.1.2va: (Do not use rising_edge or falling_edge of clock for flip-flop description. (VHDL) 
+STARC05-2.3.1.2vb: Do not use stable attribute for flip-flop description. (VHDL)
+STARC05-2.3.1.2vc: Do not use non-synthesizable clocking styles for flip-flop description. (VHDL)
+STARC05-2.3.1.5b: Ensure that the delay values are non-negative
+STARC05-2.3.1.6: Check the logic level of the reset signal as specified in the sensitivity list of the always block
+STARC05-2.3.3.1: Do not use edges of multiple clocks in same always block. (Verilog)Do not use multiple clock signals in a single process block (VHDL)
+STARC05-2.3.3.2b: Do not describe multiple clock edges in a single process/always block for the same edge of a single clock 
+STARC05-2.3.4.2: Reports initial construct used
+STARC05-2.3.6.2a: Multiple sets/resets should not be used in an always block. (Verilog)Multiple asynchronous resets should not be used in a process block. (VHDL)
+STARC05-2.3.6.2b: Asynchronous reset description should use negedge only
+STARC05-2.4.1.2: Latch descriptions should not be mixed with other descriptions in same module
+STARC05-2.5.1.1: Tristate descriptions must not be mixed with other descriptions in same module
+STARC05-2.6.2.2: A variable in sensitivity list is modified inside the same always block. (Verilog)A variable in sensitivity list is modified inside the same process block. (VHDL)
+STARC05-2.7.1.3b: An "if" clause must have a corresponding "else" clause in describing sequential circuits. (Verilog)An IF clause must have a corresponding ELSE clause in sequential circuits (VHDL) 
+STARC05-2.7.2.2: Avoid describing case constructs
+STARC05-2.7.2.3: Avoid null condition expressions
+STARC05-2.8.1.5: Do not use the full_case directive. (Verilog) 
+STARC05-2.8.3.3: Do not use //synopsys full_case pragma when all conditions are not described as case clause or the default clause is missing. (Verilog) 
+STARC05-2.8.3.4: A signal that is assigned don’t care value in a case default clause should not be used in conditional constructs (if, if-elsif, case, ternary)
+STARC05-2.8.3.4a: A signal that is assigned don’t care value in a case default clause should not be used in if conditions. (Verilog)A signal or variable, which is assigned don't-care value in an lxviiSynopsys, Inc.FeedbackOTHERS clause should not be used in if-elsif conditions. (VHDL)
+STARC05-2.8.3.4b: A signal that is assigned don't care value in a case default clause should not be used in "ternary" and "case" constructs. (Verilog)A signal that is assigned a don't care value in others clause should not be used in the case construct. (VHDL)
+STARC05-2.8.3.5: default clause in case constructs must be the last clause. (Verilog) 
+STARC05-2.8.5.1: Do not use the parallel_case directive. (Verilog) 
+STARC05-2.8.6.1: 'case' statements and nested 'if' statements co-exist, better to have fewer conditionals with multiple matches than fewer matches with multiple conditionals
+STARC05-2.9.1.2e: Do not use loop variable outside of the "for" loop. (Verilog)
+STARC05-3.1.4.4: Multiple assignments should not be made in one line. (Verilog)Multiple assignment statements should not be made in one line (VHDL)
+STARC05-3.2.2.2b: Define macros should be read using include files. (Verilog)
+STARC05-3.2.2.4: Include files must be specified with more than 1 level higher relative path. (Verilog)
+STARC05-3.2.3.1: Port connections in instantiations must be made by named association rather than positional association. (Verilog) 
+STARC05-3.2.3.1v: Port/Generic connections in instantiations must be made by named association rather than positional association. (VHDL)
+STARC05-3.2.3.2: Bit-width of the component port and its connected net must match. (Verilog) 
+STARC05-3.2.4.3: Do not use defparam statements. (Verilog)
+STARC05-3.5.3.1: A standard header should be provided in every source file
+STARC05-3.3.2.2: Clock pins, reset pins, or tristate outputs should not be connected to black boxes
+STARC05-3.3.2.3: Do not connect the outputs of a black box to clock pins, reset pins or tristate enable pins
+STARC05-1.2.1.2: Do not create an RS latch using primitive cells such as AND, OR
+STARC05-1.3.1.3: Do not use asynchronous reset/preset signals as non-reset/preset or synchronous reset/preset signals
+STARC05-1.4.3.1a: Clocks should not be inverted 
+STARC05-1.4.3.1b: Clocks should not be gated 
+STARC05-1.4.3.2: Do not use flip-flop outputs as clocks of other flip-flops
+STARC05-1.4.3.4: Do not use flip-flop clock signals as non-clock signals 
+STARC05-2.1.1.1: Combinational logic should consistently be described using either always constructs or function and assign constructs. (Verilog)
+STARC05-2.2.3.1: Non-blocking assignment should not be used in combinational always blocks (may lead to shoot through). (Verilog)
+STARC05-2.3.1.7a: A flip-flop should not have two asynchronous resets 
+STARC05-2.3.4.1v: Ensure that a flip-flop does not have an initial value in signal/variable description
+STARC05-2.3.5.1: Flip-flops should not have fixed inputs 
+STARC05-2.3.6.1: Do not mix descriptions of flip-flops with asynchronous reset and flip-flops without asynchronous reset in the same process/always block
+STARC05-1.1.1.10: Instance or module name must be different from the cell names of the ASIC library used. (Verilog)Instance/Entity name should be different from those in the ASIC library (VHDL) 
+STARC05-1.1.1.3: Do not use the reserved Verilog, SystemVerilog, or VHDL keywords. (Verilog) 
+STARC05-1.1.1.3vb: Do not use standard VHDL names (VHDL) 
+STARC05-1.1.1.4: Do not use names starting with the user specified pattern (specified by the parameter 'starc2005_compare_str')(Verilog)
+STARC05-1.1.1.6: Primary port names or module names must follow recommended naming convention. (Verilog) 
+STARC05-1.1.1.6v: Component name should be same as its corresponding entity name. (VHDL)
+STARC05-1.1.1.7: Negative logic signals must follow recommended naming convention
+STARC05-1.1.1.8: Module instance names should be same as or based on lxixSynopsys, Inc.Feedbackthe module name. (Verilog)Instance names should follow recommended naming convention. (VHDL)
+STARC05-1.1.1.8v: Instance names should follow recommended naming convention. (VHDL)
+STARC05-1.1.1.9a: Top-level module names should follow recommended naming convention. (Verilog)Top-level entity names should follow recommended naming convention. (VHDL)
+STARC05-1.1.1.9b: Top-level module name should be less than or equal to 16 characters in length (Verilog)Top-level entity name should be less than or equal to 16 characters in length (VHDL) 
+STARC05-1.1.1.9c: Top-level port names should follow recommended naming convention 
+STARC05-1.1.1.9d: Top-level port name should be less than or equal to 16 characters in length
+STARC05-1.1.2.1a: Module names should be between number of characters in length specified by parameters starc2005_min_mod_ent_length and starc2005_max_mod_ent_length. (Verilog)Entity names should be between number of characters in length specified by parameters starc2005_min_mod_ent_length and starc2005_max_mod_ent_length. (VHDL)
+STARC05-1.1.2.1b: Instance names should be between number of characters in length specified by parameters starc2005_min_inst_length and starc2005_max_inst_length
+STARC05-1.1.2.2: Top layer instance names should start with the layer identification character 
+STARC05-1.1.2.3: Instance names should start with the first character of the parent module name. (Verilog)Instance name should start with layer identification character (VHDL)
+STARC05-1.1.2.4: Output port names should start with the first character of the module name. (Verilog)Output pin name of each entity should start with the layer identification character followed by '_' (VHDL) 
+STARC05-1.1.2.5: Port names for each block should be in uppercase. (Verilog)lxxSynopsys, Inc. FeedbackPort names for each entity should be in uppercase (VHDL) 
+STARC05-1.1.2.6: Connected net name of a module instance must be same as or based on the master module input/output port name. (Verilog)Connected net name of a instance must be same as or based on the corresponding master entity input/output port name. (VHDL)
+STARC05-1.1.2.6a: Connected net name of a module instance must be same as or based on the master module output port name. (Verilog)Connected net name in an instance must be same as or based on the corresponding master entity output port name (VHDL) 
+STARC05-1.1.2.6b: Connected net name of a module instance must be same as or based on the master module input port name. (Verilog)Connected net name of a instance must be same as or based on the corresponding master entity input port name. (VHDL) 
+STARC05-1.1.3.1: Internal signal names should have at least one lowercase alphabet. (Verilog)Internal signal names should have at least one lowercase character (VHDL)
+STARC05-1.1.3.3: Signal names, port names, parameter names, generic names, function names, and define names should be between 2 and 40 characters in length 
+STARC05-1.1.3.3a: Signal name should be between 2 and 40 characters in length
+STARC05-1.1.3.3b: Port name should be between 2 and 40 characters in length 
+STARC05-1.1.3.3c: Parameter name should be between 2 and 40 characters in length. (Verilog)Generic name should be between 2 and 40 characters in length. (VHDL)
+STARC05-1.1.3.3d: Function name should be between 2 and 40 characters in length 
+STARC05-1.1.3.3e: Define macro names should be between 2 and 40 characters in length. (Verilog) 
+STARC05-1.1.4.1: Include files must have extensions that match any of the extensions specified by the parameter starc2005_ext_string_vlog. (Verilog) 
+STARC05-1.1.4.1vb: Package and entity descriptions must not be mixed lxxiSynopsys, Inc.Feedbackin same file (VHDL)
+STARC05-1.1.4.2a: Parameter names should follow recommended naming convention. (Verilog) 
+STARC05-1.1.4.2b: Define macro names should start with "D_". (Verilog)
+STARC05-1.1.4.2v: Constant names should follow recommended naming convention. (VHDL)
+STARC05-1.1.4.3: Do not use parameters with same name for different modules. (Verilog) 
+STARC05-1.1.4.3v: Do not use constant declarations with same name in different entities/architectures. (VHDL)
+STARC05-1.1.4.5: Parameters used only in a single layer must start with the layer identification character. (Verilog)
+STARC05-1.1.4.7: Vector port bit-widths should be specified using parameters. (Verilog)Port bit-width should be specified using generics. (VHDL)
+STARC05-1.1.4.8: Parameters with numeric value more than nine must have base type specification. (Verilog)
+STARC05-1.1.4.8v: Initial value in vector constant declaration must have base specifier. (VHDL)
+STARC05-1.1.4.9: Bit-width must be specified for parameters with more than 32 bits. (Verilog) 
+STARC05-1.1.4.9v: Generic must not be used at top-level module. (VHDL)
+STARC05-1.1.6.1: Architecture name must contain "RTL". (VHDL)
+STARC05-1.1.6.4: An entity and its architectures must be described in same file (VHDL) 
+STARC05-1.3.1.2: Do not use synchronous reset in the design 
+STARC05-1.3.1.5a: Do not use Design Compiler synchronous set and reset directives
+STARC05-1.3.1.5b: Do not use Design Compiler asynchronous set and reset directives
+STARC05-1.4.3.6: Do not use Flip-Flops with inverted edges 
+STARC05-1.6.1.4: Clock generation, reset generation, RAM, Setup/Hold ensure buffers, and I/O cells must be a module at top-level
+STARC05-2.1.1.2v: At least one of the packages IEEE.std_logic_arith and IEEE.std_logic_unsigned must be included in each entity. (VHDL)3222lxxiiSynopsys, Inc. Feedback
+STARC05-2.1.1.3: When using IEEE.numeric_std, do not mix with std_logic_unsigned or std_logic_arith 
+STARC05-2.1.10.1: Do not use block statement in the design (VHDL)
+STARC05-2.1.10.10: Alias declarations should not be used in the design. (VHDL)
+STARC05-2.1.10.11: Bus and register signals should not be used in the design. (VHDL)
+STARC05-2.1.10.12: Disconnect specification must not be used in the design. (VHDL)
+STARC05-2.1.10.13: Waveforms should not be used in the design. (VHDL)
+STARC05-2.1.10.2: Do not use object of type record (VHDL)
+STARC05-2.1.10.3: Do not use shared variable in the design (VHDL)
+STARC05-2.1.10.4: Do not use while-loop statement in the design (VHDL)
+STARC05-2.1.10.5: Do not use procedure in the design (VHDL) 
+STARC05-2.1.10.6: Do not use selected signal assignment in the design (VHDL)
+STARC05-2.1.10.8: Do not use attributes, which are defined in Synopsys library (VHDL) 
+STARC05-2.1.10.9: Access type should not be used in the design. (VHDL)
+STARC05-2.1.2.3v: Use range specification for integer types. (VHDL) 
+STARC05-2.1.2.6: Specify Range for std_logic_vector (VHDL)
+STARC05-2.1.3.1v: Linkage or buffer ports must not be described. (VHDL)
+STARC05-2.1.3.2: Bit-width of function return value must match the bit-width of assignment destination signal. (Verilog)Do not use buffer and linkage (VHDL)
+STARC05-2.1.3.3: Port mode must be explicitly specified (VHDL) 
+STARC05-2.1.3.5: Global signals must not be assigned in function description. (Verilog)
+STARC05-2.1.4.2: Bit-wise operators should be used instead of logic operators in single-bit operations. (Verilog) 
+STARC05-2.1.4.2v: Shift operator should not be used in the design. (VHDL)
+STARC05-2.1.4.6a: Reduction of a single-bit expression should not be performed (Verilog) 
+STARC05-2.1.4.6b: Reduction of Large expression should not be performed (Verilog) 
+STARC05-2.1.5.1v: When-else nesting in conditional signal assignment statement must not exceed 5 levels. (VHDL) 
+STARC05-2.1.6.1: Array specification should follow recommended convention. (Verilog)
+STARC05-2.1.6.3: Expressions should not be used as array indexes. (Verilog)Expression should not be used as array indices. (VHDL)
+STARC05-2.1.6.4: Index variable width should not be short (Verilog) 
+STARC05-2.1.7.1: Direct assignment must be used for aggregates (VHDL)
+STARC05-2.1.7.3: Bit position based and others based assignment should not be used together for aggregate specification (VHDL) 
+STARC05-2.1.8.1: Constrained arrays should not be used as sub-program arguments (VHDL)
+STARC05-2.1.8.10: No other statement should follow the return statement in function description (VHDL) 
+STARC05-2.1.8.2: Specify range for return values in function description when return type is array (VHDL) 
+STARC05-2.1.8.4: Only OTHERS clause must be used when specifying aggregate in sub-program description (VHDL) 
+STARC05-2.1.8.5a: Do not use nested sub-program description in the design (VHDL)
+STARC05-2.1.8.5b: Do not call a sub-program within a subprogram (VHDL)
+STARC05-2.1.8.6: Global signals must not be read in a subprogram description (VHDL)
+STARC05-2.1.8.9: A function must have the return statement and return a valid value in all possible states of the function. (VHDL) 
+STARC05-2.1.9.4: Do not use built-in attribute except range, length, left, right, high, low, reverse_range, event (VHDL) 
+STARC05-2.1.9.5: Do not use user-defined attributes in the design 
+STARC05-2.10.1.2: Parentheses should be used for logical operations to improve readability. (Verilog)Parenthesis should be used in expressions with multiple lxxivSynopsys, Inc. Feedbackoperators (VHDL)
+STARC05-2.10.1.7: Do not use RAM output signals for a conditional expression of if statements. (Verilog) 
+STARC05-2.10.1.8: Do not use RAM output signals for the selection expression of case statements that do assign 'x' in the default clause. (Verilog) 
+STARC05-2.10.3.1: Bit-widths of operands of a relational operator should match. (Verilog) 
+STARC05-2.10.3.2a: Bit-width of operands of a logical operator must match. (Verilog) 
+STARC05-2.10.3.2c: Unequal length operands in bit/arithmetic operator (Verilog)
+STARC05-2.10.3.5: Base should be specified for constant value used. (Verilog)
+STARC05-2.10.3.6: Bit-width should be specified for based constants of width more than 4 bits. (Verilog) 
+STARC05-2.10.4.3: Std_logic_vector(conv_unsigned(&, &)) should be used to convert integer to std_logic_vector (VHDL) 
+STARC05-2.10.4.7: Qualified expressions should not be used in the design. (VHDL)
+STARC05-2.10.4.8: Function To_stdlogicvector should not be used in the design. (VHDL)
+STARC05-2.10.5.1: Arithmetic/relational operation with operand bit-width more than 8 in multiple conditional expressions is same. (Verilog)
+STARC05-2.10.5.2: Do not use any arithmetic operator twice in the same "if" statement
+STARC05-2.10.5.3: Do not use any arithmetic operator thrice or more in the same "if" statement
+STARC05-2.10.5.3a: Reports violation when there are two arithmetic operations in the Always block
+STARC05-2.10.5.3b: Reports violation when there are three or more arithmetic operations in Always block 
+STARC05-2.10.5.5: Do not describe arithmetic operations with conditional operators (?) in assign statement. (Verilog)
+STARC05-2.10.6.1: Possible loss of carry or borrow in addition or subtraction (Verilog) 
+STARC05-2.10.6.5: Large multipliers must not be described using the multiplication operator
+STARC05-2.10.6.6: Do not describe more than one arithmetic operation in one line
+STARC05-2.10.7.1: Do not use arithmetic operation in the conditional expression of if statements
+STARC05-2.10.7.2: Common operational expressions should be described separately. (Verilog)Separate the common operational expressions in if-elsif branch conditions (VHDL)
+STARC05-2.10.8.2: Keep the left side of the division or modulus operator within 12 bits
+STARC05-2.10.8.3: If right side of the division or modulus operator is not a power of two, keep it within 8 bits
+STARC05-2.11.1.2: Bit change in state transition should be minimal (use Gray code). (Verilog)Bit change in FSM state transitions should be minimized (use Gray code). (VHDL) 
+STARC05-2.11.1.4: Number of states in a FSM should not exceed specified limit
+STARC05-2.11.2.1: FSM description should not be mixed with other descriptions in the same module. (Verilog)FSM description should not be mixed with non-FSM descriptions in the same module (VHDL) 
+STARC05-2.11.4.1: One-hot encoding should be used for allocating states
+STARC05-2.11.4.2: State values should be defined using parameters or macros. (Verilog)Use constant to facilitate allocation changes (VHDL) 
+STARC05-2.11.5.2: Do not assign state encoding by attaching attributes to the state variable which is declared as a type (VHDL) 
+STARC05-2.2.2.1: Signals read inside a combinational always block must be present in the sensitivity list (Verilog)Signals read inside a combinational process block must be present in the sensitivity list (VHDL)
+STARC05-2.2.2.2a: A variable specified in the sensitivity list must be read in the contained block. (Verilog)A signal should not be included in sensitivity list of a process if it is not read in that process. (VHDL)
+STARC05-2.2.2.2b: Do not define constants in the sensitivity list 
+STARC05-2.2.2.3v: Do not use wait statement in process statements (Sensitivity list should be used). (VHDL) 
+STARC05-2.2.2.3b: At least one event expression must be described for an always construct. (Verilog) 
+STARC05-2.2.3.2: Do not use nonblocking assignments for assigning initial values in always blocks. (Verilog) 
+STARC05-2.3.1.3: Flip-flop data paths should have delays
+STARC05-2.3.1.4: Do not use delay values other than in always constructs that infer FFs. (Verilog)Paths other than flip-flop data paths must not have delays. (VHDL)
+STARC05-2.3.1.5a: Delay values must be integral
+STARC05-2.3.1.7b: Do not use function in asynchronous reset description
+STARC05-2.3.1.8: Do not use wait construct to describe clock style (VHDL)
+STARC05-2.3.1.9: Functions 'rising_edge/falling_edge' should not be used in the design. (VHDL) 
+STARC05-2.3.2.2: Do not use blocking and nonblocking assignments together in same always block. (Verilog)
+STARC05-2.3.2.4: Variables, if used, must be assigned to a signal before the end of the process (VHDL)
+STARC05-2.3.3.2a: Do not use both edges of the same clock in an always block. (Verilog)Do not use both edges of the same clock in a single process block (VHDL)
+STARC05-2.3.4.1: Do not specify flip-flop initial value using initial construct. (Verilog) 
+STARC05-2.5.1.5b: A signal without a resolution function must not have multiple drivers. (VHDL) 
+STARC05-2.6.1.2: Use intermediate variables when same logic is used in more than one place
+STARC05-2.6.1.3: always construct has more than five output signals. (Verilog)A process block should not have more than five outputs (VHDL)
+STARC05-2.6.1.4a: Always/Process construct should not have more than 300 lines 
+STARC05-2.6.1.4b: Always/Process construct should not have more than 2000 lines
+STARC05-2.6.2.1: Do not describe more than one statements (if/case/while/for/forever/repeat) separately within a single always block lxxviiSynopsys, Inc.Feedback(Verilog)Do not describe more than one statements (if/case/while/for/loop) separately within a single process block (VHDL)
+STARC05-2.7.1.3a: An "if" clause must have a corresponding "else" clause in describing combinational circuits. (Verilog)An IF clause must have a corresponding ELSE clause in combinational circuits (VHDL)
+STARC05-2.7.2.1: Common part of conditional expressions should be prioritized. (Verilog)Common part of conditional expressions must be prioritized (VHDL)
+STARC05-2.7.3.1a: Nesting in if-else constructs should not be deeper than the number of levels as specified by parameter ifelse_nestlevel_reco (default 7)
+STARC05-2.7.3.1b: Where feasible case statements should be used rather than 'if-else' statements, if performance is important. (Verilog)Use "case" statements instead of if/else statements, where feasible, if performance is important. (VHDL) 
+STARC05-2.7.3.4: Nested if-statements should be merged
+STARC05-2.7.4.2: Attach begin-end to "if" statements
+STARC05-2.7.4.3: Do not use fork-join constructs. (Verilog)
+STARC05-2.8.1.3: case constructs should not have overlapping clause conditions. (Verilog)
+STARC05-2.8.1.4: case constructs must have the default clause. (Verilog)Case statements and selected signal assignment statements must always have OTHERS clause (VHDL)
+STARC05-2.8.1.6: The case expression width should match case select expression width (Verilog) 
+STARC05-2.8.2.1: if constructs should be used instead of large case constructs
+STARC05-2.8.2.2: Item count should be within the value specified by parameter 'starc2005_maxTableSize'
+STARC05-2.8.3.1: default clause output in case constructs should not be a constant value. (Verilog)lxxviiiSynopsys, Inc. FeedbackConstant values should not be assigned in OTHERS clause of case constructs (VHDL)
+STARC05-2.8.3.2: Either default clause does not exist or 'X' is not assigned in the default clause. (Verilog)Either others clause does not exist or 'X' is not assigned in the others clause. (VHDL)
+STARC05-2.8.3.6: Do not use a signal to which don't care is assigned for selection expression of case statements that do not assign 'X' in default clause. (Verilog)Do not use a signal to which don't care is assigned for selection expression of case statements that do not assign 'X' in 'others' clause. (VHDL) 
+STARC05-2.8.3.7: Do not use a signal to which don't care is assigned for selection expression of casex statements. (Verilog) 
+STARC05-2.8.4.1a: casex or casez constructs must contain a condition with don't care (Verilog) 
+STARC05-2.8.4.1b: Coding style of don’t-care condition in casex or casez branches is not proper (Verilog)
+STARC05-2.8.4.3: Design should not use casex or casez constructs. (Verilog)
+STARC05-2.8.4.4: casex or casez constructs must not have complex clause conditions. (Verilog) 
+STARC05-2.8.5.2: Do not use fixed values in case construct condition. (Verilog)
+STARC05-2.8.5.3: Do not use variables or expressions as case clause conditions. (Verilog) 
+STARC05-2.8.5.4: Logical, arithmetic, bit wise or reduction operations should not be used in case construct condition. (Verilog)
+STARC05-2.9.1.1:  "for" constructs must be used only for simple repeating statements. (Verilog)FOR constructs must be used only for simple repeating statements (VHDL) 
+STARC05-2.9.1.2a: Loop variable of "for" construct must have constant initial value. (Verilog) 
+STARC05-2.9.1.2b: Terminating condition of "for" constructs must be a constant. (Verilog) 
+STARC05-2.9.1.2c: The value of loop variable must not be modified inside the "for" construct. (Verilog) 
+STARC05-2.9.1.2d: The loop termination condition must not be a constant. (Verilog) 
+STARC05-2.9.2.1: Arithmetic operations on non-constants within for-loop must not be performed
+STARC05-2.9.2.2: Logical and Relational operations on non-constants within for-loop should not be performed
+STARC05-2.9.2.3: If logical or relational operation of non-constant variables exists in a "for" construct, the number of loop iterations must not be more than the number specified by the parameter 'maxLoopIter' (Default value 10)
+STARC05-2.9.2.4: Separate for loops must be used in reset and logic parts of flip-flop descriptions. (Verilog + VHDL) 
+STARC05-3.1.3.1: The order of module port declarations and instance port connection lists should be same as the order in the module port map.(Verilog)
+STARC05-2.9.3.1: Exit or next statement must not be used in a for loop (VHDL)
+STARC05-3.1.2.7: Do not use embedded dc_shell scripts. (Verilog)Do not use embedded dc_shell scripts in the design (VHDL) 
+STARC05-3.1.3.2vc: Ports not declared in recommended order. (VHDL) 
+STARC05-3.1.3.4a: Only one port or signal declaration should be in one line. (Verilog)Define one signal per line in I/O, reg declaration, and wire declaration (VHDL) 
+STARC05-3.1.3.4b: Port and signal declarations should have comments. (Verilog)Declarations should have comments (VHDL)
+STARC05-3.1.3.5: Description order of declarations should be type/subtype declaration, constant declaration, signal declaration and component declaration. (VHDL) 
+STARC05-3.1.4.2: Code is not correctly indented. (Verilog)Standardize the number of indents (two spaces). (VHDL)
+STARC05-3.1.4.3: Tabs should not be used. (Verilog)Tabs should not be used in the RTL description. (VHDL)
+STARC05-3.1.4.5: The maximum number of characters in one line should not be more than 110 
+STARC05-3.1.5.2: Vector signal bit-widths should be specified using parameters. (Verilog)
+STARC05-3.1.5.2v: Non-port vectors bit-width should be specified using generics. (VHDL) 
+STARC05-3.1.6.1: Generic should be used in conditional expression of if-generate statement (VHDL)
+STARC05-3.1.6.2: Generic should be used in loop parameter range specification of for-generate statement (VHDL) 
+STARC05-3.2.2.1: Parameters should be used to specify constants (Verilog)
+STARC05-3.2.2.1v: Do not use hard-coded constant in the design. (VHDL)
+STARC05-3.2.2.3: Parameters should be read using include files. (Verilog)
+STARC05-3.2.2.4: Include files must be specified with more than 1 level higher relative path. (Verilog)
+STARC05-3.2.2.5: Text macros should not be nested. (Verilog)
+STARC05-3.2.2.7: Constants should be defined using parameters only. (Verilog)
+STARC05-3.2.3.3: Do not use entity instantiation in the design (VHDL)
+STARC05-3.2.4.1: Non-integer type used in the declaration of a generic may be unsynthesizable. (VHDL)
+STARC05-3.3.1.1: Internal clocks must be controllable from the external pins
+STARC05-3.3.1.4a: Asynchronous sets/resets must be controllable from external pins 
+STARC05-3.5.2.1: File references must be relative path names including the master directory. (Verilog)
+STARC05-3.5.2.1v: Each file's reference should be specified by a relative path (return to the master directory once). (VHDL) 
+STARC05-3.5.6.2: Add comments for sub-programs, always construct and condition statements, indicating objective and contents. (Verilog)
+STARC05-3.5.6.2va: Process blocks should have comments. (VHDL)
+STARC05-3.5.6.2vb: Sub-program descriptions should have comments. (VHDL)
+STARC05-3.5.6.3a: Each declaration should be described in separate line
+STARC05-3.5.6.3b: Declarations should have comments (VHDL)
+STARC05-3.5.6.4: Comments should use English characters only. 
+STARC05-3.5.6.6: Japanese comment should be described in EUC code
+STARC05-3.5.6.7: Comments should start with  "// " (Verilog)
+STARC05-1.1.5.2b: Reset signal names should follow the recommended naming convention 
+STARC05-1.3.2.1a: Asynchronous resets or sets must not be gated 
+STARC05-2.1.2.2a: Do not use nonblocking assignment in task description. (Verilog)
+STARC05-2.3.2.1: Blocking assignment used in flip-flop description. (Verilog)
+STARC05-2.4.1.3: Latches should not have asynchronous set or asynchronous reset. (Verilog)Latches must not have asynchronous set or asynchronous reset (VHDL)
+STARC05-2.4.1.5: Do not use two level latches in the same phase clock 
+STARC05-2.5.1.2: Ensure that logic does not exist in tristate enable conditions
+STARC05-2.5.1.4: Identifies the tristate bus that is driven by more than specified number of drivers 
+STARC05-2.5.1.5a: Nets other than tristate nets must not be driven by multiple drivers. (Verilog)Net that is not tristated has multiple drivers. (VHDL)
+STARC05-2.5.1.7: Do not use tristate output in the conditional expression of an if statement 
+STARC05-2.5.1.8: Tristate output should not be used in the selection expression of a case statement that assigns a fixed value in others choice 
+STARC05-2.5.1.9: Do not enter a tristate output in the selection expression of casex and casez statement
+STARC05-3.3.1.4b: A flip-flop should have an asynchronous set or an asynchronous reset
+STARC05-3.3.3.1: A clock must not be connected to the D input of a FF 
+STARC05-1.1.4.6b: Fixed value should not be connected to the input ports
+STARC05-3.3.6.2: Do not mix clock lines and reset lines
+STARC05-3.1.3.2a: Ports should be declared in recommended order. (Verilog)
+STARC05-3.1.3.3: Separate the reg declarations of sequential circuits and combinational circuits (Verilog)
+STARC05-3.1.3.2b: Ports should be declared in recommended order. (Verilog)
+ALLOW_CELL: Allowed cells should be used in the design 
+CHIP_MODULE_NAME_LENGTH: The name lengths of chip-level modules should not be longer than 16 
+BOTH_SETRESET: Flip-flops or latches must not have both asynchronous set and asynchronous reset
+CHIP_PORT_NAME_LENGTH: The name lengths of chip-level ports should not be longer than 
+DISALLOW_CELL: Disallowed cells that are specified by user are used in the design
+RESERVE_NAME: VDD/VSS/VCC/GND/VREF are used as the name of modules/instances/nets/ports
+CELL_INFO: Informations of all cell names and the number of each cell
+MODULE_PORTS: Information about number of ports in each module 
+DeepMux: Deep MUX detected - potential performance problem 
+ClockEnableRace: Reports a race condition between clock and enable pins of a flip-flop 
+LogicDepth: Reports logic paths where depth exceeds the specified number of levels
+LogNMux: Reports multiplexer constructs with select inputs more than the specified number 
+MaxFanout: Fan-out of a net exceeds a critical threshold
+ShiftReg: Large shift register detected
+Rule_1-1: Checks for the floating primary port 
+Rule_1-2: Checks if top level primary port is not connected to the pad cell
+Rule_1-3: Checks if pad pin is connected properly 
+Rule_1-4: Checks if primary port is connected to multiple pad pins 
+Rule_1-5: Checks if inout pad pin is connected to a wrong inout primary port/pad pin
+Rule_2: Detects open input terminals 
+Rule_2-1: Detects open inout terminal 
+Rule_3: Reports variable/signals that do not infer a tristate and have multiple simultaneous drivers 
+Rule_4: Checks if output pin of an instance is tied to VDD/GND 
+Rule_5: Check pin voltage difference between source and destination
+Rule_8: Detects if transmission gate signal or instance are connected in series
+Rule_9: Checks for incorrect parametric NAND connections 
+Rule_12: Checks if output of a combinational cell is connected to its own input
+Rule_14: Checks if PI/POE/PO pins of parametric NAND tree are unconnected 
+Rule_16: Checks if fan-in cone of set and reset pin of a flip-flop/latch converge 
+Rule_19: Checks if an invalid cell is used in the analog path
+Rule_20: Checks if a hold fix delay cell is used in the clock/enable path
+Rule_22: Checks if design has more than one parametric NAND trees 
+Rule_23: Checks if control pin of an instance is tied to VDD or GND 
+Rule_24: Detects combinational loops 
+Rule_25: Checks if gated/generated clocks are generated from more than one block in the design
+Rule_26: Checks if all the inputs of a cell are tied to VDD or GND 
+Rule_26-1: Report library cell input pin’s not connected to ‘TIE’ Cell
+Rule_27: Checks if multiple inputs of the same cell are tied together 
+Rule_28: Detects combinational loops, including loop through the set/reset and output pins of a flip-flop 
+Rule_29: Checks if output data pin is connected to input data pin of the same storage element
+Rule_32: Reports variable/signals that do not infer a tristate and have multiple simultaneous drivers 
+Rule_34: Detects undriven and unloaded nets/terminals in the design
+Rule_35: Detects undriven but loaded net in the design
+Rule_36: Checks if all outputs of an instance are unconnected
+Rule_41: Primary port of a block is tied to global signal 
+Rule_42: Analog pin is tied to power or ground. 
+Rule_43: Memory Efuse Pin should be directly connected to PadCell 
+CellInfo: List of cells used in the design
+CheckAnalogConnection: Report connection between analog and non-analog pin
+InoutPin: Inout pin of a cell should be directly connected to an inout port or another inout pin 
+ModulePinExistence: Module has no input or output ports 
+UnmixableCellCheck: Detecting unmixable standard cells in a module
+ExternalPortAndIOPinCheck: Pad pin of I/O should be directly connected with external port 
+ExternalPortBranchCheck: Branching of the net which is directly connected to an external port should be avoided
+InoutIOOutput: Output pin of inout cell has been connected to clock/reset/set/enable pin of a flop/latch
+InitialConnectionCheck: Detects the initial cell which does not connect directly to an external port
+HierarchicalPathLengthCheck: Too long hierarchical path name is not allowed
+SameNetConnectionCheck: Detects the circuit which affects delay calculation 
+GlitchGenCircuitCheck: Detects incorrectly used glitch generation circuits3685Functional Lint Tags
+MissingCaseItems-ML: Reports violations for the reachable case items that are not specified
+MissingFsmStateTransition: Reports violation for a missing state transitions, which are not possible in FSM 
+NotReachableFsmState: Reports violation for not reachable state in FSM
+NoExitFsmState: Reports violation if a state is reachable, and no other transition is possible in any of the clock cycle 
+RegisterStuckInResetState-ML: Reports violation for the registers that are stuck in a constant initial state due to bad coding style 
+DeadCode-ML: Reports redundant logic in the design
+NoAssignX-ML: Ensures that the RHS of the assignment does not contains 'X’ 
+FsmLiveLock: Detects livelock states in FSM
+LINT_MULTIDRIVEN_BUS: Reports violations when multiple tristate drivers write to a bus line simultaneously
+LINT_FLOATING_BUS: Reports undriven bus lines
+ModuleComplexityInfo-ML: Reports the characteristics and complexity of a design 
+LINT_INTERACTING_FSM: Reports violations for all the interacting FSMs in a design
+LINT_NO_TOGGLE_SIGNAL: Reports non-toggling signals in a design
+DEBUG_LINT_SIMILAR_RTL_PATTERN: Groups violations having similar RTL patterns 
+DEBUG_LINT_SIMILAR_RTL_STATEMENT: Groups violations based on similar RTL statements 
+DEBUG_LINT_OPEN_PORT: Violations are grouped based on unconnected ports
+DEBUG_LINT_COMMON_MOD_INST: Violations are grouped based on the same signals from different hierarchies of the same module
+DEBUG_LINT_CONST_SRC: Violations are grouped based on a common constant source 
+DEBUG_LINT_PARAMETER_ASSIGN: Cluster of violations when macros are used as a parameter assign value
+DEBUG_LINT_PORT_STRUCT_SIGNAL: Port signals are declared using struct or interface 
+DEBUG_LINT_POTENTIAL_HEADER_FILE: Violations are grouped based on the potential header files that include only macro definitions
+DEBUG_LINT_PURE_COUNTERS: Violations are grouped based on assignments that have a counter pattern 
+DEBUG_LINT_SAME_SIGNAL_ASSIGNMENT: Violations are grouped based on similar left hand side expression in assignments. 3788DEBUG_LINT_SIMILAR_VIOLATION_FROM_DIFFERENT_HIERAR-
+CHY: Violations are grouped based on similar scenarios from different hierarchy
+DEBUG_LINT_SPLIT_USERDEFINED_SIGNALS: Violations are grouped based on the user-defined signal
+DEBUG_LINT_UNUSED_RTL_CODE: Violations are grouped based on the unused RTL code
+DEBUG_LINT_DEFINITION_FROM_HEADER_FILE: Violations are grouped based on the parameter definitions in header file 
+DEBUG_LINT_ONLY_MSB_USED: Violations are clustered based on the bus signals where only the MSB is read
+BUG_LINT_BITWISE_OR_USE_IN_FOR_LOOP: Groups violations that are reported due to bitwise or assignments inside the for loop which is assigned multiple times on the same line 
+DEBUG_LINT_COMMON_CLOCK: Violations are grouped based on a common clock.
+DEBUG_LINT_COMMON_CLOCK_GENERATOR_LIBRARY_CELL: Violations are grouped based lib cell names where the clocks are inverted/gated
+DEBUG_LINT_COMMON_CLOCK_GENERATOR_MODULE: Violations are grouped based on module names where clocks are inverted/gated 
+DEBUG_LINT_COND_WITH_IDENTIFIER: Groups violations that are generated by the always true/false conditions
+DEBUG_LINT_IGNORE_ESCAPE_NAME: Groups violations that are reported when the variable names do not follow the specified naming convention and contain a backslash 
+DEBUG_LINT_IGNORE_PACKAGE_VIOLATIONS: Groups violations that are reported due to unused definitions in packages
+DEBUG_LINT_INITIALIZATION_ASSIGNMENT: Signals that are assigned multiple times within the same block are grouped 
+DEBUG_LINT_LARGER_BASED_WIDTH: Groups violation for hexal, octal and decimal based numbers when the specified width is greater than the actual bit width of the based number 
+DEBUG_LINT_LOOP_INDEX: Violations due to signed and unsigned signals inside a for or while loop are grouped
+DEBUG_LINT_PARTIAL_BUS_USED: Groups violations reported due to only partial bus is used in inputs/parameter 
+DEBUG_LINT_PARTIAL_STRUCT: Groups violations that are reported when only partial struct is used in signals/variables/inputs 
+DEBUG_LINT_PORT_NET: Groups violations that are reported on ports/nets declarations 
+DEBUG_LINT_SAME_OP_PATTERN: Groups violations from operators that follow another operator with the same or different precedence without parenthesis
+DEBUG_LINT_SEQUENTIAL_INPUT_SIGNAL: Violations are grouped based on sequential inputs
+DEBUG_LINT_STATIC_EXPRESSIONS: Groups violations of static expression for the signals of signed and unsigned type 
+DEBUG_LINT_TOOL_GENERATED_CODE: Violations are grouped based on the machine-generated code
+DEBUG_LINT_ASSIGNMENT_IN_FOR_LOOP: Groups violations reported on multiple assignments inside a for loop in the same line

@@ -1,0 +1,39 @@
+Listing directory: /home/XXXX-2/hackdate/hw/ip/tlul
+Listing directory: /home/XXXX-2/hackdate/hw/ip/tlul/doc
+Listing directory: /home/XXXX-2/hackdate/hw/ip/tlul/rtl
+Reading file: /home/XXXX-2/hackdate/hw/ip/tlul/doc/TlulProtocolChecker.md
+Listing directory: /home/XXXX-2/hackdate/hw/ip/tlul/doc/dv
+Reading file: /home/XXXX-2/hackdate/hw/ip/tlul/doc/dv/README.md
+Reading file: /home/XXXX-2/hackdate/hw/ip/tlul/README.md
+Listing directory: /home/XXXX-2/hackdate/hw/ip/tlul/rtl
+Reading file: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+Reading file: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+Reading file: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_socket_1n.sv
+Running verilator agent on tlul
+Running verilator tests for tlul
+Running assertions checker agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for tlul_adapter_reg with security objective: register interface access control and protocol compliance
+Running assertion checker tool on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for tlul_adapter_reg with assertions: {'assert_intg_error_latched': 'property intg_error_latched;\n  @(posedge clk_i) disable iff (!rst_ni)\n  (CmdIntgCheck && intg_error) |-> ##1 intg_error_o;\nendproperty\nassert_intg_error_latched: assert property(intg_error_latched);', 'assert_instr_fetch_blocked': 'property instr_fetch_blocked;\n  @(posedge clk_i) disable iff (!rst_ni)\n  (prim_mubi_pkg::mubi4_test_true_strict(tl_i.a_user.instr_type) && \n   prim_mubi_pkg::mubi4_test_false_loose(en_ifetch_i) && tl_i.a_valid) |-> !re_o;\nendproperty\nassert_instr_fetch_blocked: assert property(instr_fetch_blocked);', 'assert_addr_align_error': 'property addr_align_error;\n  @(posedge clk_i) disable iff (!rst_ni)\n  (tl_i.a_valid && tl_o.a_ready && ((tl_i.a_opcode == tlul_pkg::PutFullData) || \n   (tl_i.a_opcode == tlul_pkg::PutPartialData)) && |tl_i.a_address[1:0]) |-> !we_o;\nendproperty\nassert_addr_align_error: assert property(addr_align_error);', 'assert_error_response': 'property error_response;\n  @(posedge clk_i) disable iff (!rst_ni)\n  (outstanding_q && error) |-> tl_o.d_error;\nendproperty\nassert_error_response: assert property(error_response);', 'assert_no_write_on_error': 'property no_write_on_error;\n  @(posedge clk_i) disable iff (!rst_ni)\n  (tl_i.a_valid && tl_o.a_ready && err_internal) |-> !we_o;\nendproperty\nassert_no_write_on_error: assert property(no_write_on_error);'}
+Running assertions checker agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv for tlul_adapter_sram with security objective: memory access control, integrity, and protocol compliance
+Running linter agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for tlul_adapter_reg with security objective: register interface security
+Running lint checker tool on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for tlul_adapter_reg with lint tags: ['RegInputOutput-ML', 'RegInput-ML', 'RegisterInfo-ML', 'InterfaceNameConflicts-ML', 'W256', 'Rule_41', 'W240', 'W500', 'STARC05-1.4.3.1b', 'W401', 'W215', 'STARC05-1.2.1.1a', 'STARC05-2.1.9.5', 'InterfaceWithoutModport-ML', 'DEBUG_LINT_PORT_STRUCT_SIGNAL', 'W188', 'CheckPortType-ML', 'PortOrder_C', 'AutomaticFuncTask-ML', 'STARC05-1.4.1.1']
+Running linter agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv for tlul_adapter_sram with security objective: memory interface security
+Running lint checker tool on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv for tlul_adapter_sram with lint tags: ['MemConflict-ML', 'W88', 'SingleBitMemory-ML', 'Rule_43', 'W502', 'STARC05-1.4.3.1b', 'STARC05-2.4.1.4', 'W215', 'STARC05-1.3.1.2', 'STARC05-2.3.1.7a', 'STARC05-1.6.1.2', 'STARC05-1.3.2.1a', 'W18', 'STARC05-2.1.6.2', 'W336L', 'W188', 'ReEntrantOutput-ML', 'STARC05-1.2.1.1a', 'W450L']
+Running llm cwe checker agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for tlul_adapter_reg with security objective: register interface access control and protocol compliance
+Running llm cwe details retriever tool on register interface access control
+Running llm cwe details retriever tool on protocol compliance in hardware
+Running llm cwe details retriever tool on hardware integrity verification
+Running llm cwe checker agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv for tlul_adapter_sram with security objective: memory access control, integrity, and protocol compliance
+Running llm cwe details retriever tool on memory access control in hardware
+Running llm cwe details retriever tool on memory integrity in hardware
+Running llm cwe details retriever tool on protocol compliance in hardware
+Reading file with line numbers: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+Running anomaly detector agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for tlul_adapter_reg with security objective: register interface access control and protocol compliance
+Running anomaly detector agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv for tlul_adapter_sram with security objective: memory access control, integrity, and protocol compliance
+Running similar bug agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for bug: assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00};
+Running similar bug tool on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for bug: assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00};
+Reading file with line numbers: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+Running similar bug tool on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv for bug: assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00};
+Running similar bug agent on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv for bug: assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00};
+Running similar bug tool on /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv for bug: assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00};
+Reading file with line numbers: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+Reading file with line numbers: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv

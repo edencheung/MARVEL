@@ -1,0 +1,3938 @@
+================================ System Message ================================
+
+
+    You are a supervisor agent in a multi-agent system focused on identifying hardware security vulnerabilities in RTL code. 
+    Your objective is to analyze the given SoC and generate a detailed security report.
+
+    You have access to the following tools: ['run_anomaly_detector_agent', 'run_verilator_agent', 'run_llm_cwe_checker_agent', 'run_assertions_checker_agent', 'run_linter_agent', 'run_similar_bug_agent', 'list_dir', 'read_file', 'read_file_with_line_numbers']. Each tool specializes in a specific task:
+
+    - Verilator Agent: Runs Verilator tests on the given IP and analyzes failing test reports to detect potential security issues.
+    - Assertion Agent: Takes a Verilog file, a top module name, and a security aspect to check. It generates and runs security assertions on the RTL. Failing assertions indicate potential issues that require further localization.
+    - Linter Agent: Accepts a Verilog file, top module, and security focus. It selects relevant lint checks and flags design violations tied to security concerns.
+    - CWE Agent: Given a Verilog file, a top module, and a security aspect, this agent maps the RTL code to relevant CWEs and detects CWE-related vulnerabilities.
+    - Similar Bug Agent: Accepts a file path and a line number (where a bug was found) to locate similar patterns or recurring bugs throughout the RTL code.
+
+    Instructions for analysis:
+
+    - Read the documentataion to identify security features and register interfaces policies.
+    - Use Verilator, Assertion, Anomaly and Linter agents to uncover initial issues in the design.
+    - If a bug is detected but not localized, use the CWE Agent to further inspect the related security aspect in the surrounding RTL.
+    - After detecting any bugs, use the Similar Bug Agent to scan similar files (of the same or of different IPs) for similar vulnerabilities.
+
+    Output Format:
+
+    - For each identified issue, report:
+    - File name
+    - Line number(s)
+    - Brief description of the issue
+    - Security aspect affected
+    - Tools used to identify the issue
+
+    When your analysis is complete, end your response with "END".
+    
+================================ Human Message =================================
+
+Identify security issues in the tlul IP of the OpenTitan SoC, located at /home/XXXX-2/hackdate.
+
+    - All IPs are located in the 'hw/ip' directory.
+    - RTL code for each IP is located in its 'rtl' subdirectory, with source files having the '.sv' extension.
+        - reg_top files contain the register interface for the IP.
+        - control/fsm files contain the control logic for the IP.
+        - core files contain the core logic for the IP.
+    - Documentation files (.md) are located in the 'doc' directories of each IP.
+        - theory_of_operation explains the properties of the IP and its security features.
+        - registers.md files contain the register interface and its read/write access policies.
+    - Ignore '.core' files; they are used by build tools and are not relevant for security analysis.
+
+    Focus on the tlul IP and make sure to analyze it thoroughly.
+
+    First, identify the relevant security properties and read/write policies of the register interfaces from the documentation. 
+    Then, use all available tools to perform a comprehensive security analysis on the RTL code.
+    
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_hQfyYIXQ8hTf3l0qqjGPWc76)
+ Call ID: call_hQfyYIXQ8hTf3l0qqjGPWc76
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/tlul
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/tlul:
+adapter_host.core adapter_reg.core adapter_sram.core BUILD common.core headers.core README.md socket_1n.core socket_m1.core sram2tlul.core tlul.core tlul_lc_gate.core trans_intg.core
+
+Directories in /home/XXXX-2/hackdate/hw/ip/tlul:
+data doc generic_dv lint rtl
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_wEkpY2tYsxSNm0xL95vJ03TM)
+ Call ID: call_wEkpY2tYsxSNm0xL95vJ03TM
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/tlul/doc
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/tlul/doc:
+tlul_adapter_sram.svg tlul_socket_1n.svg tlul_socket_m1.svg TlulProtocolChecker.md
+
+Directories in /home/XXXX-2/hackdate/hw/ip/tlul/doc:
+dv
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_TKMoyAdgYsesJxZbOWDSQsQX)
+ Call ID: call_TKMoyAdgYsesJxZbOWDSQsQX
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/tlul/rtl:
+sram2tlul.sv tlul_adapter_host.sv tlul_adapter_reg.sv tlul_adapter_sram.sv tlul_assert.sv tlul_assert_multiple.sv tlul_cmd_intg_chk.sv tlul_cmd_intg_gen.sv tlul_data_integ_dec.sv tlul_data_integ_enc.sv tlul_err.sv tlul_err_resp.sv tlul_fifo_async.sv tlul_fifo_sync.sv tlul_lc_gate.sv tlul_pkg.sv tlul_rsp_intg_chk.sv tlul_rsp_intg_gen.sv tlul_socket_1n.sv tlul_socket_m1.sv tlul_sram_byte.sv
+
+Directories in /home/XXXX-2/hackdate/hw/ip/tlul/rtl:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_7iGBKsuTYd1vGGJODMcdaTwq)
+ Call ID: call_7iGBKsuTYd1vGGJODMcdaTwq
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/doc/TlulProtocolChecker.md
+================================= Tool Message =================================
+Name: read_file
+
+# TL-UL Protocol Checker
+
+# TileLink-UL Protocol Checker
+
+
+## **Overview**
+
+This document details the protocol checker
+[tlul_assert.sv](XXXX)
+for TL-UL (TileLink Uncached Lightweight), based on
+[TileLink specification version 1.7.1](XXXX).
+
+The next sections list the checks for each signal of TL-UL channels A and D.
+More details:
+
+*   The source fields (`a_source` and `d_source`) identify in-flight
+transactions rather than physical agents. A single agent can use multiple
+source IDs to track multiple outstanding transactions. See spec section 5.4
+"Source and Sink Identifiers" for more details.
+*   The source fields are `TL_AIW` bits wide (defined in
+[tlul_pkg.sv](XXXX)).
+Therefore, there can be up to 2<sup>TL_AIW</sup> outstanding
+requests at the same time. To keep track of these outstanding requests, the
+protocol checker stores pending requests in the array `pend_req` of depth
+`TL_AIW`, and removes them once their corresponding response has been received.
+*   A request can be responded within the same cycle as the request message is
+accepted. Therefore, in each clock cycle, the protocol checker first processes
+requests and thereafter responses.
+*   The package
+[tlul_pkg.sv](XXXX)
+defines the structs for channels A and D.
+*   In below tables, "known" means that a signal should have a value other
+than X.
+* The protocol checker has a parameter `EndpointType` which can either be
+`"Host"` or `"Device"`. The difference between the `"Host"` and `"Device"`
+variant is that some of the properties are formulated as SV assumptions in the
+former, whereas the same properties are formulated as SV assertions in the
+latter (and vice versa).  The behavior of these two checkers in DV simulations
+is identical, but in formal verification, this distinction is needed (otherwise
+some of the assertions would have to be disabled).
+
+## **Request Channel (Channel A)**
+
+Below table lists all channel A signals and their checks.
+In `"Device"` mode some of these properties are assumptions (`_M` suffix) and in `"Host"` mode they are assertions (`_A` suffix).
+
+<table>
+  <tr>
+   <td><strong>Signal</strong>
+   </td>
+   <td><strong>Checks </strong>(assertion name: description)
+   </td>
+  </tr>
+  <tr>
+   <td>a_opcode
+   </td>
+   <td><strong>legalAOpcode_[M/A]</strong>: Only the following 3 opcodes are legal:
+Get, PutFullData, PutPartialData. See spec section 6.2.
+   </td>
+  </tr>
+  <tr>
+   <td>a_param
+   </td>
+   <td><strong>legalAParam_[M/A]</strong>: This field is reserved, it must be 0. See
+spec section 6.2.
+   </td>
+  </tr>
+  <tr>
+   <td>a_size
+   </td>
+   <td><strong>sizeMatchesMask_[M/A]</strong>: a_size can be calculated from a_mask
+as follows: 2<sup>a_size</sup> must equal $countones(a_mask). See spec section
+4.6.
+<p>
+<strong>aKnown_A</strong>: Make sure it's not X when a_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>a_source
+   </td>
+   <td><strong>pendingReqPerSrc_[M/A]</strong>: There should be no more
+than one pending request per each source ID. See spec section 5.4.
+<p>
+<strong>aKnown_A</strong>: Make sure it's not X when a_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>a_address
+   </td>
+   <td><strong>addrSizeAligned_[M/A]</strong>: a_address must be aligned to
+a_size: a_address & ((1 << a_size) - 1) == 0. See spec section 4.6.
+<p>
+<strong>aKnown_A</strong>Make sure it's not X when a_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>a_mask
+   </td>
+   <td><strong>contigMask_[M/A]</strong>: a_mask must be contiguous for Get
+and PutFullData (but not for PutPartialData). See spec sections 4.6 and 6.2.
+<p>
+<strong>sizeMatchesMask_[M/A]</strong>: See a_size above.
+<p>
+<strong>aKnown_A</strong>Make sure it's not X when a_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>a_data
+   </td>
+   <td><strong>aDataKnown_[M/A]</strong>: a_data should not be X for opcodes
+PutFullData and PutPartialData (it can be X for Get). Bytes of a_data, whose
+corresponding a_mask bits are 0, can be X. See spec section 4.6.
+   </td>
+  </tr>
+  <tr>
+   <td>a_user
+   </td>
+   <td><strong>aKnown_A</strong>Make sure it's not X when a_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>a_valid
+   </td>
+   <td><strong>aKnown_A</strong>: Make sure it's not X (except during reset).
+   </td>
+  </tr>
+  <tr>
+   <td>a_ready
+   </td>
+   <td><strong>aReadyKnown_A</strong>: Make sure it's not X (except during
+reset).
+   </td>
+  </tr>
+</table>
+
+## **Response Channel (Channel D)**
+
+Below table lists all channel D signals and their checks.
+In `"Device"` mode some of these properties are assertions (`_A` suffix) and in `"Host"` mode they are assumptions (`_M` suffix).
+
+<table>
+  <tr>
+   <td><strong>Signal</strong>
+   </td>
+   <td><strong>Checks  </strong>(assertion name: description)
+   </td>
+  </tr>
+  <tr>
+   <td>d_opcode
+   </td>
+   <td><strong>respOpcode_[A/M]</strong>: If the original request was Get,
+then the corresponding response must be AccessAckData. Otherwise, the response
+must be AccessAck. See spec section 6.2.
+   </td>
+  </tr>
+  <tr>
+   <td>d_param
+   </td>
+   <td><strong>legalDParam_[A/M]</strong>: This field is reserved, it must be 0. See
+spec section 6.2.
+   </td>
+  </tr>
+  <tr>
+   <td>d_size
+   </td>
+   <td><strong>respSzEqReqSz_[A/M]</strong>: The response must have
+the same size as the original request. See spec section 6.2.
+   </td>
+  </tr>
+  <tr>
+   <td>d_source
+   </td>
+   <td><strong>respMustHaveReq_[A/M]</strong>: For each response, there must have
+been a corresponding request with the same source ID value. See spec section
+5.4.
+<p>
+<strong>noOutstandingReqsAtEndOfSim_A</strong>: Make sure that there are no
+outstanding requests at the end of the simulation.
+<p>
+<strong>dKnown_A</strong>: Make sure it's not X when d_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>d_sink
+   </td>
+   <td><strong>dKnown_A</strong>: Make sure it's not X when d_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>d_data
+   </td>
+   <td><strong>dDataKnown_[A/M]</strong>: d_data should not be X for AccessAckData.
+Bytes of d_data, whose corresponding mask bits of the original request are 0,
+can be X. See spec section 4.6.
+   </td>
+  </tr>
+  <tr>
+   <td>d_error
+   </td>
+   <td><strong>dKnown_A</strong>Make sure it's not X when d_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>d_user
+   </td>
+   <td><strong>dKnown_A</strong>Make sure it's not X when d_valid is high.
+   </td>
+  </tr>
+  <tr>
+   <td>d_valid
+   </td>
+   <td><strong>dKnown_A</strong>: Make sure it's not X (except during reset).
+   </td>
+  </tr>
+  <tr>
+   <td>d_ready
+   </td>
+   <td><strong>dReadyKnown_A</strong>Make sure it's not X (except during
+reset).
+   </td>
+  </tr>
+</table>
+
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_x0rZtLkHw1VBncmotOOCNP5m)
+ Call ID: call_x0rZtLkHw1VBncmotOOCNP5m
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/tlul/doc/dv
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/tlul/doc/dv:
+README.md tb.svg
+
+Directories in /home/XXXX-2/hackdate/hw/ip/tlul/doc/dv:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_lguoV0uHNhectCEqOSWyG5XM)
+ Call ID: call_lguoV0uHNhectCEqOSWyG5XM
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/doc/dv/README.md
+================================= Tool Message =================================
+Name: read_file
+
+# TLUL XBAR DV document
+
+
+## Goals
+* **DV**
+  * Verify all TLUL XBAR IP features by running dynamic simulations with a SV/UVM based testbench
+  * Develop and run all tests based on the [testplan](#testplan) below towards closing code and functional coverage on the IP and all of its sub-modules
+* **FPV**
+  * Verify TileLink device protocol compliance with an SVA based testbench
+
+## Current status
+* [Design & verification stage](../../../../README.md)
+  * [HW development stages](../../../../../doc/project_governance/development_stages.md)
+* [Simulation results](XXXX)
+
+## Design features
+For detailed information on TLUL design features, please see the [TLUL design specification](../../README.md).
+
+Only following modules are verified in this testbench.
+* tlul_socket_1n, tlul_socket_m1
+* tlul_fifo_async, tlul_fifo_sync
+
+The other TLUL modules as follows are verified in the blocks that instantiate them.
+* tlul_adapter_*
+* tlul_*intg* / tlul_*integ*
+* tlul_err*
+* tlul_sram_byte, sram2tlul
+
+## Testbench architecture
+XBAR testbench has been constructed based on the `hw/dv/sv/dv_lib`
+
+### Block diagram
+![Block diagram](tb.svg)
+
+### Top level testbench
+Top level testbench is located at `hw/ip/tlul/dv/tb/tb.sv`. It instantiates the XBAR DUT module `hw/top_earlgrey/ip/xbar/rtl/autogen/xbar_main.sv`.
+In addition, it instantiates the following interfaces, connects them to the DUT and sets their handle into `uvm_config_db`:
+* [Clock and reset interface](../../../../dv/sv/common_ifs/README.md)
+* [TileLink host interface](../../../../dv/sv/tl_agent/README.md)
+
+### Common DV utility components
+The following utilities provide generic helper tasks and functions to perform activities that are common across the project:
+* [common_ifs](../../../../dv/sv/common_ifs/README.md)
+* [dv_utils_pkg](../../../../dv/sv/dv_utils/README.md)
+
+### Global types & methods
+All common types and methods defined at the package level can be found in
+`xbar_param`. Some of them in use are:
+```systemverilog
+// 3 hosts can access a same device, reserve upper 2 bits. If all hosts send
+// maximum outstanding request in this device, the device needs extra 2 bits
+// for source ID to accommodate all the requests
+parameter int VALID_HOST_ID_WIDTH = 6
+```
+
+### TL agent
+XBAR env instantiates [tl_agent](../../../../dv/sv/tl_agent/README.md) for each xbar host and device,
+which provides the ability to drive and independently monitor random traffic via
+TL host/device interface.
+* For host, source ID MSB 2 bits are tied to 0 and maximum number of outstanding request is 64
+* For device, max number of outstanding request = 64 * number of its accessible hosts. And device also supports out of order response
+
+### Stimulus strategy
+#### Test sequences
+All test sequences reside in `hw/ip/tlul/dv/env/seq_lib`.
+The `xbar_base_vseq` virtual sequence is extended from `dv_base_vseq` and serves as a starting point.
+All test sequences are extended from `xbar_base_vseq`.
+It provides commonly used handles, variables, functions and tasks that the test sequences can simple use / call.
+Some of the most commonly used tasks / functions are as follows:
+* seq_init: Create and configure host and device sequences, extended class can override this function to control host/device sequence
+* run_all_device_seq_nonblocking: Create passive response sequence for each device
+* run_all_host_seq_in_parallel:   Create host sequences to run in parallel
+
+#### Functional coverage
+To ensure high quality constrained random stimulus, it is necessary to develop a functional coverage model.
+The following covergroups have been developed to prove that the test intent has been adequately met:
+* common covergroup from tl_agent:  Cover each host/device reaches its maximum outstanding requests
+* same_device_access_cg:            Cover each device has been accessed by all its hosts at the same time
+* same_source_access_cg:            Cover all hosts use the same ID at the same time and all the IDs have been used at this sequence
+* max_delay_cg:                     Cover zero delay, small delay and large delay have been used in every host and device
+* outstanding_cg:                   Cover each host/device hit its maximum outstanding requests
+
+### Self-checking strategy
+#### Scoreboard
+The `xbar_scoreboard` is primarily used for end to end checking.
+It extends from scoreboard_pkg::scoreboard, which supports multiple queues and in-order/out-of-order comparison.
+Scoreboard checks one transaction twice:
+* In a_channel, host initializes a transaction and scoreboard checks if this transaction is received by a right device
+* In d_channel, device initializes a response and scoreboard checks this response is returned to the right host
+
+When device receives a transaction, we don't predict which host drives it.
+XBAR DUT may not drive transaction received from host to device in order.
+Due to this limitation, scoreboard is designed as following:
+* For a_channel, each device has a transaction queue. Monitor transaction from host and store it in a device queue based on item address.
+  When device receives a transaction, check if there is a same item in its queue and the item is allowed to be appeared out of order.
+* For d_channel, use same structure to check items from device to host.
+* If the transaction is unmapped, it won't be sent to any device. Host will return an error response with `d_error = 1`.
+  Each host has a queue used only for unmapped items. It stores the unmapped item from a_channel, then compare it with the same source ID response received in d_channel.
+
+Following analysis fifos are created to retrieve the data monitored by corresponding interface agents:
+* a_chan_host/device_name, d_chan_host/device_name: These fifos provide transaction items at the end of address channel and data channel respectively from host/device
+
+Following item queues are created to store items for check
+* a_chan_device_name: store items from all hosts that are sent to this device
+* d_chan_device_name: store items from this device that are returned to all hosts
+
+Another limitation of scoreboard is that we don't check the conversion of source ID from host to device.
+We set the source of expected item to 0 before put it into scoreboard queue and hack the source of actual item to 0 before comparison
+
+#### Assertions
+* TLUL assertions: The `tb/xbar_bind.sv` binds the `tlul_assert` [assertions](../TlulProtocolChecker.md) to the IP to ensure TileLink interface protocol compliance.
+* Unknown checks on DUT outputs: The RTL has assertions to ensure all outputs are initialized to known values after coming out of reset.
+
+## Building and running tests
+We are using our in-house developed [regression tool](../../../../../util/dvsim/README.md) for building and running our tests and regressions.
+Please take a look at the link for detailed information on the usage, capabilities, features and known issues.
+Here's how to run a smoke test:
+```console
+$ $REPO_TOP/util/dvsim/dvsim.py $REPO_TOP/hw/$CHIP/ip/$XBAR_IP/dv/autogen/${XBAR_IP}_sim_cfg.hjson -i xbar_smoke
+```
+In this run command, $XBAR_IP can be xbar_main, xbar_peri, etc. $CHIP can be top_earlgrey, etc.
+
+## Testplan
+[Testplan](../../data/tlul_testplan.hjson)
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_4UWPoRBKfuFYdnvRRpXhfYQn)
+ Call ID: call_4UWPoRBKfuFYdnvRRpXhfYQn
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/README.md
+================================= Tool Message =================================
+Name: read_file
+
+# Bus Specification
+
+# Overview
+
+This document specifies the bus functionality within a Comportable top level
+system. This includes the bus protocol and all hardware IP that supports
+creating the network on chip within that framework.
+
+## Features
+
+- Support for multiple bus hosts and bus devices<sup>1</sup>
+- Support for multiple clock domains
+- Support for multiple outstanding requests
+- Extendability for 32b or 64b data widths
+- Extendability for flexible address widths
+- Extendability for security features
+- Low pin-count / area overhead
+- Support for transaction sizes up to bus width (byte, 2B, 4B); no
+  support for bursts
+- Suite of bus primitives to aid in fast fabric generation
+
+<sup>1</sup>lowRISC is avoiding the fraught terms master/slave and defaulting
+to host/device where applicable.
+
+## Description
+
+For chip-level interconnect, Comportable devices will be using
+[TileLink](XXXX)
+as its bus fabric protocol. For the purposes of our performance
+requirement needs, the Uncached Lightweight (TL-UL) variant will
+suffice. There is one minor modification to add the user extensions. This
+is highlighted below, but otherwise all functionality follows the official
+specification. The main signal names are kept the same as TL-UL and the
+user extension signal groups follow the same timing and naming conventions
+used in the TL-UL specification. Existing TL-UL IP blocks may be used
+directly in devices that do not need the additional sideband signals,
+or can be straightforwardly adapted to use the added features.
+
+TL-UL is a lightweight bus that combines the point-to-point
+split-transaction features of the powerful TileLink (or AMBA AXI)
+5-channel bus without the high pin-count overhead. It is intended to be
+about on par of pincount with APB but with the transaction performance of
+AXI-4, modulo the following assumptions.
+
+- Only one request (read or write) per cycle
+- Only one response (read or write) per cycle
+- No burst transactions
+
+Bus primitives are provided in the lowRISC IP library. These are
+described later in this document. These primitives can be combined to form
+a flexible crossbar of any M hosts to any N devices. As of this writing,
+these crossbars are generated programmatically through usage of configuration files.
+See the [tlgen reference manual](../../../util/tlgen/README.md) for more details.
+
+## Compatibility
+
+With the exception of the user extensions, the bus is
+compliant with TileLink-UL. The bus primitives, hosts and peripherals
+developed using the extended specification can be used with
+blocks using the base specification. As a receiver baseline blocks
+ignore the user signals and as a
+source will generate a project-specific default value. Alternatively,
+the blocks can be easily modified to make use of the user extensions.
+
+# Theory of Operations
+
+## Signals
+
+The table below lists all of the TL-UL signals. "Direction" is
+w.r.t. a bus host, signals marked as output will be in the verilog
+`typedef struct` tagged as host-to-device (`tl_h2d_t`) and those marked
+as input will be in the device-to-host struct (`tl_d2h_t`). The literal
+`typedef structs` follow. Size qualifiers are described below. The table
+and structs include the additional (non-TL-UL standard) user extension
+signals per direction to carry chip specific user bits.
+
+The function of the user bits are separately described in a separate table.
+
+| Signal Name | Direction | Description |
+| --- | --- | --- |
+| `a_valid`           | output | Request from host is valid |
+| `a_ready`           | input  | Request from host is accepted by device |
+| `a_opcode[2:0]`     | output | Request opcode (read, write, or partial write) |
+| `a_param[2:0]`      | output | unused |
+| `a_address[AW-1:0]` | output | Request address of configurable width |
+| `a_data[DW-1:0]`    | output | Write request data of configurable width |
+| `a_source[AIW-1:0]` | output | Request identifier of configurable width |
+| `a_size[SZW-1:0]`   | output | Request size (requested size is 2^`a_size`, thus 0 = byte, 1 = 16b, 2 = 32b, 3 = 64b, etc) |
+| `a_mask[DBW-1:0]`   | output | Write strobe, one bit per byte indicating which lanes of data are valid for this write request |
+| `a_user`            | output | Request attributes of configurable width, use TBD. **This is an augmentation to the TL-UL specification.** |
+| `d_valid`           | input  | Response from device is valid |
+| `d_ready`           | output | Response from device is accepted by host |
+| `d_opcode[2:0]`     | input  | Response opcode (Ack or Data) |
+| `d_error`           | input  | Response is in error |
+| `d_param[2:0]`      | input  | Response parameter (unused) |
+| `d_size[SZW-1:0]`   | input  | Response data size |
+| `d_data[DW-1:0]`    | input  | Response data of configurable width |
+| `d_source[AIW-1:0]` | input  | Bouncing of request ID of configurable width |
+| `d_sink[DIW-1:0]`   | input  | Response ID of configurable width (possibly unused) |
+| `d_user[DUW-1:0]`   | input  | Response attributes of configurable width; includes error responses plus other attributes TBD. **This is an augmentation to the TL-UL specification.** |
+
+The `a_user` bus contains several signals
+- `instr_type` - controls whether the transaction is an instruction fetch type
+- `cmd_intg`   - carries the command integrity of the transaction
+- `data_intg`  - carries the write data integrity of the transaction
+
+The `d_user` bus contains several signals
+- `rsp_intg`   - carries the response integrity of the transaction
+- `data_intg`  - carries the read data integrity of the transaction
+
+The user bus is primarily used to distinguish data / instruction transactions while also supporting the bus integrity scheme.
+
+There are eight bus width parameters, defined here. Some are generated
+widths based upon the other parameter sizes.
+
+- `AW`: width of address bus, default 32
+- `DW`: width of data bus, default 32
+- `DBW`: number of data bytes, generated == `DW/8`
+- `SZW`: size width, covers 2^(x) <= `DBW`; (2 bit for 4B)
+- `AIW`: width of address source (ID) bus, default 8
+- `DUW`: width of device user bits, default 4
+- `DIW`: width of sink bits, default 1
+
+All widths are expected to be fixed for an entire project and referred
+to in (what is currently called) `top_pkg`. The contents of `top_pkg`
+(to define the widths) and `tlul_pkg` (to define the bus structs) are
+given below.
+
+### Reset Timing
+
+Section 3.2.2 of the
+[TileLink specification (1.7.1)](XXXX)
+has a requirement on TL-UL hosts ("masters" in TileLink terminology) that "`valid` signals must be driven LOW for at least 100 cycles while reset is asserted."
+The TL-UL collateral within this library does **not** have this requirement on its TL-UL host drivers.
+TL-UL devices within the library can tolerate shorter reset windows.
+(See the reset section of the [Comportability Specification](../../../doc/contributing/hw/comportability/README.md)
+for details on reset requirements.)
+
+### Signal and Struct Definitions
+
+The following shows Verilog structs to define the above parameters
+and signals.
+
+```systemverilog
+package top_pkg;
+  localparam TL_AW=32;
+  localparam TL_DW=32;
+  localparam TL_AIW=8;
+  localparam TL_DIW=1;
+  localparam TL_DUW=4;
+  localparam TL_DBW=(TL_DW>>3);
+  localparam TL_SZW=$clog2($clog2(TL_DBW)+1);
+endpackage
+```
+
+```systemverilog
+package tlul_pkg;
+  typedef enum logic [2:0] {
+    PutFullData    = 3'h 0,
+    PutPartialData = 3'h 1,
+    Get            = 3'h 4
+  } tl_a_op_e;
+  typedef enum logic [2:0] {
+    AccessAck     = 3'h 0,
+    AccessAckData = 3'h 1
+  } tl_d_op_e;
+
+  typedef struct packed {
+    logic [6:0] rsvd1; // Reserved for future use
+    logic       parity_en;
+    logic [7:0] parity; // Use only lower TL_DBW bit
+  } tl_a_user_t;
+
+  typedef struct packed {
+    logic                         a_valid;
+    tl_a_op_e                     a_opcode;
+    logic                  [2:0]  a_param;
+    logic  [top_pkg::TL_SZW-1:0]  a_size;
+    logic  [top_pkg::TL_AIW-1:0]  a_source;
+    logic   [top_pkg::TL_AW-1:0]  a_address;
+    logic  [top_pkg::TL_DBW-1:0]  a_mask;
+    logic   [top_pkg::TL_DW-1:0]  a_data;
+    tl_a_user_t                   a_user;
+
+    logic                         d_ready;
+  } tl_h2d_t;
+
+  typedef struct packed {
+    logic                         d_valid;
+    tl_d_op_e                     d_opcode;
+    logic                  [2:0]  d_param;
+    logic  [top_pkg::TL_SZW-1:0]  d_size;
+    logic  [top_pkg::TL_AIW-1:0]  d_source;
+    logic  [top_pkg::TL_DIW-1:0]  d_sink;
+    logic   [top_pkg::TL_DW-1:0]  d_data;
+    logic  [top_pkg::TL_DUW-1:0]  d_user;
+    logic                         d_error;
+
+    logic                         a_ready;
+  } tl_d2h_t;
+
+endpackage
+```
+
+### Usage of Signals
+
+#### Usage of Address
+
+All signaling for host-request routing is encapsulated in the `a_addr` signal.
+(See section 5.3 of the TileLink specification).
+For a bus host to designate which device it is talking to, it only needs to indicate the correct device register/memory address.
+The other host signals (namely `a_source` and `a_user`) do not enter into the address calculation.
+All request steering must thus be made as a function of the address.
+
+#### Usage of Source and Sink ID Bits
+
+The `a_source` and `d_source` signals are used to steer the response from
+a device back to a host through bus primitives. (See primitives section
+that follows). It can also be used to ascribe request identifiers by a
+host when response reordering is required (since TL-UL does not guarantee
+in-order responses). For permission detection, static host identifiers
+will be transmitted in the user field (see below).
+
+Some bus primitives, such as `M:1` sockets, need to add source bits
+during request routing in order to be able to correctly route the
+response. For instance, if one destination is addressed by N potential
+hosts, log<sub>2</sub>N more source ID bits need to be added to the
+outgoing request. The fabric architect needs to ensure that the attribute
+`AIW` is big enough to cover the number of outstanding requests hosts
+can make and the maximum source ID growth that could be added by bus
+primitives. At this time, `AIW` is assumed to be 8 bits of ID growth, but
+this is likely overkill. The fabric also needs to allow for how many host
+ID bits are needed, for instance if converting from an AXI host that uses
+`RID` or `WID`, enough bits must be provided to maintain those ID values.
+
+##### Source ID growth
+
+When a bus primitive needs to add source ID bits, it shifts left the
+incoming `a_source` and post-pends its necessary sub-source bits. For
+instance, if a 5:1 socket is needed, 3 sub-source bits are generated to
+distinguish between hosts 0 through 4. So an 8-bit outgoing `a_source`
+would be `{a_source_inbound[4:0],subsource[2:0]}`. When the response
+returns, those 3 sub-source bits are shifted off, with `'0'` bits
+shifted into the top, and returned to the originator's `d_source`. It
+is recommended to have assertions in place to ensure no significant bits
+of `a_source` are lost in `M:1` sockets. See the `M:1` socket primitive
+for more details.
+
+##### Source ID requirements for host elements
+
+The potential for source ID growth (and contraction in the response)
+implies that hosts may only use the low bits of the identifier and cannot
+assume the entire `AIW` bits will be returned intact. If there are any hosts
+that need more source bits returned than the host's maximum number of
+outstanding transactions (for example the host uses some source bits as
+internal sub-unit identifiers and some bits as transaction IDs from that
+subunit) then the `AIW` value needs to be set accordingly.
+
+##### Source ID requirements for device elements
+
+All bus devices must simply return the associated `a_source` on the
+response `d_source` bus.
+
+##### Source ID requirements for bus primitives
+
+Most bus primitives simply pass source ID bits opaquely from host end to
+device end. The exception is for `M:1` sockets (see ID growth above). Other
+elements (`1:N` sockets, domain crossing FIFOs, etc) should not modify
+the `a_source` and `d_source` values, but pass them along.
+
+##### Sink ID Usage
+
+At this time there is no defined use for `d_sink`, but the TileLink-UL
+protocol allows configurable bits to be passed back to the host to
+indicate who responded. In theory this could be used as a security
+guarantee, to ensure that the appropriate responder was targeted. At
+this time the configurable width for sink is turned down to one bit.
+
+#### Usage of User Bits
+
+User bits are added to the TileLink-UL specification in order to prepare
+for command and response modification in future IP. These are effectively
+modifiers to the transactions that can qualify the request and the
+response. The user bits follow the same timing as the source ID bits:
+`a_user` matches `a_source` and `d_user` matches `d_source`. Usage of
+user bits within a project must be assigned project-wide, but the bus
+fabric does not rely on them for transport, and should pass the user
+bits on blindly. Bus hosts and devices must understand their usage and
+apply them appropriately.
+
+The following list gives examples of future usage for `a_user` and
+`d_user` bits.
+
+- `a_user` modifications
+  - Instruction Type
+    - This indicates whether the transaction originates from a code fetch or data fetch.
+    - This attribute is used by downstream consumers to provide separate privilege control based on transaction type.
+  - Command Integrity
+    - This is the calculated integrity of the instruction type, transaction address, transaction op code and mask.
+    - The integrity is checked by downstream consumers to ensure the transaction has not been tampered.
+
+  - Data Integrity
+    - This is calculated integrity of the write data.
+    - The integrity is checked by downstream consumers to ensure the transaction has not been tampered.
+
+- `d_user` modifications
+  - Response Integrity
+    - This is the calculated integrity of the response op code, response size and response error.
+    - This integrity is checked by the transaction originator to ensure the response has not been tampered.
+
+  - Data Integrity
+    - This is the calculated integrity of the response read data.
+    - This integrity is checked by the transaction originator to ensure the response has not been tampered.
+
+#### Usage of Opcode, Size and Mask
+
+The request opcode (`a_opcode`) can designate between a write (`'Put'`)
+and a read (`'Get'`) transaction. Writes can be designated as full
+(`'PutFullData'`) or partial (`'PutPartialData'`) within the opcode
+space. The request size (`a_size`) and mask (`a_mask`) is defined for
+all read and write operations. Opcode (`a_opcode`) definitions are
+shown below. Responses also have opcodes (`d_opcode`) to indicate read
+response (`'AccessAckData'`) and write response (`'AccessAck'`). Error
+indications are available on either with the `d_error` bit. Each bus
+device has an option to support or not support the full variety of
+bus transaction sizes. Their support will be documented in the device
+specification.
+
+It should be noted that, even though non-contiguous `a_mask` values like
+`0b1001` are permitted by the TL-UL spec, the TL-UL hosts within this project
+**do not leverage non-contiguous masks**. I.e., the TL-UL hosts will only assert
+`a_mask` values from the following restricted set for 32bit transfers:
+```
+{'b0000, 'b0001, 'b0010, 'b0100, 'b1000, 'b0011, 'b0110, 'b1100, 'b0111, 'b1110, 'b1111}.
+```
+The TL-UL devices within the project may or may not support certain subword
+masks (both non-contiguous or contiguous ones), and they have the right to
+assert `d_error` if they don't.
+
+| `a_opcode[2:0]` value | Name | Definition |
+| :---: | :---: | --- |
+| `3'b000` | `PutFullData` | Write of full bus width. `a_size` should be `'h2` to indicate 32b write (or `'h3` if/when 64b bus width is supported), though the bus specification allows these to be defined otherwise (see `PutPartialData` below) |
+| `3'b001` | `PutPartialData` | Write of partial bus width. `a_size[SZW-1:0]` indicates how many bytes are transmitted. The encoding is `2^a_size` so `'h0` indicates 1 byte, `'h1` indicates 2 bytes, `'h2` indicates 4 bytes, etc. The lower bits of `a_address` are valid to indicate sub-word addressing, and the bits of `a_mask[DBW-1:0]` should indicate valid byte lanes. |
+| `3'b100` | `Get` | Read of full bus width. The bus specification allows these to be defined otherwise (see PutPartialData above) for reads of sub-bus-width. |
+| `3'b01x, 3'b101, 3'b11x` | `undefined` | All other opcodes are undefined. Bus devices should return an error. |
+
+| `d_opcode[2:0]` value | Name | Definition |
+| :---: | :---: | --- |
+| `3'b000` | `AccessAck` | Write command acknowledgement, no data |
+| `3'b001` | `AccessAckData` | Read command acknowledgement, data valid on `d_data` |
+| `3'b01x, 3'b1xx` | `undefined` | All other opcodes are undefined and should return an error. |
+
+#### Explicit Error Cases
+
+The TL-UL devices in this project contain a set of HW protocol checkers that raise a runtime error (`d_error`) if the request is in violation.
+In particular, the following properties are checked:
+
+1. Wrong opcode,
+2. Wrong combination of `a_addr[1:0]`, `a_size`, `a_mask`, for example:
+  - `a_size` must not be greater than `2`,
+  - Inactive lanes must be marked with `'b0` in `a_mask`,
+  - `PutFullData` must mark all active lanes with a `'b1` in `a_mask`,
+3. Non-contiguous mask may lead to an error, depending on the device support (see previous section),
+4. Register files always assume aligned 32bit accesses, see also [register tool manual](../../../util/reggen/README.md#error-responses),
+5. Accesses to non-existent addresses.
+
+On the host side, orphaned responses (i.e. responses that do not have a valid request counterpart) and responses with the wrong opcode will be discarded.
+It is planned to raise a critical hardware error that can be detected and reacted upon via other subsystems in those cases, but that feature has not been implemented yet.
+
+Note that the above checks also cover cases which are in principle allowed by the TL-UL spec, but are not supported by the hosts and devices within this project.
+Further, devices and hosts may implement additional more restrictive checks, if needed.
+
+The remaining, basic properties as specified in the TL-UL spec are enforced at design time using assertions, and hence no additional hardware checkers are implemented to check for those properties (see also [TL-UL Protocol Checker Specification](./doc/TlulProtocolChecker.md)).
+
+The interconnect does not possess additional hardware mechanisms to detect and handle interconnect deadlocks due to malicious tampering attempts.
+The reasons for this are that
+1. the space of potential errors and resolutions would be very large, thus unnecessarily complicating the design,
+2. any tampering attempt leading to an unresponsive system will eventually be detected by other subsystems within the top level system.
+
+### Bus Integrity Scheme
+To be filled in.
+
+
+## Timing Diagrams
+
+This section shows the timing relationship on the bus for writes with
+response, and reads with response. This shows a few transactions, see
+the TileLink specification for more examples.
+
+```wavejson
+{
+  signal: [
+    { name: 'clk_i',      wave: 'p...................' },
+    { name: 'a_valid',    wave: '0.1....0101...0.....' },
+    { name: 'a_ready',    wave: '0.1..01010...10.....' },
+    { name: 'a_source',   wave: '0.3333.0303...0.....', data: ['I0','I1','I2','I3','I4','I5'] },
+    { name: 'a_opcode',   wave: '0.3..3.0303...0.....', data: ['put-full','put-partial','pf', 'put-partial'] },
+    { name: 'a_addr',     wave: '703333.0303...7.....', data: ['A0', 'A1','A2','A3','A4','A5'] },
+    { name: 'a_data',     wave: '703333.0303...7.....', data: ['D0', 'D1','D2','D3','D4','D5'] },
+    { name: 'a_size',     wave: '703..3.0303...7.....', data: ['2', '0','2','1'] },
+    { name: 'a_mask',     wave: '7...03.7703...7.....', data: ['M3', 'M5'] },
+    { name: 'a_user',     wave: '0.3333.0303...0.....', data: ['AU0','AU1','AU2','AU3','AU4','AU5'] },
+    {},
+    { name: 'd_valid',   wave: '0....1....0101....0.' },
+    { name: 'd_ready',   wave: '0......1..010...1.0.' },
+    { name: 'd_source',  wave: '7...03..330304...38.', data: ['I0','I1','I2','I3','I4','I5'] },
+    { name: 'd_opcode',  wave: '7...03....0304...38.', data: ['ACK','ACK','ACK'] },
+    { name: 'd_user',    wave: '7...03..330304...38.', data: ['DU0','DU1','DU2','DU3','DU4','DU5'] },
+    { name: 'd_error',   wave: '0............1...0..' },
+  ],
+  head: {
+    text: 'TileLink-UL write transactions',
+  },
+  foot: {
+    text: 'six write transactions (four full, two partial) with various req/ready delays, error on I4 response',
+    }
+}
+```
+
+```wavejson
+{
+  signal: [
+    { name: 'clk_i',    wave: 'p...................' },
+    { name: 'a_valid',  wave: '0.1....0101...0.....' },
+    { name: 'a_ready',  wave: '0.1..01010...10.....' },
+    { name: 'a_source', wave: '703333.0303...7.....', data: ['I0', 'I1','I2','I3','I4','I5'] },
+    { name: 'a_opcode', wave: '0.3....0303...7.....', data: ['get', 'get', 'get'] },
+    { name: 'a_addr',   wave: '703333.0303...7.....', data: ['A0', 'A1','A2','A3','A4','A5'] },
+    { name: 'a_user',   wave: '703333.0303...7.....', data: ['AU0', 'AU1','AU2','AU3','AU4','AU5'] },
+    {},
+    { name: 'd_valid',  wave: '0....1....0101....0.' },
+    { name: 'd_ready',  wave: '0......1..010...1.0.' },
+    { name: 'd_source', wave: '7...03..330304...38.', data: ['I0', 'I1','I2','I3','I4','I5'] },
+    { name: 'd_data',   wave: '7...03..330304...38.', data: ['D0', 'D1','D2','D3','D4','D5'] },
+    { name: 'd_opcode', wave: '7...03....0304...38.', data: ['DATA', 'DATA','DATA','DATA'] },
+    { name: 'd_user',   wave: '7...03..330304...38.', data: ['DU0', 'DU1','DU2','DU3','DU4','DU5'] },
+    { name: 'd_error',  wave: '0............1...0..', data: ['ACK', 'ACK','ACK','ACK','ERR','ACK'] },
+  ],
+  head: {
+    text: 'TileLink-UL read transactions',
+  },
+  foot: {
+    text: 'six read transactions with various req/ready delays, error on I5 response',
+    }
+}
+```
+
+## Bus Primitives
+
+The bus primitives are defined in the following table and described in
+detail below.
+
+| Element | Description |
+| :---: | --- |
+| `tlul_fifo_sync` | FIFO connecting one TL-UL host to one TL-UL device in a synchronous manner. Used to create elasticity in the bus, or as a sub-element within other elements. TL-UL protocol is maintained on both sides of the device. Parameters control many features of the FIFO (see detailed description that follows). |
+| `tlul_fifo_async` | FIFO connecting one TL-UL host to one TL-UL device in an asynchronous manner. Used to create elasticity in the bus, or to cross clock domains, or as a sub-element within other elements. TL-UL protocol is maintained on both sides of the device. Parameters control many features of the FIFO (see detailed description that follows). |
+| `tlul_socket_1n` | Demultiplexing element that connects 1 TL-UL host to N TL-UL devices. TL-UL protocol is maintained on the host side and with all devices. Parameter settings control many of the features of the socket (see detailed description that follows). |
+| `tlul_socket_m1` | Multiplexing element that connects M TL-UL hosts to 1 TL-UL device. TL-UL protocol is maintained with all hosts and on the device side. Parameter settings control many of the features of the socket (see detailed description that follows). |
+| `tlul_xbar` | Crossbar that connects M TL-UL hosts with N TL-UL devices. The connectivity matrix may be sparse, and not all nodes are required to be the same clock or reset domain.  TL-UL protocol is maintained with all hosts and with all devices. Parameters and configuration settings control many of the features of the switch. This is not specified at this time, and will be done at a later date based upon project goals. |
+| `tlul_adapter_sram` | Adapter that connects a TL-UL host to an sram type interface. |
+
+#### A Note on Directions
+
+In each of these devices, ports are named with respect to their usage,
+not their direction. For instance, a `1:N` socket connects one host to
+N devices. Thus the TL-UL port coming in is called the "host bus",
+and the N device ports are called "device bus" 0 through N-1. Within
+the Verilog module, the "host bus" is actually a device in the sense
+that it receives requests and returns responses. This terminology can be
+confusing within the bus element itself but should maintain consistency
+in naming at the higher levels.
+
+### `tlul_fifo_sync`
+
+The TL-UL FIFO is a `1:1` bus element that provides elasticity (the
+ability for transactions to stall on one side without affecting the other
+side) on the bus. It is also used as a sub-element in other elements, like
+sockets. Parameterization of the module is described in the table below.
+
+| name | description |
+| :---: | --- |
+| `ReqPass` | If 1, allow requests to pass through the FIFO with no clock delay if the request FIFO is empty (this may have timing implications). If false, at least one clock cycle of latency is created. Default is 1. |
+| `RspPass` | If 1, allow responses to pass through the FIFO with no clock delay if the response FIFO is empty (this may have timing implications). If false, at least one clock cycle of latency is created. Default is 1. |
+| `ReqDepth[4]` | Depth of request FIFO. Depth of zero is allowed only if `ReqPass` is 1. The maximum value for `ReqDepth` is 15. Default is 2. |
+| `RspDepth[4]` | Depth of response FIFO. Depth of zero is allowed only if `RspPass` is 1. The maximum value for `RspDepth` is 15. Default is 2. |
+| `SpareReqW` | The FIFO has spare bits in the request direction for auxiliary use by other bus elements. This parameter defines the size, default 1, must be >= 1 to avoid compilation errors. If the bit is not needed, the spare input should be tied to zero, and the spare output ignored. |
+| `SpareRspW` | The FIFO has spare bits in the response direction for auxiliary use by other bus elements. This parameter defines the size, default 1, must be >= 1 to avoid compilation error. If the bit is not needed, the spare input should be tied to zero, and the spare output ignored. |
+
+When `Pass` is 1 and its corresponding `Depth` is 0, the FIFO feeds through the signals completely.
+This allows more flexible control at compile-time on the FIFO overhead / latency trade-off without needing to re-code the design.
+
+The IO of the module are given in this table. See the struct above for
+TL-UL typedef definitions.
+
+| direction | type / size | name | description |
+| :---: | :---: | :---: | --- |
+| `input`  | | `clk_i` | clock |
+| `input`  | | `rst_ni` | active low reset |
+| `input`  | `tl_h2d_t` | `tl_h_i` | Incoming host request struct |
+| `output` | `tl_d2h_t` | `tl_h_o` | Outgoing host response struct |
+| `output` | `tl_h2d_t` | `tl_d_o` | Outgoing device request struct |
+| `input`  | `tl_d2h_t` | `tl_d_i` | Incoming device response struct |
+| `input`  | `[SpareReqW-1:0]` | `spare_req_i` | Spare request bits in|
+| `output` | `[SpareReqW-1:0]` | `spare_req_o` | Spare request bits out |
+| `input`  | `[SpareRspW-1:0]` | `spare_rsp_i` | Spare response bits in |
+| `output` | `[SpareRspW-1:0]` | `spare_rsp_o` | Spare response bits out |
+
+### `tlul_fifo_async`
+
+The TL-UL asynchronous FIFO is a `1:1` bus element that can be used to
+cross clock domains. Parameterization of the module is described in the
+table below.
+
+| name | description |
+| :---: | --- |
+| `ReqDepth[4]` | Depth of request FIFO. Depth of request FIFO. ReqDepth must be >= 2, and the maximum value is 15. |
+| `RspDepth[4]` | Depth of response FIFO. RspDepth must be >= 2, and the maximum value is 15. |
+
+The IO of the module are given in this table. See the struct above for
+TL-UL typedef definitions.
+
+| direction | type / size | name | description |
+| :---: | :---: | :---: | --- |
+| `input`  | | `clk_h_i` | Host side clock |
+| `input`  | | `rst_h_ni` | Host side active low reset |
+| `input`  | | `clk_d_i` | Device side clock |
+| `input`  | | `rst_d_ni` | Device side active low reset |
+| `input`  | `tl_h2d_t` | `tl_h_i` | Incoming host request struct |
+| `output` | `tl_d2h_t` | `tl_h_o` | Outgoing host response struct |
+| `output` | `tl_h2d_t` | `tl_d_o` | Outgoing device request struct |
+| `input`  | `tl_d2h_t` | `tl_d_i` | Incoming device response struct |
+
+### `tlul_socket_1n`
+
+The TL-UL socket `1:N` is a bus element that connects 1 TL-UL host
+to N TL-UL devices. It is a fundamental building block of the TL-UL
+switch, and uses `tlul_fifo_sync` as its building block. It has a
+several parameterization settings available, summarized here. Note
+`tlul_socket_1n` is always synchronous. If asynchronous behavior is
+desired, an `tlul_fifo_async` should be placed on the desired bus.
+
+| name | description |
+| :---: | --- |
+| `N` | Number of devices the socket communicates with, 2 <= N <= 15. |
+| `HReqPass` | If 1, allow requests to pass through the host-side FIFO with no clock delay if the request FIFO is empty. If 0, at least one clock cycle of latency is created. Default is 1. |
+| `HRspPass` | If 1, allow responses to pass through the host-side FIFO with no clock delay if the response FIFO is empty. If 0, at least one clock cycle of latency is created. Default is 1. |
+| `HReqDepth[4]` | Depth of host-side request FIFO. Depth of zero is allowed if `ReqPass` is 1. A maximum value of 15 is allowed, default is 2. |
+| `HRspDepth[4]` | Depth of host-side response FIFO. Depth of zero is allowed if `RspPass` is 1. A maximum value of 15 is allowed, default is 2. |
+| `DReqPass[N]` | If 1, allow requests to pass through device i FIFO with no clock delay if the request FIFO is empty. If false, at least one clock cycle of latency is created. Default is 1. |
+| `DRspPass[N]` | If 1, allow responses to pass through the device i FIFO with no clock delay if the response FIFO is empty. If 0, at least one clock cycle of latency is created. Default is 1. |
+| `DReqDepth[N*4]` | Depth of device i request FIFO. Depth of zero is allowed if `ReqPass` is 1. A maximum value of 15 is allowed, default is 2. |
+| `DRspDepth[N*4]` | Depth of device i response FIFO. Depth of zero is allowed if `RspPass` is 1. A maximum value of 15 is allowed, default is 2. |
+
+The diagram below shows the dataflow of the `tlul_socket_1n` and how
+the `tlul_fifo_sync` modules are allocated.
+
+![tlul_socket_1n block diagram](./doc/tlul_socket_1n.svg)
+
+In this diagram, the full socket (`1:4` in this case) is shown, with
+its single host port and four device ports. Also shown is the critical
+device select input, which controls the transaction steering. To allow
+flexibility the address decoding is done outside the socket. The TL-UL
+specification requires that the decode only use the address bits, but no
+other constraints are placed on how the external decode logic converts
+the address to the output device selection signal (`dev_sel`). The
+timing of `dev_sel` is such that it must be valid whenever `a_valid`
+is true in order to steer the associated request.
+
+The address decoder can trigger an error response: if the value of
+`dev_sel` is not between 0 and N-1, then `tlul_socket_1n` will provide
+the error response to the request. This is implemented with a separate
+piece of logic inside the socket which handles all requests to `dev_sel >=
+N` and replies with an error.
+
+The IO of the socket are given in this table. See the struct above for
+TL-UL `typedef` definitions.
+
+| direction | type / size | name | description |
+| :---: | :---: | :---: | --- |
+| `input`  | | `clk_i` | clock |
+| `input`  | | `rst_ni` | active low reest |
+| `input`  | `tl_h2d_t` | `tl_h_i` | incoming host request struct |
+| `output` | `tl_d2h_t` | `tl_h_o` | outgoing host response struct |
+| `output` | `tl_h2d_t` | `tl_d_o[N]` | Outgoing device request struct for device port *i* (where *i* is from 0 to *N-1*) |
+| `input`  | `tl_d2h_t` | `tl_d_i[N]` | Incoming device response struct for device port *i* (where *i* is from 0 to *N-1*) |
+| `input`  | `[log2(N+1)-1:0]` | `dev_sel` | Device select for the current transaction provided in `tl_h_i` bus. Legal values from 0 to N-1 steer to the corresponding device port. Any other value returns an automatic error response.  |
+
+In the current implementation, outstanding requests are tracked so that
+no new requests can go to a device port if there already are outstanding
+requests to a different device. This ensures that all transactions are
+returned in order. This feature is still in discussion.
+
+### `tlul_socket_m1`
+
+The TL-UL socket `M:1` is a bus element that connects `M` TL-UL
+hosts to 1 TL-UL device. Along with a `tlul_socket_1n`, this could
+be used to build the TL-UL fabric, and uses `tlul_fifo` as its
+building block. `tlul_socket_m1` has several parameterization settings
+available. The `tlul_socket_m1` is synchronous, so a `tlul_fifo_async`
+must be instantiated on any ports that run asynchronously.
+
+| name | description |
+| :---: | --- |
+| `M` | Number of hosts the socket communicates with, 2 <= M <= 15. |
+| `HReqPass[M]` | `M` bit array to allow requests to pass through the host i FIFO with no clock delay if the request FIFO is empty. If `1'b0`, at least one clock cycle of latency is created. Default is `1'b1`. |
+| `HRspPass[M]` | `M` bit array. If `bit[i]=1`, allow responses to pass through the host *i* FIFO with no clock delay if the response FIFO is empty. If false, at least one clock cycle of latency is created. Default is 1. |
+| `HReqDepth[4*M]` | `Mx4` bit array. `bit[i*4+:4]` is depth of host *i* request FIFO. Depth of zero is allowed if `ReqPass` is true. A maximum value of 15 is allowed, default is 2. |
+| `HRspDepth[4*M]` | `Mx4` bit array. `bit[i*4+:4]` is depth of host *i* response FIFO. Depth of zero is allowed if RspPass is true. A maximum value of 15 is allowed, default is 2. |
+| `DReqPass` | If 1, allow requests to pass through device FIFO with no clock delay if the request FIFO is empty. If false, at least one clock cycle of latency is created. Default is 1. |
+| `DRspPass` | If 1, allow responses to pass through the device FIFO with no clock delay if the response FIFO is empty. If false, at least one clock cycle of latency is created. Default is 1. |
+| `DReqDepth[4]` | Depth of device i request FIFO. Depth of zero is allowed if `ReqPass` is true. A maximum value of 15 is allowed, default is 2. |
+| `DRspDepth[4]` | Depth of device i response FIFO. Depth of zero is allowed if `RspPass` is true. A maximum value of 15 is allowed, default is 2. |
+
+The diagram below shows the dataflow of `tlul_socket_m1` for `4:1`
+case and how the `tlul_fifo_sync` modules are allocated.
+
+![tlul_socket_m1 block diagram](./doc/tlul_socket_m1.svg)
+
+Requests coming from each host ports are arbitrated in the socket based
+on round-robin scheme. `tlul_socket_m1`, unlike the `1:N` socket, doesn't
+require the `dev_sel` input. As the request is forwarded, the request ID
+(`a_source`) is modified as described in the ID Growth section. The ID
+returned with a response (`d_source`) can thus be directly used to steer
+the response to the appropriate host.
+
+The IO of `M:1` socket are given in this table. See the struct above for
+TL `typedef` definitions.
+
+| direction | type / size | name | description |
+| :---: | :---: | :---: | --- |
+| `input`  |            | `clk_i`     | clock |
+| `input`  |            | `rst_ni`    | active low reest |
+| `input`  | `tl_h2d_t` | `tl_h_i[M]` | unpacked array of incoming host request structs |
+| `output` | `tl_d2h_t` | `tl_h_o[M]` | unpacked array of outgoing host response structs |
+| `output` | `tl_h2d_t` | `tl_d_o`    | outgoing device request struct |
+| `input`  | `tl_d2h_t` | `tl_d_i`    | incoming device response struct |
+
+### `tlul_xbar`
+
+For details of the `tlul_xbar`, please refer to the [tlgen reference manual](../../../util/tlgen/README.md).
+In general, tlgen stitches together various components described in the previous sections to create a full blown fabric switch.
+Specifically, it implements the address to `dev_sel` steering logic and ensures the right connections are made from host to device.
+
+
+### `tlul_adapter_sram`
+
+The TL-UL sram adapter is a bus element that connects a TL-UL interface to a memory like interface.
+The memory interface is defined as follows:
+
+| name    | direction | description                            |
+| :---:   | :---:     | :---:                                  |
+| req     | `output`  | Memory interface transaction request   |
+| gnt     | `input`   | Memory interface transaction grant     |
+| we      | `output`  | Transaction write enable               |
+| addr    | `output`  | Transaction address                    |
+| wdata   | `output`  | Transaction write data                 |
+| wmask   | `output`  | Transaction write mask                 |
+| rvalid  | `input`   | Transaction read valid from downstream |
+| rdata   | `input`   | Transaction read data from downstream  |
+| rerror  | `input`   | Transaction read error from downstream |
+
+The diagram below is a block diagram that shows the construction of the adapter.
+![tlul_adapter_sram_block diagram](./doc/tlul_adapter_sram.svg)
+
+All incoming transactions are checked for protocol errors and integrity.
+The transactions are then forwarded to the `tlul_sram_byte` module, which determines whether the incoming transaction is a write, and whether the write transaction must be transformed to a read-modified-write.
+
+The transformation is done when integrity is enabled on the downstream storage and the incoming transaction is a legal partial write.
+During this scenario, in order to correctly compute the storage integrity, the adapter must first read back whatever is present in memory so that the full integrity can be computed.
+If an error is present during the protocol and integrity checks, or if the transaction is not a partial write (read or full write), then the transaction is passed through directly to the TL-UL-sram conversion.
+If the transaction is a legal partial write, the `tlul_sram_byte` instead transforms the transaction into two: a full read followed by a full write for a read-modified-write of the intended address.
+
+Once past the `tlul_sram_byte`, a transaction accepted by downstream consumers has some of its attributes (type of operation, presence of error, size, source) stored in the `request fifo`.
+This is needed to correctly construct the TL-UL d-channel response when the transaction is complete.
+
+The internally computed "read mask" is also stored in the `sramreqfifo` for read transactions.
+This is needed to correctly mask off uninteresting bytes during a partial read.
+
+Any returning read data from downstream is stored inside the `rspfifo`.
+This is needed in case the upstream TL-UL host back pressures the d-channel.
+
+#### Life of a Write Transaction
+When a write transaction is received, the above steps are followed; however, nothing is stored in the `sramreqfifo`.
+When downstream completes the write transaction, the stored `reqfifo` entry is used to construct the TL-UL response.
+When the response is accepted by an upstream TL-UL host, the `reqfifo` entry popped.
+
+#### Life of a Read Transaction
+When a read transaction is received, both the `reqfifo` and the `sramreqfifo` store a new entry.
+The former stores transaction attributes, while the latter stores the read mask and read offset (in case the downstream read is larger than TL-UL bus width).
+When downstream completes the read transaction through `rvalid_i`, the relevant data, as determined by the stored read mask and offset in `sramreqfifo`, is stored in the `rspfifo`.
+The act of storing into the `rspfifo` also pops `sramreqfifo` entry.
+
+The `reqfifo` entry is used to construct the TL-UL response.
+When the response is accepted by an upstream TL-UL host, the `reqfifo` and `rspfifo` entries are both popped.
+
+#### Readback Mode
+When enabled using the [`SRAM_CTRL.READBACK`](../sram_ctrl/doc/registers.md#readback) register, the `tlul_sram_byte` module is capable of reading back and checking each issued read and write.
+On an integrity failure, for example caused by a fault injection attack, a fatal alert is raised and the alert register [`STATUS.READBACK_ERROR`](../sram_ctrl/doc/registers.md#status--readback_error) is set.
+When the host issues a read, the `tlul_sram_byte` module performs the read, internally stores the received data from the memory, issues a second read, and compares the values of the first and second reads.
+Similarily, on a write, the module temporarily stores the data to write, performs the write, issues a readback, and compares the read back value to the temporarily stored write data to ensure that the data correctly got written into the memory.
+
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_K3OHXNtjdLgNFlrnr1bjAN1u)
+ Call ID: call_K3OHXNtjdLgNFlrnr1bjAN1u
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/tlul/rtl:
+sram2tlul.sv tlul_adapter_host.sv tlul_adapter_reg.sv tlul_adapter_sram.sv tlul_assert.sv tlul_assert_multiple.sv tlul_cmd_intg_chk.sv tlul_cmd_intg_gen.sv tlul_data_integ_dec.sv tlul_data_integ_enc.sv tlul_err.sv tlul_err_resp.sv tlul_fifo_async.sv tlul_fifo_sync.sv tlul_lc_gate.sv tlul_pkg.sv tlul_rsp_intg_chk.sv tlul_rsp_intg_gen.sv tlul_socket_1n.sv tlul_socket_m1.sv tlul_sram_byte.sv
+
+Directories in /home/XXXX-2/hackdate/hw/ip/tlul/rtl:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_ySLiygP7T26rK9ZARLiY9it5)
+ Call ID: call_ySLiygP7T26rK9ZARLiY9it5
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+================================= Tool Message =================================
+Name: read_file
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+`include "prim_assert.sv"
+
+/**
+ * Tile-Link UL adapter for Register interface
+ *
+ * ICEBOX(#15822): Note that due to some modules with special needs (like
+ * the vendored-in RV_DM), this module has been extended so that it
+ * supports use cases outside of the generated reg_top module. This makes
+ * this adapter and its parameterization options a bit heavy.
+ *
+ * We should in the future come back to this and refactor / align the
+ * module and its parameterization needs.
+ */
+
+module tlul_adapter_reg
+  import tlul_pkg::*;
+  import prim_mubi_pkg::mubi4_t;
+#(
+  parameter  bit CmdIntgCheck      = 0,  // 1: Enable command integrity check
+  parameter  bit EnableRspIntgGen  = 0,  // 1: Generate response integrity
+  parameter  bit EnableDataIntgGen = 0,  // 1: Generate response data integrity
+  parameter  int RegAw             = 8,  // Width of register address
+  parameter  int RegDw             = 32, // Shall be matched with TL_DW
+  parameter  int AccessLatency     = 0,  // 0: same cycle, 1: next cycle
+  localparam int RegBw             = RegDw/8
+) (
+  input clk_i,
+  input rst_ni,
+
+  // TL-UL interface
+  input  tl_h2d_t tl_i,
+  output tl_d2h_t tl_o,
+
+  // control interface
+  input  mubi4_t  en_ifetch_i,
+  output logic    intg_error_o,
+
+  // Register interface
+  output logic             re_o,
+  output logic             we_o,
+  output logic [RegAw-1:0] addr_o,
+  output logic [RegDw-1:0] wdata_o,
+  output logic [RegBw-1:0] be_o,
+  input                    busy_i,
+  // The following two signals are expected
+  // to be returned in AccessLatency cycles.
+  input        [RegDw-1:0] rdata_i,
+  // This can be a write or read error.
+  input                    error_i
+);
+
+  `ASSERT_INIT(AllowedLatency_A, AccessLatency inside {0, 1})
+
+  localparam int IW  = $bits(tl_i.a_source);
+  localparam int SZW = $bits(tl_i.a_size);
+
+  logic outstanding_q;    // Indicates current request is pending
+  logic a_ack, d_ack;
+
+  logic [RegDw-1:0] rdata, rdata_q;
+  logic             error_q, error, err_internal, instr_error, intg_error;
+
+  logic addr_align_err;     // Size and alignment
+  logic malformed_meta_err; // User signal format error or unsupported
+  logic tl_err;             // Common TL-UL error checker
+
+  logic [IW-1:0]  reqid_q;
+  logic [SZW-1:0] reqsz_q;
+  tl_d_op_e       rspop_q;
+
+  logic rd_req, wr_req;
+
+  assign a_ack   = tl_i.a_valid & tl_o.a_ready;
+  assign d_ack   = tl_o.d_valid & tl_i.d_ready;
+  // Request signal
+  assign wr_req  = a_ack & ((tl_i.a_opcode == PutFullData) | (tl_i.a_opcode == PutPartialData));
+  assign rd_req  = a_ack & (tl_i.a_opcode == Get);
+
+  assign we_o    = wr_req & ~err_internal;
+  assign re_o    = rd_req & ~err_internal;
+  assign wdata_o = tl_i.a_data;
+  assign be_o    = tl_i.a_mask;
+
+  if (RegAw <= 2) begin : gen_only_one_reg
+    assign addr_o  = '0;
+  end else begin : gen_more_regs
+    assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00}; // generate always word-align
+  end
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni)    outstanding_q <= 1'b0;
+    else if (a_ack) outstanding_q <= 1'b1;
+    else if (d_ack) outstanding_q <= 1'b0;
+  end
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      reqid_q <= '0;
+      reqsz_q <= '0;
+      rspop_q <= AccessAck;
+    end else if (a_ack) begin
+      reqid_q <= tl_i.a_source;
+      reqsz_q <= tl_i.a_size;
+      // Return AccessAckData regardless of error
+      rspop_q <= (rd_req) ? AccessAckData : AccessAck ;
+    end
+  end
+
+  if (AccessLatency == 1) begin : gen_access_latency1
+    logic wr_req_q, rd_req_q;
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        rdata_q  <= '0;
+        error_q  <= 1'b0;
+        wr_req_q <= 1'b0;
+        rd_req_q <= 1'b0;
+      end else begin
+        rd_req_q <= rd_req;
+        wr_req_q <= wr_req;
+        // Addressing phase
+        if (a_ack) begin
+          error_q <= err_internal;
+        // Response phase
+        end else begin
+          error_q <= error;
+          rdata_q <= rdata;
+        end
+      end
+    end
+    assign rdata = (error_i || error_q || wr_req_q) ? '1      :
+                   (rd_req_q)                       ? rdata_i :
+                                                      rdata_q; // backpressure case
+    assign error = (rd_req_q || wr_req_q) ? (error_q || error_i) :
+                                            error_q; // backpressure case
+  end else begin : gen_access_latency0
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        rdata_q <= '0;
+        error_q <= 1'b0;
+      end else if (a_ack) begin
+        rdata_q <= (error_i || err_internal || wr_req) ? '1 : rdata_i;
+        error_q <= error_i || err_internal;
+      end
+    end
+    assign rdata = rdata_q;
+    assign error = error_q;
+  end
+
+  tlul_pkg::tl_d2h_t tl_o_pre;
+  assign tl_o_pre = '{
+    // busy is selected based on address
+    // thus if there is no valid transaction, we should ignore busy
+    a_ready:  ~(outstanding_q | tl_i.a_valid & busy_i),
+    d_valid:  outstanding_q,
+    d_opcode: rspop_q,
+    d_param:  '0,
+    d_size:   reqsz_q,
+    d_source: reqid_q,
+    d_sink:   '0,
+    d_data:   rdata,
+    d_user:   '0,
+    d_error:  error
+  };
+
+  // outgoing integrity generation
+  tlul_rsp_intg_gen #(
+    .EnableRspIntgGen(EnableRspIntgGen),
+    .EnableDataIntgGen(EnableDataIntgGen)
+  ) u_rsp_intg_gen (
+    .tl_i(tl_o_pre),
+    .tl_o(tl_o)
+  );
+
+  if (CmdIntgCheck) begin : gen_cmd_intg_check
+    logic intg_error_q;
+    tlul_cmd_intg_chk u_cmd_intg_chk (
+      .tl_i(tl_i),
+      .err_o(intg_error)
+    );
+    // permanently latch integrity error until reset
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        intg_error_q <= 1'b0;
+      end else if (intg_error) begin
+        intg_error_q <= 1'b1;
+      end
+    end
+    assign intg_error_o = intg_error_q;
+  end else begin : gen_no_cmd_intg_check
+    assign intg_error = 1'b0;
+    assign intg_error_o = 1'b0;
+  end
+
+  ////////////////////
+  // Error Handling //
+  ////////////////////
+
+  // An instruction type transaction is only valid if en_ifetch is enabled
+  // If the instruction type is completely invalid, also considered an instruction error
+  assign instr_error = prim_mubi_pkg::mubi4_test_invalid(tl_i.a_user.instr_type) |
+                       (prim_mubi_pkg::mubi4_test_true_strict(tl_i.a_user.instr_type) &
+                        prim_mubi_pkg::mubi4_test_false_loose(en_ifetch_i));
+
+  assign err_internal = addr_align_err | malformed_meta_err | tl_err | instr_error | intg_error;
+
+  // Don't allow unsupported values.
+  assign malformed_meta_err = tl_a_user_chk(tl_i.a_user);
+
+  // addr_align_err
+  //    Raised if addr isn't aligned with the size
+  //    Read size error is checked in tlul_assert.sv
+  //    Here is it added due to the limitation of register interface.
+  always_comb begin
+    if (wr_req) begin
+      // Only word-align is accepted based on comportability spec
+      addr_align_err = |tl_i.a_address[1:0];
+    end else begin
+      // No request
+      addr_align_err = 1'b0;
+    end
+  end
+
+  // tl_err : separate checker
+  tlul_err u_err (
+    .clk_i,
+    .rst_ni,
+    .tl_i,
+    .err_o (tl_err)
+  );
+
+  `ASSERT_INIT(MatchedWidthAssert, RegDw == top_pkg::TL_DW)
+
+endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_F8h2vls0zfS8tlaSjR8BgxP2)
+ Call ID: call_F8h2vls0zfS8tlaSjR8BgxP2
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+================================= Tool Message =================================
+Name: read_file
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+`include "prim_assert.sv"
+
+/**
+ * Tile-Link UL adapter for SRAM-like devices
+ *
+ * - Intentionally omitted BaseAddr in case of multiple memory maps are used in a SoC,
+ *   it means that aliasing can happen if target device size in TL-UL crossbar is bigger
+ *   than SRAM size
+ * - At most one of EnableDataIntgGen / EnableDataIntgPt can be enabled. However it
+ *   possible for both to be disabled.
+ *   A module can neither generate an integrity response nor pass through any pre-existing
+ *   integrity.  This might be the case for non-security critical memories where there is
+ *   no stored integrity AND another entity upstream is already generating returning integrity.
+ *   There is however no case where EnableDataIntgGen and EnableDataIntgPt are both true.
+ */
+module tlul_adapter_sram
+  import tlul_pkg::*;
+  import prim_mubi_pkg::mubi4_t;
+#(
+  parameter int SramAw            = 12,
+  parameter int SramDw            = 32, // Must be multiple of the TL width
+  parameter int Outstanding       = 1,  // Only one request is accepted
+  parameter int SramBusBankAW     = 12, // SRAM bus address width of the SRAM bank. Only used
+                                        // when DataXorAddr=1.
+  parameter bit ByteAccess        = 1,  // 1: Enables sub-word write transactions. Note that this
+                                        //    results in read-modify-write operations for integrity
+                                        //    re-generation if EnableDataIntgPt is set to 1.
+  parameter bit ErrOnWrite        = 0,  // 1: Writes not allowed, automatically error
+  parameter bit ErrOnRead         = 0,  // 1: Reads not allowed, automatically error
+  parameter bit CmdIntgCheck      = 0,  // 1: Enable command integrity check
+  parameter bit EnableRspIntgGen  = 0,  // 1: Generate response integrity
+  parameter bit EnableDataIntgGen = 0,  // 1: Generate response data integrity
+  parameter bit EnableDataIntgPt  = 0,  // 1: Passthrough command/response data integrity
+  parameter bit SecFifoPtr        = 0,  // 1: Duplicated fifo pointers
+  parameter bit EnableReadback    = 0,  // 1: Readback and check written/read data.
+  parameter bit DataXorAddr       = 0,  // 1: XOR data and address for address protection
+  localparam int WidthMult        = SramDw / top_pkg::TL_DW,
+  localparam int IntgWidth        = tlul_pkg::DataIntgWidth * WidthMult,
+  localparam int DataOutW         = EnableDataIntgPt ? SramDw + IntgWidth : SramDw
+) (
+  input   clk_i,
+  input   rst_ni,
+
+  // TL-UL interface
+  input   tl_h2d_t          tl_i,
+  output  tl_d2h_t          tl_o,
+
+  // control interface
+  input   mubi4_t en_ifetch_i,
+
+  // SRAM interface
+  output logic                req_o,
+  output mubi4_t              req_type_o,
+  input                       gnt_i,
+  output logic                we_o,
+  output logic [SramAw-1:0]   addr_o,
+  output logic [DataOutW-1:0] wdata_o,
+  output logic [DataOutW-1:0] wmask_o,
+  output logic                intg_error_o,
+  input        [DataOutW-1:0] rdata_i,
+  input                       rvalid_i,
+  input        [1:0]          rerror_i, // 2 bit error [1]: Uncorrectable, [0]: Correctable
+  output logic                compound_txn_in_progress_o,
+  input  mubi4_t              readback_en_i,
+  output logic                readback_error_o,
+  input  logic                wr_collision_i,
+  input  logic                write_pending_i
+);
+
+  localparam int SramByte = SramDw/8;
+  localparam int DataBitWidth = prim_util_pkg::vbits(SramByte);
+  localparam int WoffsetWidth = (SramByte == top_pkg::TL_DBW) ? 1 :
+                                DataBitWidth - prim_util_pkg::vbits(top_pkg::TL_DBW);
+
+  logic error_det; // Internal protocol error checker
+  logic error_internal; // Internal protocol error checker
+  logic wr_attr_error;
+  logic instr_error;
+  logic wr_vld_error;
+  logic rd_vld_error;
+  logic rsp_fifo_error;
+  logic sramreqfifo_error;
+  logic reqfifo_error;
+  logic intg_error;
+  logic tlul_error;
+  logic readback_error;
+  logic sram_byte_readback_error;
+
+  // readback check
+  logic readback_error_q;
+  if (EnableReadback) begin : gen_cmd_readback_check
+    assign readback_error = sram_byte_readback_error;
+    // permanently latch readback error until reset
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        readback_error_q <= '0;
+      end else if (readback_error) begin
+        readback_error_q <= 1'b1;
+      end
+    end
+  end else begin : gen_no_readback_check
+    logic unused_sram_byte_readback_error;
+    assign unused_sram_byte_readback_error = sram_byte_readback_error;
+    assign readback_error = '0;
+    assign readback_error_q = '0;
+  end
+
+  // readback error output is permanent and should be used for alert generation
+  // or other downstream effects
+  assign readback_error_o = readback_error | readback_error_q;
+
+  // integrity check
+  if (CmdIntgCheck) begin : gen_cmd_intg_check
+    tlul_cmd_intg_chk u_cmd_intg_chk (
+      .tl_i(tl_i),
+      .err_o (intg_error)
+    );
+  end else begin : gen_no_cmd_intg_check
+    assign intg_error = '0;
+  end
+
+  // permanently latch integrity error until reset
+  logic intg_error_q;
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      intg_error_q <= '0;
+    end else if (intg_error || rsp_fifo_error || sramreqfifo_error || reqfifo_error) begin
+      intg_error_q <= 1'b1;
+    end
+  end
+
+  // integrity error output is permanent and should be used for alert generation
+  // or other downstream effects
+  assign intg_error_o = intg_error | rsp_fifo_error | sramreqfifo_error |
+      reqfifo_error | intg_error_q;
+
+  // wr_attr_error: Check if the request size, mask are permitted.
+  //    Basic check of size, mask, addr align is done in tlul_err module.
+  //    Here it checks any partial write if ByteAccess isn't allowed.
+  assign wr_attr_error = (tl_i.a_opcode == PutFullData || tl_i.a_opcode == PutPartialData)
+                         ? ((ByteAccess == 0) ?
+                           (tl_i.a_mask != '1 || tl_i.a_size != 2'h2) : 1'b0)
+                           : 1'b0;
+
+  // An instruction type transaction is only valid if en_ifetch is enabled
+  // If the instruction type is completely invalid, also considered an instruction error
+  assign instr_error = prim_mubi_pkg::mubi4_test_invalid(tl_i.a_user.instr_type) |
+                       (prim_mubi_pkg::mubi4_test_true_strict(tl_i.a_user.instr_type) &
+                        prim_mubi_pkg::mubi4_test_false_loose(en_ifetch_i));
+
+  if (ErrOnWrite == 1) begin : gen_no_writes
+    assign wr_vld_error = tl_i.a_opcode != Get;
+  end else begin : gen_writes_allowed
+    assign wr_vld_error = 1'b0;
+  end
+
+  if (ErrOnRead == 1) begin: gen_no_reads
+    assign rd_vld_error = tl_i.a_opcode == Get;
+  end else begin : gen_reads_allowed
+    assign rd_vld_error = 1'b0;
+  end
+
+  // tlul protocol check
+  tlul_err u_err (
+    .clk_i,
+    .rst_ni,
+    .tl_i(tl_i),
+    .err_o (tlul_error)
+  );
+
+  // error return is transactional and thus does not used the "latched" intg_err signal
+  assign error_det = wr_attr_error | wr_vld_error | rd_vld_error | instr_error |
+                     tlul_error    | intg_error;
+
+  // from sram_byte to adapter logic
+  tl_h2d_t tl_i_int;
+  // from adapter logic to sram_byte
+  tl_d2h_t tl_o_int;
+  // from sram_byte to rsp_gen
+  tl_d2h_t tl_out;
+
+  // not all parts of tl_i_int are used
+  logic unused_tl_i_int;
+  assign unused_tl_i_int = ^tl_i_int;
+
+  tlul_rsp_intg_gen #(
+    .EnableRspIntgGen(EnableRspIntgGen),
+    .EnableDataIntgGen(EnableDataIntgGen)
+  ) u_rsp_gen (
+    .tl_i(tl_out),
+    .tl_o
+  );
+
+  // byte handling for integrity
+  tlul_sram_byte #(
+    .EnableIntg(ByteAccess & EnableDataIntgPt & !ErrOnWrite),
+    .Outstanding(Outstanding),
+    .EnableReadback(EnableReadback)
+  ) u_sram_byte (
+    .clk_i,
+    .rst_ni,
+    .tl_i,
+    .tl_o(tl_out),
+    .tl_sram_o(tl_i_int),
+    .tl_sram_i(tl_o_int),
+    .error_i(error_det),
+    .error_o(error_internal),
+    .alert_o(sram_byte_readback_error),
+    .compound_txn_in_progress_o,
+    .readback_en_i,
+    .wr_collision_i,
+    .write_pending_i
+  );
+
+  typedef struct packed {
+    logic [top_pkg::TL_DBW-1:0] mask ; // Byte mask within the TL-UL word
+    logic [WoffsetWidth-1:0]    woffset ; // Offset of the TL-UL word within the SRAM word
+  } sram_req_t ;
+
+  typedef struct packed {
+    logic [SramBusBankAW-1:0] addr; // Address of the request going to the memory.
+  } sram_req_addr_t ;
+
+  typedef enum logic [1:0] {
+    OpWrite,
+    OpRead,
+    OpUnknown
+  } req_op_e ;
+
+  typedef struct packed {
+    req_op_e                    op ;
+    logic                       error ;
+    prim_mubi_pkg::mubi4_t      instr_type;
+    logic [top_pkg::TL_SZW-1:0] size ;
+    logic [top_pkg::TL_AIW-1:0] source ;
+  } req_t ;
+
+  typedef struct packed {
+    logic [top_pkg::TL_DW-1:0] data ;
+    logic [DataIntgWidth-1:0]  data_intg ;
+    logic                      error ;
+  } rsp_t ;
+
+  localparam int SramReqFifoWidth = $bits(sram_req_t) ;
+  localparam int ReqFifoWidth = $bits(req_t) ;
+  localparam int RspFifoWidth = $bits(rsp_t) ;
+
+  // FIFO signal in case OutStand is greater than 1
+  // If request is latched, {write, source} is pushed to req fifo.
+  // Req fifo is popped when D channel is acknowledged (v & r)
+  // D channel valid is asserted if it is write request or rsp fifo not empty if read.
+  logic reqfifo_wvalid, reqfifo_wready;
+  logic reqfifo_rvalid, reqfifo_rready;
+  req_t reqfifo_wdata,  reqfifo_rdata;
+
+  logic sramreqfifo_wvalid, sramreqfifo_wready;
+  logic sramreqfifo_rready;
+  sram_req_t sramreqfifo_wdata, sramreqfifo_rdata;
+
+  logic sramreqaddrfifo_wready;
+  logic [SramBusBankAW-1:0] sramreqaddrfifo_wdata, sramreqaddrfifo_rdata;
+
+  logic rspfifo_wvalid, rspfifo_wready;
+  logic rspfifo_rvalid, rspfifo_rready;
+  rsp_t rspfifo_wdata,  rspfifo_rdata;
+
+  logic a_ack, d_ack, sram_ack;
+  assign a_ack    = tl_i_int.a_valid & tl_o_int.a_ready ;
+  assign d_ack    = tl_o_int.d_valid & tl_i_int.d_ready ;
+  assign sram_ack = req_o        & gnt_i ;
+
+  // Valid handling
+  logic d_valid, d_error;
+  always_comb begin
+    d_valid = 1'b0;
+
+    if (reqfifo_rvalid) begin
+      if (reqfifo_rdata.error) begin
+        // Return error response. Assume no request went out to SRAM
+        d_valid = 1'b1;
+      end else if (reqfifo_rdata.op == OpRead) begin
+        d_valid = rspfifo_rvalid;
+      end else begin
+        // Write without error
+        d_valid = 1'b1;
+      end
+    end else begin
+      d_valid = 1'b0;
+    end
+  end
+
+
+
+  always_comb begin
+    d_error = 1'b0;
+
+    if (reqfifo_rvalid) begin
+      if (reqfifo_rdata.op == OpRead) begin
+        d_error = rspfifo_rdata.error | reqfifo_rdata.error;
+      end else begin
+        d_error = reqfifo_rdata.error;
+      end
+    end else begin
+      d_error = 1'b0;
+    end
+  end
+
+  logic vld_rd_rsp;
+  assign vld_rd_rsp = d_valid & reqfifo_rvalid & rspfifo_rvalid & (reqfifo_rdata.op == OpRead);
+  // If the response data is not valid, we set it to an illegal blanking value which is determined
+  // by whether the current transaction is an instruction fetch or a regular read operation.
+  logic [top_pkg::TL_DW-1:0] error_blanking_data;
+  assign error_blanking_data = (prim_mubi_pkg::mubi4_test_true_strict(reqfifo_rdata.instr_type)) ?
+                                 DataWhenInstrError :
+                                 DataWhenError;
+
+  // Since DataWhenInstrError and DataWhenError can be arbitrary parameters
+  // we statically calculate the correct integrity values for these parameters here so that
+  // they do not have to be supplied externally.
+  logic [top_pkg::TL_DW-1:0] unused_instr, unused_data;
+  logic [DataIntgWidth-1:0] error_instr_integ, error_data_integ;
+  tlul_data_integ_enc u_tlul_data_integ_enc_instr (
+    .data_i(DataMaxWidth'(DataWhenInstrError)),
+    .data_intg_o({error_instr_integ, unused_instr})
+  );
+  tlul_data_integ_enc u_tlul_data_integ_enc_data (
+    .data_i(DataMaxWidth'(DataWhenError)),
+    .data_intg_o({error_data_integ, unused_data})
+  );
+
+  logic [DataIntgWidth-1:0] error_blanking_integ;
+  assign error_blanking_integ = (prim_mubi_pkg::mubi4_test_true_strict(reqfifo_rdata.instr_type)) ?
+                                 error_instr_integ :
+                                 error_data_integ;
+
+  logic [top_pkg::TL_DW-1:0] d_data;
+  assign d_data = (vld_rd_rsp & ~d_error) ? rspfifo_rdata.data   // valid read
+                                          : error_blanking_data; // write or TL-UL error
+
+  // If this a write response with data fields set to 0, we have to set all ECC bits correctly
+  // since we are using an inverted Hsiao code.
+  logic [DataIntgWidth-1:0] data_intg;
+  assign data_intg = (vld_rd_rsp && reqfifo_rdata.error) ? error_blanking_integ    : // TL-UL error
+                     (vld_rd_rsp)                        ? rspfifo_rdata.data_intg : // valid read
+                     prim_secded_pkg::SecdedInv3932ZeroEcc;                          // valid write
+
+  // When an error is seen on an incoming transaction it gets an immediate response without
+  // performing an SRAM request. It may be the transaction receives a ready the first cycle it is
+  // seen, but if not we force a ready the following cycle. This avoids factoring the error
+  // calculation into the outgoing ready preventing a feedthrough path from the incoming tilelink
+  // signals to the outgoing tilelink signals.
+  logic missed_err_gnt_d, missed_err_gnt_q;
+
+  // Track whether we've seen an incoming transaction with an error that didn't get a ready
+  assign missed_err_gnt_d = error_internal & tl_i_int.a_valid & ~tl_o_int.a_ready;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      missed_err_gnt_q <= 1'b0;
+    end else begin
+      missed_err_gnt_q <= missed_err_gnt_d;
+    end
+  end
+
+  assign tl_o_int = '{
+      d_valid  : d_valid ,
+      d_opcode : (d_valid && reqfifo_rdata.op != OpRead) ? AccessAck : AccessAckData,
+      d_param  : '0,
+      d_size   : (d_valid) ? reqfifo_rdata.size : '0,
+      d_source : (d_valid) ? reqfifo_rdata.source : '0,
+      d_sink   : 1'b0,
+      d_data   : d_data,
+      d_user   : '{default: '0, data_intg: data_intg},
+      d_error  : d_valid && d_error,
+      a_ready  : (gnt_i | missed_err_gnt_q) & reqfifo_wready & sramreqfifo_wready &
+                  sramreqaddrfifo_wready
+  };
+
+  // a_ready depends on the FIFO full condition and grant from SRAM (or SRAM arbiter)
+  // assemble response, including read response, write response, and error for unsupported stuff
+
+  // Output to SRAM:
+  //    Generate request only when no internal error occurs. If error occurs, the request should be
+  //    dropped and returned error response to the host. So, error to be pushed to reqfifo.
+  //    In this case, it is assumed the request is granted (may cause ordering issue later?)
+  assign req_o      = tl_i_int.a_valid & reqfifo_wready & ~error_internal;
+  assign req_type_o = tl_i_int.a_user.instr_type;
+  assign we_o       = tl_i_int.a_valid & (tl_i_int.a_opcode inside {PutFullData, PutPartialData});
+  assign addr_o     = (tl_i_int.a_valid) ? tl_i_int.a_address[DataBitWidth+:SramAw] : '0;
+
+  // Support SRAMs wider than the TL-UL word width by mapping the parts of the
+  // TL-UL address which are more fine-granular than the SRAM width to the
+  // SRAM write mask.
+  logic [WoffsetWidth-1:0] woffset;
+  if (top_pkg::TL_DW != SramDw) begin : gen_wordwidthadapt
+    assign woffset = tl_i_int.a_address[DataBitWidth-1:prim_util_pkg::vbits(top_pkg::TL_DBW)];
+  end else begin : gen_no_wordwidthadapt
+    assign woffset = '0;
+  end
+
+  // The size of the data/wmask depends on whether passthrough integrity is enabled.
+  // If passthrough integrity is enabled, the data is concatenated with the integrity passed through
+  // the user bits.  Otherwise, it is the data only.
+  localparam int DataWidth = EnableDataIntgPt ? top_pkg::TL_DW + DataIntgWidth : top_pkg::TL_DW;
+
+  // Final combined wmask / wdata
+  logic [WidthMult-1:0][DataWidth-1:0] wmask_combined;
+  logic [WidthMult-1:0][DataWidth-1:0] wdata_combined;
+
+  // Original tlul portion
+  logic [WidthMult-1:0][top_pkg::TL_DW-1:0] wmask_int;
+  logic [WidthMult-1:0][top_pkg::TL_DW-1:0] wdata_int;
+
+  // Integrity portion
+  logic [WidthMult-1:0][DataIntgWidth-1:0] wmask_intg;
+  logic [WidthMult-1:0][DataIntgWidth-1:0] wdata_intg;
+
+  always_comb begin
+    wmask_int = '0;
+    wdata_int = '0;
+
+    if (tl_i_int.a_valid) begin
+      for (int i = 0 ; i < top_pkg::TL_DW/8 ; i++) begin
+        wmask_int[woffset][8*i +: 8] = {8{tl_i_int.a_mask[i]}};
+        wdata_int[woffset][8*i +: 8] = (tl_i_int.a_mask[i] && we_o) ? tl_i_int.a_data[8*i+:8] : '0;
+      end
+    end
+  end
+
+  always_comb begin
+    wmask_intg  = '0;
+    wdata_intg  = '0;
+
+    if (tl_i_int.a_valid) begin
+      wmask_intg[woffset] = {DataIntgWidth{1'b1}};
+      wdata_intg[woffset] = tl_i_int.a_user.data_intg;
+    end
+  end
+
+  for (genvar i = 0; i < WidthMult; i++) begin : gen_write_output
+    if (EnableDataIntgPt) begin : gen_combined_output
+      assign wmask_combined[i] = {wmask_intg[i], wmask_int[i]};
+      assign wdata_combined[i] = {wdata_intg[i], wdata_int[i]};
+    end else begin : gen_ft_output
+      logic unused_w;
+      assign wmask_combined[i] = wmask_int[i];
+      assign wdata_combined[i] = wdata_int[i];
+      assign unused_w = |wmask_intg & |wdata_intg;
+    end
+  end
+
+  assign wmask_o = wmask_combined;
+  assign wdata_o = wdata_combined;
+
+  assign reqfifo_wvalid = a_ack ; // Push to FIFO only when granted
+  assign reqfifo_wdata  = '{
+    op:     (tl_i_int.a_opcode != Get) ? OpWrite : OpRead, // To return AccessAck for opcode error
+    error:  error_internal,
+    instr_type: tl_i_int.a_user.instr_type,
+    size:   tl_i_int.a_size,
+    source: tl_i_int.a_source
+  }; // Store the request only. Doesn't have to store data
+  assign reqfifo_rready = d_ack ;
+
+  // push together with ReqFIFO, pop upon returning read
+  assign sramreqfifo_wdata = '{
+    mask    : tl_i_int.a_mask,
+    woffset : woffset
+  };
+  assign sramreqfifo_wvalid = sram_ack & ~we_o;
+  assign sramreqfifo_rready = rspfifo_wvalid;
+
+  assign rspfifo_wvalid = rvalid_i & reqfifo_rvalid;
+
+  assign sramreqaddrfifo_wdata = tl_i_int.a_address[DataBitWidth+:SramBusBankAW];
+
+  // Make sure only requested bytes are forwarded
+  logic [WidthMult-1:0][DataWidth-1:0] rdata_reshaped;
+  logic [DataWidth-1:0] rdata_tlword;
+
+  // This just changes the array format so that the correct word can be selected by indexing.
+  assign rdata_reshaped = rdata_i;
+
+  if (EnableDataIntgPt) begin : gen_no_rmask
+    always_comb begin
+      // If the read mask is set to zero, all read data is zeroed out by the mask.
+      // We have to set the ECC bits accordingly since we are using an inverted Hsiao code.
+      rdata_tlword = prim_secded_pkg::SecdedInv3932ZeroWord;
+      // Otherwise, if at least one mask bit is nonzero, we are passing through the integrity.
+      // In that case we need to feed back the entire word since otherwise the integrity
+      // will not calculate correctly.
+      if (|sramreqfifo_rdata.mask) begin
+        // Select correct word.
+        if (DataXorAddr) begin : gen_data_xor_addr
+          // When DataXorAddr is enabled, on a read, the address is XORed with the data fetched from
+          // the memory in the underlying memory controller (e.g., flash controller). At this point,
+          // the address is again removed. If the address in the read transaction has been modified,
+          // e.g., due to a fault, rdata now contains faulty data, which is detected by the
+          // integrity mechanism.
+          rdata_tlword = {
+              rdata_reshaped[sramreqfifo_rdata.woffset][DataWidth-1:top_pkg::TL_DW],
+              rdata_reshaped[sramreqfifo_rdata.woffset][top_pkg::TL_DW-1:0] ^
+                  {{(top_pkg::TL_DW-SramBusBankAW){1'b0}}, sramreqaddrfifo_rdata}
+          };
+        end else begin: gen_no_data_xor_addr
+          rdata_tlword = rdata_reshaped[sramreqfifo_rdata.woffset];
+        end
+      end
+    end
+  end else begin : gen_rmask
+    logic [DataWidth-1:0] rmask;
+    always_comb begin
+      rmask = '0;
+      for (int i = 0 ; i < top_pkg::TL_DW/8 ; i++) begin
+        rmask[8*i +: 8] = {8{sramreqfifo_rdata.mask[i]}};
+      end
+    end
+    // Select correct word and mask it.
+    assign rdata_tlword = rdata_reshaped[sramreqfifo_rdata.woffset] & rmask;
+  end
+
+  assign rspfifo_wdata  = '{
+    data      : rdata_tlword[top_pkg::TL_DW-1:0],
+    data_intg : EnableDataIntgPt ? rdata_tlword[DataWidth-1 -: DataIntgWidth] : '0,
+    error     : rerror_i[1] // Only care for Uncorrectable error
+  };
+  assign rspfifo_rready = (reqfifo_rdata.op == OpRead & ~reqfifo_rdata.error)
+                        ? reqfifo_rready : 1'b0 ;
+
+  // This module only cares about uncorrectable errors.
+  logic unused_rerror;
+  assign unused_rerror = rerror_i[0];
+
+  // FIFO instance: REQ, RSP
+
+  // ReqFIFO is to store the Access type to match to the Response data.
+  //    For instance, SRAM accepts the write request but doesn't return the
+  //    acknowledge. In this case, it may be hard to determine when the D
+  //    response for the write data should send out if reads/writes are
+  //    interleaved. So, to make it in-order (even TL-UL allows out-of-order
+  //    responses), storing the request is necessary. And if the read entry
+  //    is write op, it is safe to return the response right away. If it is
+  //    read reqeust, then D response is waiting until read data arrives.
+  prim_fifo_sync #(
+    .Width   (ReqFifoWidth),
+    .Pass    (1'b0),
+    .Depth   (Outstanding),
+    .Secure  (SecFifoPtr)
+  ) u_reqfifo (
+    .clk_i,
+    .rst_ni,
+    .clr_i   (1'b0),
+    .wvalid_i(reqfifo_wvalid),
+    .wready_o(reqfifo_wready),
+    .wdata_i (reqfifo_wdata),
+    .rvalid_o(reqfifo_rvalid),
+    .rready_i(reqfifo_rready),
+    .rdata_o (reqfifo_rdata),
+    .full_o  (),
+    .depth_o (),
+    .err_o   (reqfifo_error)
+  );
+
+  // sramreqfifo:
+  //    While the ReqFIFO holds the request until it is sent back via TL-UL, the
+  //    sramreqfifo only needs to hold the mask and word offset until the read
+  //    data returns from memory.
+  prim_fifo_sync #(
+    .Width   (SramReqFifoWidth),
+    .Pass    (1'b0),
+    .Depth   (Outstanding),
+    .Secure  (SecFifoPtr)
+  ) u_sramreqfifo (
+    .clk_i,
+    .rst_ni,
+    .clr_i   (1'b0),
+    .wvalid_i(sramreqfifo_wvalid),
+    .wready_o(sramreqfifo_wready),
+    .wdata_i (sramreqfifo_wdata),
+    .rvalid_o(),
+    .rready_i(sramreqfifo_rready),
+    .rdata_o (sramreqfifo_rdata),
+    .full_o  (),
+    .depth_o (),
+    .err_o   (sramreqfifo_error)
+  );
+
+  // sramreqaddrfifo:
+  //    This fifo holds the address used for undoing the address XOR data infection.
+  if (DataXorAddr) begin : gen_data_xor_addr_fifo
+    prim_fifo_sync #(
+      .Width              (SramBusBankAW),
+      .Pass               (1'b0),
+      .Depth              (Outstanding),
+      .OutputZeroIfEmpty  (1)
+    ) u_sramreqaddrfifo (
+      .clk_i,
+      .rst_ni,
+      .clr_i   (1'b0),
+      .wvalid_i(sramreqfifo_wvalid),
+      .wready_o(sramreqaddrfifo_wready),
+      .wdata_i (sramreqaddrfifo_wdata),
+      .rvalid_o(),
+      .rready_i(sramreqfifo_rready),
+      .rdata_o (sramreqaddrfifo_rdata),
+      .full_o  (),
+      .depth_o (),
+      .err_o   ()
+    );
+  end else begin : gen_no_data_xor_addr_fifo
+    assign sramreqaddrfifo_wready = 1'b1;
+    assign sramreqaddrfifo_rdata = '0;
+
+    // Tie-off unused signals
+    logic unused_sramreqaddrfifo;
+    assign unused_sramreqaddrfifo = ^{sramreqaddrfifo_wdata, sramreqaddrfifo_rdata};
+  end
+
+  // Rationale having #Outstanding depth in response FIFO.
+  //    In normal case, if the host or the crossbar accepts the response data,
+  //    response FIFO isn't needed. But if in any case it has a chance to be
+  //    back pressured, the response FIFO should store the returned data not to
+  //    lose the data from the SRAM interface. Remember, SRAM interface doesn't
+  //    have back-pressure signal such as read_ready.
+  prim_fifo_sync #(
+    .Width   (RspFifoWidth),
+    .Pass    (1'b1),
+    .Depth   (Outstanding),
+    .Secure  (SecFifoPtr)
+  ) u_rspfifo (
+    .clk_i,
+    .rst_ni,
+    .clr_i   (1'b0),
+    .wvalid_i(rspfifo_wvalid),
+    .wready_o(rspfifo_wready),
+    .wdata_i (rspfifo_wdata),
+    .rvalid_o(rspfifo_rvalid),
+    .rready_i(rspfifo_rready),
+    .rdata_o (rspfifo_rdata),
+    .full_o  (),
+    .depth_o (),
+    .err_o   (rsp_fifo_error)
+  );
+
+  // below assertion fails when SRAM rvalid is asserted even though ReqFifo is empty
+  `ASSERT(rvalidHighReqFifoEmpty, rvalid_i |-> reqfifo_rvalid)
+
+  // below assertion fails when outstanding value is too small (SRAM rvalid is asserted
+  // even though the RspFifo is full)
+  `ASSERT(rvalidHighWhenRspFifoFull, rvalid_i |-> rspfifo_wready)
+
+  // If both ErrOnWrite and ErrOnRead are set, this block is useless
+  `ASSERT_INIT(adapterNoReadOrWrite, (ErrOnWrite & ErrOnRead) == 0)
+
+  `ASSERT_INIT(SramDwHasByteGranularity_A, SramDw % 8 == 0)
+  `ASSERT_INIT(SramDwIsMultipleOfTlulWidth_A, SramDw % top_pkg::TL_DW == 0)
+
+  // These parameter options cannot both be true at the same time
+  `ASSERT_INIT(DataIntgOptions_A, ~(EnableDataIntgGen & EnableDataIntgPt))
+
+  // Make sure that outputs are defined (a special case for tl_o is explained separately below)
+  `ASSERT_KNOWN(ReqOutKnown_A,   req_o  )
+  `ASSERT_KNOWN(WeOutKnown_A,    we_o   )
+  `ASSERT_KNOWN(AddrOutKnown_A,  addr_o )
+  `ASSERT_KNOWN(WdataOutKnown_A, wdata_o)
+  `ASSERT_KNOWN(WmaskOutKnown_A, wmask_o)
+
+  // We'd like to claim that the payload of the TL output is known, but this isn't necessarily true!
+  // This block is just an adapter that converts from an SRAM interface to a TL interface. To make
+  // the assertion true, we need to weaken it to say that that tl_o is only X if the SRAM supplied
+  // that X.
+  //
+  // This is a bit tricky to track because SRAM responses get stored in u_rspfifo. Assuming that the
+  // FIFO doesn't manufacture X's (an assertion in prim_fifo_sync), the only stage of the path
+  // needed in this file is the following:
+  `ASSERT_KNOWN(TlOutValidKnown_A, tl_o.d_valid)
+  `ASSERT(TlOutKnownIfFifoKnown_A, !$isunknown(rspfifo_rdata) -> !$isunknown(tl_o))
+
+endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_WepBBoICZpWLe2W7giGdZeLu)
+ Call ID: call_WepBBoICZpWLe2W7giGdZeLu
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_socket_1n.sv
+================================= Tool Message =================================
+Name: read_file
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// TL-UL socket 1:N module
+//
+// configuration settings
+//   device_count: 4
+//
+// Verilog parameters
+//   HReqPass:      if 1 then host requests can pass through on empty fifo,
+//                  default 1
+//   HRspPass:      if 1 then host responses can pass through on empty fifo,
+//                  default 1
+//   DReqPass:      (one per device_count) if 1 then device i requests can
+//                  pass through on empty fifo, default 1
+//   DRspPass:      (one per device_count) if 1 then device i responses can
+//                  pass through on empty fifo, default 1
+//   HReqDepth:     Depth of host request FIFO, default 2
+//   HRspDepth:     Depth of host response FIFO, default 2
+//   DReqDepth:     (one per device_count) Depth of device i request FIFO,
+//                  default 2
+//   DRspDepth:     (one per device_count) Depth of device i response FIFO,
+//                  default 2
+//   ExplicitErrs:  This module always returns a request error if dev_select_i
+//                  is greater than N-1. If ExplicitErrs is set then the width
+//                  of the dev_select_i signal will be chosen to make sure that
+//                  this is possible. This only makes a difference if N is a
+//                  power of 2.
+//
+// Requests must stall to one device until all responses from other devices
+// have returned.  Need to keep a counter of all outstanding requests and
+// wait until that counter is zero before switching devices.
+//
+// This module will return a request error if the input value of 'dev_select_i'
+// is not within the range 0..N-1. Thus the instantiator of the socket
+// can indicate error by any illegal value of dev_select_i. 4'b1111 is
+// recommended for visibility
+//
+// The maximum value of N is 15
+
+`include "prim_assert.sv"
+
+module tlul_socket_1n #(
+  parameter int unsigned  N            = 4,
+  parameter bit           HReqPass     = 1'b1,
+  parameter bit           HRspPass     = 1'b1,
+  parameter bit [N-1:0]   DReqPass     = {N{1'b1}},
+  parameter bit [N-1:0]   DRspPass     = {N{1'b1}},
+  parameter bit [3:0]     HReqDepth    = 4'h1,
+  parameter bit [3:0]     HRspDepth    = 4'h1,
+  parameter bit [N*4-1:0] DReqDepth    = {N{4'h1}},
+  parameter bit [N*4-1:0] DRspDepth    = {N{4'h1}},
+  parameter bit           ExplicitErrs = 1'b1,
+
+  // The width of dev_select_i. We must be able to select any of the N devices
+  // (i.e. values 0..N-1). If ExplicitErrs is set, we also need to be able to
+  // represent N.
+  localparam int unsigned NWD = $clog2(ExplicitErrs ? N+1 : N)
+) (
+  input                     clk_i,
+  input                     rst_ni,
+  input  tlul_pkg::tl_h2d_t tl_h_i,
+  output tlul_pkg::tl_d2h_t tl_h_o,
+  output tlul_pkg::tl_h2d_t tl_d_o    [N],
+  input  tlul_pkg::tl_d2h_t tl_d_i    [N],
+  input  [NWD-1:0]          dev_select_i
+);
+
+  `ASSERT_INIT(maxN, N < 32)
+
+  // Since our steering is done after potential FIFOing, we need to
+  // shove our device select bits into spare bits of reqfifo
+
+  // instantiate the host fifo, create intermediate bus 't'
+
+  // FIFO'd version of device select
+  logic [NWD-1:0] dev_select_t;
+
+  tlul_pkg::tl_h2d_t   tl_t_o;
+  tlul_pkg::tl_d2h_t   tl_t_i;
+
+  tlul_fifo_sync #(
+    .ReqPass(HReqPass),
+    .RspPass(HRspPass),
+    .ReqDepth(HReqDepth),
+    .RspDepth(HRspDepth),
+    .SpareReqW(NWD)
+  ) fifo_h (
+    .clk_i,
+    .rst_ni,
+    .tl_h_i,
+    .tl_h_o,
+    .tl_d_o     (tl_t_o),
+    .tl_d_i     (tl_t_i),
+    .spare_req_i (dev_select_i),
+    .spare_req_o (dev_select_t),
+    .spare_rsp_i (1'b0),
+    .spare_rsp_o ());
+
+
+  // We need to keep track of how many requests are outstanding,
+  // and to which device. New requests are compared to this and
+  // stall until that number is zero.
+  localparam int MaxOutstanding = 2**top_pkg::TL_AIW; // Up to 256 ounstanding
+  localparam int OutstandingW = $clog2(MaxOutstanding+1);
+  logic [OutstandingW-1:0] num_req_outstanding;
+  logic [NWD-1:0]          dev_select_outstanding;
+  logic                    hold_all_requests;
+  logic                    accept_t_req, accept_t_rsp;
+
+  assign  accept_t_req = tl_t_o.a_valid & tl_t_i.a_ready;
+  assign  accept_t_rsp = tl_t_i.d_valid & tl_t_o.d_ready;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      num_req_outstanding <= '0;
+      dev_select_outstanding <= '0;
+    end else if (accept_t_req) begin
+      if (!accept_t_rsp) begin
+        num_req_outstanding <= num_req_outstanding + 1'b1;
+      end
+      dev_select_outstanding <= dev_select_t;
+    end else if (accept_t_rsp) begin
+      num_req_outstanding <= num_req_outstanding - 1'b1;
+    end
+  end
+
+  `ASSERT(NotOverflowed_A,
+          accept_t_req && !accept_t_rsp -> num_req_outstanding <= MaxOutstanding)
+
+  assign hold_all_requests =
+      (num_req_outstanding != '0) &
+      (dev_select_t != dev_select_outstanding);
+
+  // Make N copies of 't' request side with modified reqvalid, call
+  // them 'u[0]' .. 'u[n-1]'.
+
+  tlul_pkg::tl_h2d_t   tl_u_o [N+1];
+  tlul_pkg::tl_d2h_t   tl_u_i [N+1];
+
+  // ensure that when a device is not selected, both command
+  // data integrity can never match
+  tlul_pkg::tl_a_user_t blanked_auser;
+  assign blanked_auser = '{
+    rsvd: tl_t_o.a_user.rsvd,
+    instr_type: tl_t_o.a_user.instr_type,
+    cmd_intg: tlul_pkg::get_bad_cmd_intg(tl_t_o),
+    data_intg: tlul_pkg::get_bad_data_intg(tlul_pkg::BlankedAData)
+  };
+
+  // if a host is not selected, or if requests are held off, blank the bus
+  for (genvar i = 0 ; i < N ; i++) begin : gen_u_o
+    logic dev_select;
+    assign dev_select = dev_select_t == NWD'(i) & ~hold_all_requests;
+
+    assign tl_u_o[i].a_valid   = tl_t_o.a_valid & dev_select;
+    assign tl_u_o[i].a_opcode  = tl_t_o.a_opcode;
+    assign tl_u_o[i].a_param   = tl_t_o.a_param;
+    assign tl_u_o[i].a_size    = tl_t_o.a_size;
+    assign tl_u_o[i].a_source  = tl_t_o.a_source;
+    assign tl_u_o[i].a_address = tl_t_o.a_address;
+    assign tl_u_o[i].a_mask    = tl_t_o.a_mask;
+    assign tl_u_o[i].a_data    = dev_select ?
+                                 tl_t_o.a_data :
+                                 tlul_pkg::BlankedAData;
+    assign tl_u_o[i].a_user    = dev_select ?
+                                 tl_t_o.a_user :
+                                 blanked_auser;
+
+    assign tl_u_o[i].d_ready   = tl_t_o.d_ready;
+  end
+
+
+  tlul_pkg::tl_d2h_t tl_t_p ;
+
+  // for the returning reqready, only look at the device we're addressing
+  logic hfifo_reqready;
+  always_comb begin
+    hfifo_reqready = tl_u_i[N].a_ready; // default to error
+    for (int idx = 0 ; idx < N ; idx++) begin
+      //if (dev_select_outstanding == NWD'(idx)) hfifo_reqready = tl_u_i[idx].a_ready;
+      if (dev_select_t == NWD'(idx)) hfifo_reqready = tl_u_i[idx].a_ready;
+    end
+    if (hold_all_requests) hfifo_reqready = 1'b0;
+  end
+  // Adding a_valid as a qualifier. This prevents the a_ready from having unknown value
+  // when the address is unknown and the Host TL-UL FIFO is bypass mode.
+  assign tl_t_i.a_ready = tl_t_o.a_valid & hfifo_reqready;
+
+  always_comb begin
+    tl_t_p = tl_u_i[N];
+    for (int idx = 0 ; idx < N ; idx++) begin
+      if (dev_select_outstanding == NWD'(idx)) tl_t_p = tl_u_i[idx];
+    end
+  end
+  assign tl_t_i.d_valid  = tl_t_p.d_valid ;
+  assign tl_t_i.d_opcode = tl_t_p.d_opcode;
+  assign tl_t_i.d_param  = tl_t_p.d_param ;
+  assign tl_t_i.d_size   = tl_t_p.d_size  ;
+  assign tl_t_i.d_source = tl_t_p.d_source;
+  assign tl_t_i.d_sink   = tl_t_p.d_sink  ;
+  assign tl_t_i.d_data   = tl_t_p.d_data  ;
+  assign tl_t_i.d_user   = tl_t_p.d_user  ;
+  assign tl_t_i.d_error  = tl_t_p.d_error ;
+
+  // Instantiate all the device FIFOs
+  for (genvar i = 0 ; i < N ; i++) begin : gen_dfifo
+    tlul_fifo_sync #(
+      .ReqPass(DReqPass[i]),
+      .RspPass(DRspPass[i]),
+      .ReqDepth(DReqDepth[i*4+:4]),
+      .RspDepth(DRspDepth[i*4+:4])
+    ) fifo_d (
+      .clk_i,
+      .rst_ni,
+      .tl_h_i      (tl_u_o[i]),
+      .tl_h_o      (tl_u_i[i]),
+      .tl_d_o      (tl_d_o[i]),
+      .tl_d_i      (tl_d_i[i]),
+      .spare_req_i (1'b0),
+      .spare_req_o (),
+      .spare_rsp_i (1'b0),
+      .spare_rsp_o ());
+  end
+
+  // Instantiate the error responder. It's only needed if a value greater than
+  // N-1 is actually representable in NWD bits.
+  if ($clog2(N+1) <= NWD) begin : gen_err_resp
+    assign tl_u_o[N].d_ready     = tl_t_o.d_ready;
+    assign tl_u_o[N].a_valid     = tl_t_o.a_valid &
+                                   (dev_select_t >= NWD'(N)) &
+                                   ~hold_all_requests;
+    assign tl_u_o[N].a_opcode    = tl_t_o.a_opcode;
+    assign tl_u_o[N].a_param     = tl_t_o.a_param;
+    assign tl_u_o[N].a_size      = tl_t_o.a_size;
+    assign tl_u_o[N].a_source    = tl_t_o.a_source;
+    assign tl_u_o[N].a_address   = tl_t_o.a_address;
+    assign tl_u_o[N].a_mask      = tl_t_o.a_mask;
+    assign tl_u_o[N].a_data      = tl_t_o.a_data;
+    assign tl_u_o[N].a_user      = tl_t_o.a_user;
+    tlul_err_resp err_resp (
+      .clk_i,
+      .rst_ni,
+      .tl_h_i     (tl_u_o[N]),
+      .tl_h_o     (tl_u_i[N])
+    );
+  end else begin : gen_no_err_resp // block: gen_err_resp
+    assign tl_u_o[N] = '0;
+    assign tl_u_i[N] = '0;
+    logic unused_sig;
+    assign unused_sig = ^tl_u_o[N];
+  end
+
+endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  run_verilator_agent (call_YxSXoFIlMkHy3sdyhchQcBXM)
+ Call ID: call_YxSXoFIlMkHy3sdyhchQcBXM
+  Args:
+    ip: tlul
+================================= Tool Message =================================
+Name: run_verilator_agent
+
+I apologize, but it appears that there are no verilator tests available for the tlul IP. This means I cannot perform the security analysis you requested using the verilator testing approach.
+
+To proceed with a security analysis of the tlul IP, we would need:
+
+1. Either verilator tests to be created for this IP
+2. Or alternative testing methods to be made available
+
+Would you like me to:
+1. Check if there are other IPs with available verilator tests that you'd prefer to analyze instead?
+2. Suggest alternative approaches for analyzing the security of the tlul IP without verilator tests?
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_vK5nuw0zmAvKqlS5g2JPCcLW)
+ Call ID: call_vK5nuw0zmAvKqlS5g2JPCcLW
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+    top_module: tlul_adapter_reg
+    security_objective: register interface access control and protocol compliance
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+## Security Analysis of tlul_adapter_reg
+
+Based on the assertion checking results, there are no falsified properties, which suggests that the implemented security mechanisms in the `tlul_adapter_reg` module are functioning as expected. Let me explain the security aspects I checked:
+
+### 1. Integrity Checking Mechanisms
+- The module includes optional command integrity checking (controlled by `CmdIntgCheck` parameter)
+- The assertion `assert_intg_error_latched` verified that when an integrity error is detected, it's properly latched and reported through `intg_error_o`
+- This mechanism helps protect against data corruption or malicious tampering with commands
+
+### 2. Instruction Fetch Access Control
+- The module implements access control for instruction fetches via the `en_ifetch_i` signal
+- The assertion `assert_instr_fetch_blocked` confirmed that instruction fetches are properly blocked when `en_ifetch_i` is disabled
+- This is an important security feature that prevents unauthorized instruction fetches
+
+### 3. Address Alignment Error Handling
+- The module checks for address alignment errors in write requests
+- The assertion `assert_addr_align_error` verified that write operations are blocked when address alignment errors are detected
+- This prevents potential security issues from misaligned memory accesses
+
+### 4. Error Response Handling
+- The assertion `assert_error_response` confirmed that error conditions are properly propagated to the TileLink interface
+- The assertion `assert_no_write_on_error` verified that write operations are blocked when any internal error is detected
+- These mechanisms ensure that error conditions don't lead to unauthorized register modifications
+
+### Security Assessment
+
+The `tlul_adapter_reg` module appears to have robust security mechanisms for register interface access control and protocol compliance:
+
+1. It properly handles integrity checking for commands when enabled
+2. It enforces access control for instruction fetches
+3. It validates address alignment for write operations
+4. It properly handles and propagates error conditions
+5. It blocks register modifications when errors are detected
+
+No security vulnerabilities were identified through the assertion checking. The module implements appropriate access controls and error handling mechanisms to protect the register interface.
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_ZUX97olp9APb4ftYzeeTAdrW)
+ Call ID: call_ZUX97olp9APb4ftYzeeTAdrW
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+    top_module: tlul_adapter_sram
+    security_objective: memory access control, integrity, and protocol compliance
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+[{"text": "I need to provide the assertions parameter with specific assertions to check. Let me create those:", "type": "text"}, {"id": "toolu_019SqgWLtTFAJLhgoJtGw1wC", "input": {"design_filepath": "/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv", "top_module": "tlul_adapter_sram", "clock_signal": "clk_i", "reset_signal": "rst_ni", "reset_active": "low"}, "name": "assertion_checker_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_0Xa8DRlmyJZCHJYB7RnF3IK3)
+ Call ID: call_0Xa8DRlmyJZCHJYB7RnF3IK3
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+    top_module: tlul_adapter_reg
+    security_objective: register interface security
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check results for the module tlul_adapter_reg in the file /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv show the following:
+
+1. There are 53 total errors related to coding style and structure.
+2. Two errors are related to CheckPortType-ML, indicating that ports of struct type (tl_i and tl_o) are not allowed in the module port declaration.
+3. Nine errors are related to RegInput-ML, indicating that some input ports are not registered.
+4. Thirty errors are related to RegInputOutput-ML, indicating that some ports are not registered.
+5. One error is related to RegisterInfo-ML, suggesting to check a report for details on all registers in the design.
+6. Eleven errors are related to W240, indicating input signals declared but not read in submodules like tlul_err.
+
+Summary:
+- The use of struct types as ports (tl_i and tl_o) is flagged as an issue.
+- Many input and output ports are not registered, which can be a security and reliability concern in register interface designs.
+- Some inputs are declared but not used, which may indicate incomplete or incorrect design.
+- The lint does not explicitly mention critical security vulnerabilities but highlights potential issues in interface and register handling that could lead to security risks if not addressed.
+
+Recommendation:
+- Consider registering input and output ports to avoid timing and security issues.
+- Avoid using complex struct types directly as module ports or ensure they are properly handled.
+- Review unused inputs and either use them or remove them to clean up the design.
+- Check the detailed register info report for further insights.
+
+In conclusion, while no direct critical security flaws are reported, the lint errors indicate potential weaknesses in register interface handling that should be addressed to ensure secure and robust operation.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_Rbr6Pp5avwPGcoHVY10WDf25)
+ Call ID: call_Rbr6Pp5avwPGcoHVY10WDf25
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+    top_module: tlul_adapter_sram
+    security_objective: memory interface security
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check was executed on the module tlul_adapter_sram for various memory interface security related lint tags. The lint tool did not report any issues or warnings for the given RTL code.
+
+Based on the lint check results, there are no detected security issues related to memory interface security in the provided RTL code for the module tlul_adapter_sram. The design appears to be free from common memory-related security concerns such as memory conflicts, improper memory initialization, or other related issues flagged by the lint tags checked.
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_5LfqaCvVMPYeV9nQKRbTIyNa)
+ Call ID: call_5LfqaCvVMPYeV9nQKRbTIyNa
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+    top_module: tlul_adapter_reg
+    security_objective: register interface access control and protocol compliance
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+Based on the CWE information I've gathered, I'll analyze the provided RTL code for security concerns related to register interface access control and protocol compliance.
+
+## Security Analysis of the RTL Code
+
+### 1. CWE-1262: Improper Access Control for Register Interface
+
+The provided code is a TileLink-to-register adapter module (`tlul_adapter_reg`) that bridges the TileLink protocol to a register interface. Let's examine potential security issues:
+
+#### Access Control Concerns:
+
+1. **Instruction Fetch Control**:
+   ```verilog
+   // An instruction type transaction is only valid if en_ifetch is enabled
+   // If the instruction type is completely invalid, also considered an instruction error
+   assign instr_error = prim_mubi_pkg::mubi4_test_invalid(tl_i.a_user.instr_type) |
+                       (prim_mubi_pkg::mubi4_test_true_strict(tl_i.a_user.instr_type) &
+                        prim_mubi_pkg::mubi4_test_false_loose(en_ifetch_i));
+   ```
+   This code properly checks if instruction fetches are enabled before allowing instruction-type transactions, which is a good security practice.
+
+2. **Error Handling**:
+   ```verilog
+   assign err_internal = addr_align_err | malformed_meta_err | tl_err | instr_error | intg_error;
+   ```
+   The module combines various error conditions, including instruction errors, integrity errors, and protocol errors, which is good for security.
+
+3. **No Privilege Level Checking**:
+   The code doesn't appear to implement privilege-level checking for register access. Unlike the example in CWE-1262, there's no verification that the accessing entity has the appropriate privilege level to access specific registers. This could be a security concern if some registers should only be accessible by privileged software.
+
+### 2. Integrity Protection
+
+The module includes optional integrity checking and generation:
+
+```verilog
+parameter  bit CmdIntgCheck      = 0,  // 1: Enable command integrity check
+parameter  bit EnableRspIntgGen  = 0,  // 1: Generate response integrity
+parameter  bit EnableDataIntgGen = 0,  // 1: Generate response data integrity
+```
+
+These parameters are defaulted to 0, which means integrity checking and generation are disabled by default. This could be a security concern if not explicitly enabled when instantiating this module.
+
+The module does include integrity checking logic:
+```verilog
+if (CmdIntgCheck) begin : gen_cmd_intg_check
+  logic intg_error_q;
+  tlul_cmd_intg_chk u_cmd_intg_chk (
+    .tl_i(tl_i),
+    .err_o(intg_error)
+  );
+  // permanently latch integrity error until reset
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      intg_error_q <= 1'b0;
+    end else if (intg_error) begin
+      intg_error_q <= 1'b1;
+    end
+  end
+  assign intg_error_o = intg_error_q;
+end else begin : gen_no_cmd_intg_check
+  assign intg_error = 1'b0;
+  assign intg_error_o = 1'b0;
+end
+```
+
+This is a good practice as it latches integrity errors until reset, but it's only enabled if `CmdIntgCheck` is set to 1.
+
+### 3. Protocol Compliance
+
+The module includes checks for protocol compliance:
+
+```verilog
+// addr_align_err
+//    Raised if addr isn't aligned with the size
+//    Read size error is checked in tlul_assert.sv
+//    Here is it added due to the limitation of register interface.
+always_comb begin
+  if (wr_req) begin
+    // Only word-align is accepted based on comportability spec
+    addr_align_err = |tl_i.a_address[1:0];
+  end else begin
+    // No request
+    addr_align_err = 1'b0;
+  end
+end
+
+// tl_err : separate
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_zgqUZgsPPXBJ6AgzX79IUOxj)
+ Call ID: call_zgqUZgsPPXBJ6AgzX79IUOxj
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+    top_module: tlul_adapter_sram
+    security_objective: memory access control, integrity, and protocol compliance
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+[{"id": "toolu_015fKmNakWnkPpHCwZczvXWj", "input": {"security_issue": "data integrity in hardware"}, "name": "llm_cwe_details_retriever_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_la6ZmTpAPRLhidqr2OrC0HbX)
+ Call ID: call_la6ZmTpAPRLhidqr2OrC0HbX
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+    top_module: tlul_adapter_reg
+    security_objective: register interface access control and protocol compliance
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+The anomaly detection tool clustered the code lines into 3 groups:
+
+- Cluster 0 contains lines related to interface signals for ack, request, data, and mask.
+- Cluster 1 contains lines related to write/read enables, error and data assignments, and integrity error outputs.
+- Cluster 2 contains two lines for address assignment, either zero or word-aligned.
+
+Among these clusters, no individual line stood out as significantly anomalous by itself. However, from a security perspective related to register interface access control and protocol compliance, there are some areas to consider:
+
+1. **Address Alignment Check (Addr_align_err):** The code enforces word alignment for write requests (`addr_align_err = |tl_i.a_address[1:0];`). Misaligned accesses raise an error, which is good for preventing protocol violation. No anomaly detected here, and it is a positive security feature.
+
+2. **Error Aggregation (err_internal):** The internal error signal `err_internal` includes address alignment errors, malformed metadata, TileLink errors, instruction errors, and integrity errors. This comprehensive error checking is crucial for access control. No anomalous code detected but this is security-relevant.
+
+3. **Instruction Fetch Enablement (instr_error):** Instruction fetch transactions require `en_ifetch_i` to be enabled, else it is treated as an instruction error. This conditional access control is implemented correctly.
+
+4. **Command Integrity Check (CmdIntgCheck):** When enabled, this module checks command integrity and latches errors, signaling `intg_error_o`. This is important for detecting tampering or protocol violations.
+
+5. **Backpressure and access latency handling:** The read/write request signals and response data/error handling have some temporal logic for 0 or 1 cycle access latency, which seems appropriately handled.
+
+No anomalous lines indicate outright security violations like missing authentication, bypass, or unhandled errors. The module seems designed carefully to enforce protocol and access control at the register interface level. Thus:
+
+**Conclusion:**  
+There are no anomalous lines indicating security flaws. The RTL implements appropriate checks for register interface access control and protocol compliance. The internal error signaling and integrity checking provide good security coverage for this adapter module.
+
+If you want, I can help review specific parts or verify if any corner cases might pose risks.
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_9cS5hPObnr9NsjOszAhjrKCg)
+ Call ID: call_9cS5hPObnr9NsjOszAhjrKCg
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+    top_module: tlul_adapter_sram
+    security_objective: memory access control, integrity, and protocol compliance
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+The anomaly detection clusters identify multiple assignments and logic lines that are central to the design's memory access control, integrity management, and protocol compliance. No specific line of code stands out as anomalous from repeated patterns or unusual constructs based on this clustering.
+
+Security issues related to memory access control, integrity, and protocol compliance would typically manifest as missing or incorrect checks, insecure handling of integrity bits, allowing transactions that violate protocol rules, or incorrect FIFO handling potentially leading to race conditions or data exposure.
+
+From the provided RTL and based on the anomaly clusters:
+
+- There are comprehensive error checks for write/read validity, instruction errors, and protocol errors.
+- There are integrity checks both at command level (CmdIntgCheck) and data integrity management (EnableDataIntgGen, EnableDataIntgPt).
+- Readback error checking is supported (EnableReadback).
+- The use of FIFOs for requests and responses considers backpressure and ordering.
+- Assertions are included for protocol adherence and output data validity.
+- Errors are latched permanently for alerting or downstream effects.
+- Correct masking and data alignment are carefully managed.
+- XOR with addresses for data protection is implemented and controlled.
+
+No anomalies were flagged by the tool that directly represent security issues. The code shows well-structured handling of access control, integrity, and protocol compliance consistent with secure design practices. However, a full security analysis would also involve dynamic verification and formal checking beyond anomaly clustering.
+
+Summary:
+- No anomalous lines indicating security vulnerabilities were detected.
+- Existing error checking, integrity validation, and protocol compliance mechanisms appear robust.
+- This RTL module for the Tile-Link UL adapter to SRAM shows proper design considerations for security in memory transactions. 
+
+Recommendation:
+- Complement the static checking here with comprehensive functional and security verification.
+- Test different error conditions, corner cases, and fault injections in simulation.
+- Review parameter combinations and their effect on security features enabled/disabled.
+
+In conclusion, based on the anomaly detection and review, there are no identified security concerns in the provided RTL code snippet related to memory access control, integrity, or protocol compliance.
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_Cd4WgJaodU9kDjst0wRACiiZ)
+ Call ID: call_Cd4WgJaodU9kDjst0wRACiiZ
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: 
+5: `include "prim_assert.sv"
+6: 
+7: /**
+8:  * Tile-Link UL adapter for Register interface
+9:  *
+10:  * ICEBOX(#15822): Note that due to some modules with special needs (like
+11:  * the vendored-in RV_DM), this module has been extended so that it
+12:  * supports use cases outside of the generated reg_top module. This makes
+13:  * this adapter and its parameterization options a bit heavy.
+14:  *
+15:  * We should in the future come back to this and refactor / align the
+16:  * module and its parameterization needs.
+17:  */
+18: 
+19: module tlul_adapter_reg
+20:   import tlul_pkg::*;
+21:   import prim_mubi_pkg::mubi4_t;
+22: #(
+23:   parameter  bit CmdIntgCheck      = 0,  // 1: Enable command integrity check
+24:   parameter  bit EnableRspIntgGen  = 0,  // 1: Generate response integrity
+25:   parameter  bit EnableDataIntgGen = 0,  // 1: Generate response data integrity
+26:   parameter  int RegAw             = 8,  // Width of register address
+27:   parameter  int RegDw             = 32, // Shall be matched with TL_DW
+28:   parameter  int AccessLatency     = 0,  // 0: same cycle, 1: next cycle
+29:   localparam int RegBw             = RegDw/8
+30: ) (
+31:   input clk_i,
+32:   input rst_ni,
+33: 
+34:   // TL-UL interface
+35:   input  tl_h2d_t tl_i,
+36:   output tl_d2h_t tl_o,
+37: 
+38:   // control interface
+39:   input  mubi4_t  en_ifetch_i,
+40:   output logic    intg_error_o,
+41: 
+42:   // Register interface
+43:   output logic             re_o,
+44:   output logic             we_o,
+45:   output logic [RegAw-1:0] addr_o,
+46:   output logic [RegDw-1:0] wdata_o,
+47:   output logic [RegBw-1:0] be_o,
+48:   input                    busy_i,
+49:   // The following two signals are expected
+50:   // to be returned in AccessLatency cycles.
+51:   input        [RegDw-1:0] rdata_i,
+52:   // This can be a write or read error.
+53:   input                    error_i
+54: );
+55: 
+56:   `ASSERT_INIT(AllowedLatency_A, AccessLatency inside {0, 1})
+57: 
+58:   localparam int IW  = $bits(tl_i.a_source);
+59:   localparam int SZW = $bits(tl_i.a_size);
+60: 
+61:   logic outstanding_q;    // Indicates current request is pending
+62:   logic a_ack, d_ack;
+63: 
+64:   logic [RegDw-1:0] rdata, rdata_q;
+65:   logic             error_q, error, err_internal, instr_error, intg_error;
+66: 
+67:   logic addr_align_err;     // Size and alignment
+68:   logic malformed_meta_err; // User signal format error or unsupported
+69:   logic tl_err;             // Common TL-UL error checker
+70: 
+71:   logic [IW-1:0]  reqid_q;
+72:   logic [SZW-1:0] reqsz_q;
+73:   tl_d_op_e       rspop_q;
+74: 
+75:   logic rd_req, wr_req;
+76: 
+77:   assign a_ack   = tl_i.a_valid & tl_o.a_ready;
+78:   assign d_ack   = tl_o.d_valid & tl_i.d_ready;
+79:   // Request signal
+80:   assign wr_req  = a_ack & ((tl_i.a_opcode == PutFullData) | (tl_i.a_opcode == PutPartialData));
+81:   assign rd_req  = a_ack & (tl_i.a_opcode == Get);
+82: 
+83:   assign we_o    = wr_req & ~err_internal;
+84:   assign re_o    = rd_req & ~err_internal;
+85:   assign wdata_o = tl_i.a_data;
+86:   assign be_o    = tl_i.a_mask;
+87: 
+88:   if (RegAw <= 2) begin : gen_only_one_reg
+89:     assign addr_o  = '0;
+90:   end else begin : gen_more_regs
+91:     assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00}; // generate always word-align
+92:   end
+93: 
+94:   always_ff @(posedge clk_i or negedge rst_ni) begin
+95:     if (!rst_ni)    outstanding_q <= 1'b0;
+96:     else if (a_ack) outstanding_q <= 1'b1;
+97:     else if (d_ack) outstanding_q <= 1'b0;
+98:   end
+99: 
+100:   always_ff @(posedge clk_i or negedge rst_ni) begin
+101:     if (!rst_ni) begin
+102:       reqid_q <= '0;
+103:       reqsz_q <= '0;
+104:       rspop_q <= AccessAck;
+105:     end else if (a_ack) begin
+106:       reqid_q <= tl_i.a_source;
+107:       reqsz_q <= tl_i.a_size;
+108:       // Return AccessAckData regardless of error
+109:       rspop_q <= (rd_req) ? AccessAckData : AccessAck ;
+110:     end
+111:   end
+112: 
+113:   if (AccessLatency == 1) begin : gen_access_latency1
+114:     logic wr_req_q, rd_req_q;
+115:     always_ff @(posedge clk_i or negedge rst_ni) begin
+116:       if (!rst_ni) begin
+117:         rdata_q  <= '0;
+118:         error_q  <= 1'b0;
+119:         wr_req_q <= 1'b0;
+120:         rd_req_q <= 1'b0;
+121:       end else begin
+122:         rd_req_q <= rd_req;
+123:         wr_req_q <= wr_req;
+124:         // Addressing phase
+125:         if (a_ack) begin
+126:           error_q <= err_internal;
+127:         // Response phase
+128:         end else begin
+129:           error_q <= error;
+130:           rdata_q <= rdata;
+131:         end
+132:       end
+133:     end
+134:     assign rdata = (error_i || error_q || wr_req_q) ? '1      :
+135:                    (rd_req_q)                       ? rdata_i :
+136:                                                       rdata_q; // backpressure case
+137:     assign error = (rd_req_q || wr_req_q) ? (error_q || error_i) :
+138:                                             error_q; // backpressure case
+139:   end else begin : gen_access_latency0
+140:     always_ff @(posedge clk_i or negedge rst_ni) begin
+141:       if (!rst_ni) begin
+142:         rdata_q <= '0;
+143:         error_q <= 1'b0;
+144:       end else if (a_ack) begin
+145:         rdata_q <= (error_i || err_internal || wr_req) ? '1 : rdata_i;
+146:         error_q <= error_i || err_internal;
+147:       end
+148:     end
+149:     assign rdata = rdata_q;
+150:     assign error = error_q;
+151:   end
+152: 
+153:   tlul_pkg::tl_d2h_t tl_o_pre;
+154:   assign tl_o_pre = '{
+155:     // busy is selected based on address
+156:     // thus if there is no valid transaction, we should ignore busy
+157:     a_ready:  ~(outstanding_q | tl_i.a_valid & busy_i),
+158:     d_valid:  outstanding_q,
+159:     d_opcode: rspop_q,
+160:     d_param:  '0,
+161:     d_size:   reqsz_q,
+162:     d_source: reqid_q,
+163:     d_sink:   '0,
+164:     d_data:   rdata,
+165:     d_user:   '0,
+166:     d_error:  error
+167:   };
+168: 
+169:   // outgoing integrity generation
+170:   tlul_rsp_intg_gen #(
+171:     .EnableRspIntgGen(EnableRspIntgGen),
+172:     .EnableDataIntgGen(EnableDataIntgGen)
+173:   ) u_rsp_intg_gen (
+174:     .tl_i(tl_o_pre),
+175:     .tl_o(tl_o)
+176:   );
+177: 
+178:   if (CmdIntgCheck) begin : gen_cmd_intg_check
+179:     logic intg_error_q;
+180:     tlul_cmd_intg_chk u_cmd_intg_chk (
+181:       .tl_i(tl_i),
+182:       .err_o(intg_error)
+183:     );
+184:     // permanently latch integrity error until reset
+185:     always_ff @(posedge clk_i or negedge rst_ni) begin
+186:       if (!rst_ni) begin
+187:         intg_error_q <= 1'b0;
+188:       end else if (intg_error) begin
+189:         intg_error_q <= 1'b1;
+190:       end
+191:     end
+192:     assign intg_error_o = intg_error_q;
+193:   end else begin : gen_no_cmd_intg_check
+194:     assign intg_error = 1'b0;
+195:     assign intg_error_o = 1'b0;
+196:   end
+197: 
+198:   ////////////////////
+199:   // Error Handling //
+200:   ////////////////////
+201: 
+202:   // An instruction type transaction is only valid if en_ifetch is enabled
+203:   // If the instruction type is completely invalid, also considered an instruction error
+204:   assign instr_error = prim_mubi_pkg::mubi4_test_invalid(tl_i.a_user.instr_type) |
+205:                        (prim_mubi_pkg::mubi4_test_true_strict(tl_i.a_user.instr_type) &
+206:                         prim_mubi_pkg::mubi4_test_false_loose(en_ifetch_i));
+207: 
+208:   assign err_internal = addr_align_err | malformed_meta_err | tl_err | instr_error | intg_error;
+209: 
+210:   // Don't allow unsupported values.
+211:   assign malformed_meta_err = tl_a_user_chk(tl_i.a_user);
+212: 
+213:   // addr_align_err
+214:   //    Raised if addr isn't aligned with the size
+215:   //    Read size error is checked in tlul_assert.sv
+216:   //    Here is it added due to the limitation of register interface.
+217:   always_comb begin
+218:     if (wr_req) begin
+219:       // Only word-align is accepted based on comportability spec
+220:       addr_align_err = |tl_i.a_address[1:0];
+221:     end else begin
+222:       // No request
+223:       addr_align_err = 1'b0;
+224:     end
+225:   end
+226: 
+227:   // tl_err : separate checker
+228:   tlul_err u_err (
+229:     .clk_i,
+230:     .rst_ni,
+231:     .tl_i,
+232:     .err_o (tl_err)
+233:   );
+234: 
+235:   `ASSERT_INIT(MatchedWidthAssert, RegDw == top_pkg::TL_DW)
+236: 
+237: endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  run_similar_bug_agent (call_fmCQi3HPFpiblkalp9N8hGTx)
+ Call ID: call_fmCQi3HPFpiblkalp9N8hGTx
+  Args:
+    bug: assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00};
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+================================= Tool Message =================================
+Name: run_similar_bug_agent
+
+I apologize for the persistent error. Let me manually analyze the code.
+
+I found the similar line on line 91:
+```systemverilog
+assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00}; // generate always word-align
+```
+
+This line appears to be the exact match to the bug you mentioned. It's part of a generate block for handling address generation when RegAw > 2. 
+
+The potential issue here is the hardcoded `2'b00` at the end, which always forces word alignment by setting the two least significant bits to zero. This might cause problems if the original address requires a different alignment or if there are specific requirements for address handling.
+
+Buggy line: Line 91 in /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv
+================================== Ai Message ==================================
+Tool Calls:
+  run_similar_bug_agent (call_O242mFT1JHr1512nlpmwbdwO)
+ Call ID: call_O242mFT1JHr1512nlpmwbdwO
+  Args:
+    bug: assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00};
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+================================= Tool Message =================================
+Name: run_similar_bug_agent
+
+After carefully analyzing the code, I found a potentially similar bug on line 393:
+
+```systemverilog
+assign addr_o     = (tl_i_int.a_valid) ? tl_i_int.a_address[DataBitWidth+:SramAw] : '0;
+```
+
+This line is similar to the original bug you mentioned, with a few key differences:
+1. It uses a different slice selection method (`[DataBitWidth+:SramAw]` instead of `[RegAw-1:2]`)
+2. It has a conditional assignment with a default of '0 when not valid
+
+While this might not be an exact match to the original bug, it follows a similar pattern of extracting a portion of the address for output.
+
+The buggy lines I've identified are:
+- Line 393: `assign addr_o     = (tl_i_int.a_valid) ? tl_i_int.a_address[DataBitWidth+:SramAw] : '0;`
+
+Would you like me to provide more context or analysis about this potential bug?
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_WVjdiTaQUeoFt1XwovoKKIxf)
+ Call ID: call_WVjdiTaQUeoFt1XwovoKKIxf
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: 
+5: `include "prim_assert.sv"
+6: 
+7: /**
+8:  * Tile-Link UL adapter for SRAM-like devices
+9:  *
+10:  * - Intentionally omitted BaseAddr in case of multiple memory maps are used in a SoC,
+11:  *   it means that aliasing can happen if target device size in TL-UL crossbar is bigger
+12:  *   than SRAM size
+13:  * - At most one of EnableDataIntgGen / EnableDataIntgPt can be enabled. However it
+14:  *   possible for both to be disabled.
+15:  *   A module can neither generate an integrity response nor pass through any pre-existing
+16:  *   integrity.  This might be the case for non-security critical memories where there is
+17:  *   no stored integrity AND another entity upstream is already generating returning integrity.
+18:  *   There is however no case where EnableDataIntgGen and EnableDataIntgPt are both true.
+19:  */
+20: module tlul_adapter_sram
+21:   import tlul_pkg::*;
+22:   import prim_mubi_pkg::mubi4_t;
+23: #(
+24:   parameter int SramAw            = 12,
+25:   parameter int SramDw            = 32, // Must be multiple of the TL width
+26:   parameter int Outstanding       = 1,  // Only one request is accepted
+27:   parameter int SramBusBankAW     = 12, // SRAM bus address width of the SRAM bank. Only used
+28:                                         // when DataXorAddr=1.
+29:   parameter bit ByteAccess        = 1,  // 1: Enables sub-word write transactions. Note that this
+30:                                         //    results in read-modify-write operations for integrity
+31:                                         //    re-generation if EnableDataIntgPt is set to 1.
+32:   parameter bit ErrOnWrite        = 0,  // 1: Writes not allowed, automatically error
+33:   parameter bit ErrOnRead         = 0,  // 1: Reads not allowed, automatically error
+34:   parameter bit CmdIntgCheck      = 0,  // 1: Enable command integrity check
+35:   parameter bit EnableRspIntgGen  = 0,  // 1: Generate response integrity
+36:   parameter bit EnableDataIntgGen = 0,  // 1: Generate response data integrity
+37:   parameter bit EnableDataIntgPt  = 0,  // 1: Passthrough command/response data integrity
+38:   parameter bit SecFifoPtr        = 0,  // 1: Duplicated fifo pointers
+39:   parameter bit EnableReadback    = 0,  // 1: Readback and check written/read data.
+40:   parameter bit DataXorAddr       = 0,  // 1: XOR data and address for address protection
+41:   localparam int WidthMult        = SramDw / top_pkg::TL_DW,
+42:   localparam int IntgWidth        = tlul_pkg::DataIntgWidth * WidthMult,
+43:   localparam int DataOutW         = EnableDataIntgPt ? SramDw + IntgWidth : SramDw
+44: ) (
+45:   input   clk_i,
+46:   input   rst_ni,
+47: 
+48:   // TL-UL interface
+49:   input   tl_h2d_t          tl_i,
+50:   output  tl_d2h_t          tl_o,
+51: 
+52:   // control interface
+53:   input   mubi4_t en_ifetch_i,
+54: 
+55:   // SRAM interface
+56:   output logic                req_o,
+57:   output mubi4_t              req_type_o,
+58:   input                       gnt_i,
+59:   output logic                we_o,
+60:   output logic [SramAw-1:0]   addr_o,
+61:   output logic [DataOutW-1:0] wdata_o,
+62:   output logic [DataOutW-1:0] wmask_o,
+63:   output logic                intg_error_o,
+64:   input        [DataOutW-1:0] rdata_i,
+65:   input                       rvalid_i,
+66:   input        [1:0]          rerror_i, // 2 bit error [1]: Uncorrectable, [0]: Correctable
+67:   output logic                compound_txn_in_progress_o,
+68:   input  mubi4_t              readback_en_i,
+69:   output logic                readback_error_o,
+70:   input  logic                wr_collision_i,
+71:   input  logic                write_pending_i
+72: );
+73: 
+74:   localparam int SramByte = SramDw/8;
+75:   localparam int DataBitWidth = prim_util_pkg::vbits(SramByte);
+76:   localparam int WoffsetWidth = (SramByte == top_pkg::TL_DBW) ? 1 :
+77:                                 DataBitWidth - prim_util_pkg::vbits(top_pkg::TL_DBW);
+78: 
+79:   logic error_det; // Internal protocol error checker
+80:   logic error_internal; // Internal protocol error checker
+81:   logic wr_attr_error;
+82:   logic instr_error;
+83:   logic wr_vld_error;
+84:   logic rd_vld_error;
+85:   logic rsp_fifo_error;
+86:   logic sramreqfifo_error;
+87:   logic reqfifo_error;
+88:   logic intg_error;
+89:   logic tlul_error;
+90:   logic readback_error;
+91:   logic sram_byte_readback_error;
+92: 
+93:   // readback check
+94:   logic readback_error_q;
+95:   if (EnableReadback) begin : gen_cmd_readback_check
+96:     assign readback_error = sram_byte_readback_error;
+97:     // permanently latch readback error until reset
+98:     always_ff @(posedge clk_i or negedge rst_ni) begin
+99:       if (!rst_ni) begin
+100:         readback_error_q <= '0;
+101:       end else if (readback_error) begin
+102:         readback_error_q <= 1'b1;
+103:       end
+104:     end
+105:   end else begin : gen_no_readback_check
+106:     logic unused_sram_byte_readback_error;
+107:     assign unused_sram_byte_readback_error = sram_byte_readback_error;
+108:     assign readback_error = '0;
+109:     assign readback_error_q = '0;
+110:   end
+111: 
+112:   // readback error output is permanent and should be used for alert generation
+113:   // or other downstream effects
+114:   assign readback_error_o = readback_error | readback_error_q;
+115: 
+116:   // integrity check
+117:   if (CmdIntgCheck) begin : gen_cmd_intg_check
+118:     tlul_cmd_intg_chk u_cmd_intg_chk (
+119:       .tl_i(tl_i),
+120:       .err_o (intg_error)
+121:     );
+122:   end else begin : gen_no_cmd_intg_check
+123:     assign intg_error = '0;
+124:   end
+125: 
+126:   // permanently latch integrity error until reset
+127:   logic intg_error_q;
+128:   always_ff @(posedge clk_i or negedge rst_ni) begin
+129:     if (!rst_ni) begin
+130:       intg_error_q <= '0;
+131:     end else if (intg_error || rsp_fifo_error || sramreqfifo_error || reqfifo_error) begin
+132:       intg_error_q <= 1'b1;
+133:     end
+134:   end
+135: 
+136:   // integrity error output is permanent and should be used for alert generation
+137:   // or other downstream effects
+138:   assign intg_error_o = intg_error | rsp_fifo_error | sramreqfifo_error |
+139:       reqfifo_error | intg_error_q;
+140: 
+141:   // wr_attr_error: Check if the request size, mask are permitted.
+142:   //    Basic check of size, mask, addr align is done in tlul_err module.
+143:   //    Here it checks any partial write if ByteAccess isn't allowed.
+144:   assign wr_attr_error = (tl_i.a_opcode == PutFullData || tl_i.a_opcode == PutPartialData)
+145:                          ? ((ByteAccess == 0) ?
+146:                            (tl_i.a_mask != '1 || tl_i.a_size != 2'h2) : 1'b0)
+147:                            : 1'b0;
+148: 
+149:   // An instruction type transaction is only valid if en_ifetch is enabled
+150:   // If the instruction type is completely invalid, also considered an instruction error
+151:   assign instr_error = prim_mubi_pkg::mubi4_test_invalid(tl_i.a_user.instr_type) |
+152:                        (prim_mubi_pkg::mubi4_test_true_strict(tl_i.a_user.instr_type) &
+153:                         prim_mubi_pkg::mubi4_test_false_loose(en_ifetch_i));
+154: 
+155:   if (ErrOnWrite == 1) begin : gen_no_writes
+156:     assign wr_vld_error = tl_i.a_opcode != Get;
+157:   end else begin : gen_writes_allowed
+158:     assign wr_vld_error = 1'b0;
+159:   end
+160: 
+161:   if (ErrOnRead == 1) begin: gen_no_reads
+162:     assign rd_vld_error = tl_i.a_opcode == Get;
+163:   end else begin : gen_reads_allowed
+164:     assign rd_vld_error = 1'b0;
+165:   end
+166: 
+167:   // tlul protocol check
+168:   tlul_err u_err (
+169:     .clk_i,
+170:     .rst_ni,
+171:     .tl_i(tl_i),
+172:     .err_o (tlul_error)
+173:   );
+174: 
+175:   // error return is transactional and thus does not used the "latched" intg_err signal
+176:   assign error_det = wr_attr_error | wr_vld_error | rd_vld_error | instr_error |
+177:                      tlul_error    | intg_error;
+178: 
+179:   // from sram_byte to adapter logic
+180:   tl_h2d_t tl_i_int;
+181:   // from adapter logic to sram_byte
+182:   tl_d2h_t tl_o_int;
+183:   // from sram_byte to rsp_gen
+184:   tl_d2h_t tl_out;
+185: 
+186:   // not all parts of tl_i_int are used
+187:   logic unused_tl_i_int;
+188:   assign unused_tl_i_int = ^tl_i_int;
+189: 
+190:   tlul_rsp_intg_gen #(
+191:     .EnableRspIntgGen(EnableRspIntgGen),
+192:     .EnableDataIntgGen(EnableDataIntgGen)
+193:   ) u_rsp_gen (
+194:     .tl_i(tl_out),
+195:     .tl_o
+196:   );
+197: 
+198:   // byte handling for integrity
+199:   tlul_sram_byte #(
+200:     .EnableIntg(ByteAccess & EnableDataIntgPt & !ErrOnWrite),
+201:     .Outstanding(Outstanding),
+202:     .EnableReadback(EnableReadback)
+203:   ) u_sram_byte (
+204:     .clk_i,
+205:     .rst_ni,
+206:     .tl_i,
+207:     .tl_o(tl_out),
+208:     .tl_sram_o(tl_i_int),
+209:     .tl_sram_i(tl_o_int),
+210:     .error_i(error_det),
+211:     .error_o(error_internal),
+212:     .alert_o(sram_byte_readback_error),
+213:     .compound_txn_in_progress_o,
+214:     .readback_en_i,
+215:     .wr_collision_i,
+216:     .write_pending_i
+217:   );
+218: 
+219:   typedef struct packed {
+220:     logic [top_pkg::TL_DBW-1:0] mask ; // Byte mask within the TL-UL word
+221:     logic [WoffsetWidth-1:0]    woffset ; // Offset of the TL-UL word within the SRAM word
+222:   } sram_req_t ;
+223: 
+224:   typedef struct packed {
+225:     logic [SramBusBankAW-1:0] addr; // Address of the request going to the memory.
+226:   } sram_req_addr_t ;
+227: 
+228:   typedef enum logic [1:0] {
+229:     OpWrite,
+230:     OpRead,
+231:     OpUnknown
+232:   } req_op_e ;
+233: 
+234:   typedef struct packed {
+235:     req_op_e                    op ;
+236:     logic                       error ;
+237:     prim_mubi_pkg::mubi4_t      instr_type;
+238:     logic [top_pkg::TL_SZW-1:0] size ;
+239:     logic [top_pkg::TL_AIW-1:0] source ;
+240:   } req_t ;
+241: 
+242:   typedef struct packed {
+243:     logic [top_pkg::TL_DW-1:0] data ;
+244:     logic [DataIntgWidth-1:0]  data_intg ;
+245:     logic                      error ;
+246:   } rsp_t ;
+247: 
+248:   localparam int SramReqFifoWidth = $bits(sram_req_t) ;
+249:   localparam int ReqFifoWidth = $bits(req_t) ;
+250:   localparam int RspFifoWidth = $bits(rsp_t) ;
+251: 
+252:   // FIFO signal in case OutStand is greater than 1
+253:   // If request is latched, {write, source} is pushed to req fifo.
+254:   // Req fifo is popped when D channel is acknowledged (v & r)
+255:   // D channel valid is asserted if it is write request or rsp fifo not empty if read.
+256:   logic reqfifo_wvalid, reqfifo_wready;
+257:   logic reqfifo_rvalid, reqfifo_rready;
+258:   req_t reqfifo_wdata,  reqfifo_rdata;
+259: 
+260:   logic sramreqfifo_wvalid, sramreqfifo_wready;
+261:   logic sramreqfifo_rready;
+262:   sram_req_t sramreqfifo_wdata, sramreqfifo_rdata;
+263: 
+264:   logic sramreqaddrfifo_wready;
+265:   logic [SramBusBankAW-1:0] sramreqaddrfifo_wdata, sramreqaddrfifo_rdata;
+266: 
+267:   logic rspfifo_wvalid, rspfifo_wready;
+268:   logic rspfifo_rvalid, rspfifo_rready;
+269:   rsp_t rspfifo_wdata,  rspfifo_rdata;
+270: 
+271:   logic a_ack, d_ack, sram_ack;
+272:   assign a_ack    = tl_i_int.a_valid & tl_o_int.a_ready ;
+273:   assign d_ack    = tl_o_int.d_valid & tl_i_int.d_ready ;
+274:   assign sram_ack = req_o        & gnt_i ;
+275: 
+276:   // Valid handling
+277:   logic d_valid, d_error;
+278:   always_comb begin
+279:     d_valid = 1'b0;
+280: 
+281:     if (reqfifo_rvalid) begin
+282:       if (reqfifo_rdata.error) begin
+283:         // Return error response. Assume no request went out to SRAM
+284:         d_valid = 1'b1;
+285:       end else if (reqfifo_rdata.op == OpRead) begin
+286:         d_valid = rspfifo_rvalid;
+287:       end else begin
+288:         // Write without error
+289:         d_valid = 1'b1;
+290:       end
+291:     end else begin
+292:       d_valid = 1'b0;
+293:     end
+294:   end
+295: 
+296: 
+297: 
+298:   always_comb begin
+299:     d_error = 1'b0;
+300: 
+301:     if (reqfifo_rvalid) begin
+302:       if (reqfifo_rdata.op == OpRead) begin
+303:         d_error = rspfifo_rdata.error | reqfifo_rdata.error;
+304:       end else begin
+305:         d_error = reqfifo_rdata.error;
+306:       end
+307:     end else begin
+308:       d_error = 1'b0;
+309:     end
+310:   end
+311: 
+312:   logic vld_rd_rsp;
+313:   assign vld_rd_rsp = d_valid & reqfifo_rvalid & rspfifo_rvalid & (reqfifo_rdata.op == OpRead);
+314:   // If the response data is not valid, we set it to an illegal blanking value which is determined
+315:   // by whether the current transaction is an instruction fetch or a regular read operation.
+316:   logic [top_pkg::TL_DW-1:0] error_blanking_data;
+317:   assign error_blanking_data = (prim_mubi_pkg::mubi4_test_true_strict(reqfifo_rdata.instr_type)) ?
+318:                                  DataWhenInstrError :
+319:                                  DataWhenError;
+320: 
+321:   // Since DataWhenInstrError and DataWhenError can be arbitrary parameters
+322:   // we statically calculate the correct integrity values for these parameters here so that
+323:   // they do not have to be supplied externally.
+324:   logic [top_pkg::TL_DW-1:0] unused_instr, unused_data;
+325:   logic [DataIntgWidth-1:0] error_instr_integ, error_data_integ;
+326:   tlul_data_integ_enc u_tlul_data_integ_enc_instr (
+327:     .data_i(DataMaxWidth'(DataWhenInstrError)),
+328:     .data_intg_o({error_instr_integ, unused_instr})
+329:   );
+330:   tlul_data_integ_enc u_tlul_data_integ_enc_data (
+331:     .data_i(DataMaxWidth'(DataWhenError)),
+332:     .data_intg_o({error_data_integ, unused_data})
+333:   );
+334: 
+335:   logic [DataIntgWidth-1:0] error_blanking_integ;
+336:   assign error_blanking_integ = (prim_mubi_pkg::mubi4_test_true_strict(reqfifo_rdata.instr_type)) ?
+337:                                  error_instr_integ :
+338:                                  error_data_integ;
+339: 
+340:   logic [top_pkg::TL_DW-1:0] d_data;
+341:   assign d_data = (vld_rd_rsp & ~d_error) ? rspfifo_rdata.data   // valid read
+342:                                           : error_blanking_data; // write or TL-UL error
+343: 
+344:   // If this a write response with data fields set to 0, we have to set all ECC bits correctly
+345:   // since we are using an inverted Hsiao code.
+346:   logic [DataIntgWidth-1:0] data_intg;
+347:   assign data_intg = (vld_rd_rsp && reqfifo_rdata.error) ? error_blanking_integ    : // TL-UL error
+348:                      (vld_rd_rsp)                        ? rspfifo_rdata.data_intg : // valid read
+349:                      prim_secded_pkg::SecdedInv3932ZeroEcc;                          // valid write
+350: 
+351:   // When an error is seen on an incoming transaction it gets an immediate response without
+352:   // performing an SRAM request. It may be the transaction receives a ready the first cycle it is
+353:   // seen, but if not we force a ready the following cycle. This avoids factoring the error
+354:   // calculation into the outgoing ready preventing a feedthrough path from the incoming tilelink
+355:   // signals to the outgoing tilelink signals.
+356:   logic missed_err_gnt_d, missed_err_gnt_q;
+357: 
+358:   // Track whether we've seen an incoming transaction with an error that didn't get a ready
+359:   assign missed_err_gnt_d = error_internal & tl_i_int.a_valid & ~tl_o_int.a_ready;
+360: 
+361:   always_ff @(posedge clk_i or negedge rst_ni) begin
+362:     if (!rst_ni) begin
+363:       missed_err_gnt_q <= 1'b0;
+364:     end else begin
+365:       missed_err_gnt_q <= missed_err_gnt_d;
+366:     end
+367:   end
+368: 
+369:   assign tl_o_int = '{
+370:       d_valid  : d_valid ,
+371:       d_opcode : (d_valid && reqfifo_rdata.op != OpRead) ? AccessAck : AccessAckData,
+372:       d_param  : '0,
+373:       d_size   : (d_valid) ? reqfifo_rdata.size : '0,
+374:       d_source : (d_valid) ? reqfifo_rdata.source : '0,
+375:       d_sink   : 1'b0,
+376:       d_data   : d_data,
+377:       d_user   : '{default: '0, data_intg: data_intg},
+378:       d_error  : d_valid && d_error,
+379:       a_ready  : (gnt_i | missed_err_gnt_q) & reqfifo_wready & sramreqfifo_wready &
+380:                   sramreqaddrfifo_wready
+381:   };
+382: 
+383:   // a_ready depends on the FIFO full condition and grant from SRAM (or SRAM arbiter)
+384:   // assemble response, including read response, write response, and error for unsupported stuff
+385: 
+386:   // Output to SRAM:
+387:   //    Generate request only when no internal error occurs. If error occurs, the request should be
+388:   //    dropped and returned error response to the host. So, error to be pushed to reqfifo.
+389:   //    In this case, it is assumed the request is granted (may cause ordering issue later?)
+390:   assign req_o      = tl_i_int.a_valid & reqfifo_wready & ~error_internal;
+391:   assign req_type_o = tl_i_int.a_user.instr_type;
+392:   assign we_o       = tl_i_int.a_valid & (tl_i_int.a_opcode inside {PutFullData, PutPartialData});
+393:   assign addr_o     = (tl_i_int.a_valid) ? tl_i_int.a_address[DataBitWidth+:SramAw] : '0;
+394: 
+395:   // Support SRAMs wider than the TL-UL word width by mapping the parts of the
+396:   // TL-UL address which are more fine-granular than the SRAM width to the
+397:   // SRAM write mask.
+398:   logic [WoffsetWidth-1:0] woffset;
+399:   if (top_pkg::TL_DW != SramDw) begin : gen_wordwidthadapt
+400:     assign woffset = tl_i_int.a_address[DataBitWidth-1:prim_util_pkg::vbits(top_pkg::TL_DBW)];
+401:   end else begin : gen_no_wordwidthadapt
+402:     assign woffset = '0;
+403:   end
+404: 
+405:   // The size of the data/wmask depends on whether passthrough integrity is enabled.
+406:   // If passthrough integrity is enabled, the data is concatenated with the integrity passed through
+407:   // the user bits.  Otherwise, it is the data only.
+408:   localparam int DataWidth = EnableDataIntgPt ? top_pkg::TL_DW + DataIntgWidth : top_pkg::TL_DW;
+409: 
+410:   // Final combined wmask / wdata
+411:   logic [WidthMult-1:0][DataWidth-1:0] wmask_combined;
+412:   logic [WidthMult-1:0][DataWidth-1:0] wdata_combined;
+413: 
+414:   // Original tlul portion
+415:   logic [WidthMult-1:0][top_pkg::TL_DW-1:0] wmask_int;
+416:   logic [WidthMult-1:0][top_pkg::TL_DW-1:0] wdata_int;
+417: 
+418:   // Integrity portion
+419:   logic [WidthMult-1:0][DataIntgWidth-1:0] wmask_intg;
+420:   logic [WidthMult-1:0][DataIntgWidth-1:0] wdata_intg;
+421: 
+422:   always_comb begin
+423:     wmask_int = '0;
+424:     wdata_int = '0;
+425: 
+426:     if (tl_i_int.a_valid) begin
+427:       for (int i = 0 ; i < top_pkg::TL_DW/8 ; i++) begin
+428:         wmask_int[woffset][8*i +: 8] = {8{tl_i_int.a_mask[i]}};
+429:         wdata_int[woffset][8*i +: 8] = (tl_i_int.a_mask[i] && we_o) ? tl_i_int.a_data[8*i+:8] : '0;
+430:       end
+431:     end
+432:   end
+433: 
+434:   always_comb begin
+435:     wmask_intg  = '0;
+436:     wdata_intg  = '0;
+437: 
+438:     if (tl_i_int.a_valid) begin
+439:       wmask_intg[woffset] = {DataIntgWidth{1'b1}};
+440:       wdata_intg[woffset] = tl_i_int.a_user.data_intg;
+441:     end
+442:   end
+443: 
+444:   for (genvar i = 0; i < WidthMult; i++) begin : gen_write_output
+445:     if (EnableDataIntgPt) begin : gen_combined_output
+446:       assign wmask_combined[i] = {wmask_intg[i], wmask_int[i]};
+447:       assign wdata_combined[i] = {wdata_intg[i], wdata_int[i]};
+448:     end else begin : gen_ft_output
+449:       logic unused_w;
+450:       assign wmask_combined[i] = wmask_int[i];
+451:       assign wdata_combined[i] = wdata_int[i];
+452:       assign unused_w = |wmask_intg & |wdata_intg;
+453:     end
+454:   end
+455: 
+456:   assign wmask_o = wmask_combined;
+457:   assign wdata_o = wdata_combined;
+458: 
+459:   assign reqfifo_wvalid = a_ack ; // Push to FIFO only when granted
+460:   assign reqfifo_wdata  = '{
+461:     op:     (tl_i_int.a_opcode != Get) ? OpWrite : OpRead, // To return AccessAck for opcode error
+462:     error:  error_internal,
+463:     instr_type: tl_i_int.a_user.instr_type,
+464:     size:   tl_i_int.a_size,
+465:     source: tl_i_int.a_source
+466:   }; // Store the request only. Doesn't have to store data
+467:   assign reqfifo_rready = d_ack ;
+468: 
+469:   // push together with ReqFIFO, pop upon returning read
+470:   assign sramreqfifo_wdata = '{
+471:     mask    : tl_i_int.a_mask,
+472:     woffset : woffset
+473:   };
+474:   assign sramreqfifo_wvalid = sram_ack & ~we_o;
+475:   assign sramreqfifo_rready = rspfifo_wvalid;
+476: 
+477:   assign rspfifo_wvalid = rvalid_i & reqfifo_rvalid;
+478: 
+479:   assign sramreqaddrfifo_wdata = tl_i_int.a_address[DataBitWidth+:SramBusBankAW];
+480: 
+481:   // Make sure only requested bytes are forwarded
+482:   logic [WidthMult-1:0][DataWidth-1:0] rdata_reshaped;
+483:   logic [DataWidth-1:0] rdata_tlword;
+484: 
+485:   // This just changes the array format so that the correct word can be selected by indexing.
+486:   assign rdata_reshaped = rdata_i;
+487: 
+488:   if (EnableDataIntgPt) begin : gen_no_rmask
+489:     always_comb begin
+490:       // If the read mask is set to zero, all read data is zeroed out by the mask.
+491:       // We have to set the ECC bits accordingly since we are using an inverted Hsiao code.
+492:       rdata_tlword = prim_secded_pkg::SecdedInv3932ZeroWord;
+493:       // Otherwise, if at least one mask bit is nonzero, we are passing through the integrity.
+494:       // In that case we need to feed back the entire word since otherwise the integrity
+495:       // will not calculate correctly.
+496:       if (|sramreqfifo_rdata.mask) begin
+497:         // Select correct word.
+498:         if (DataXorAddr) begin : gen_data_xor_addr
+499:           // When DataXorAddr is enabled, on a read, the address is XORed with the data fetched from
+500:           // the memory in the underlying memory controller (e.g., flash controller). At this point,
+501:           // the address is again removed. If the address in the read transaction has been modified,
+502:           // e.g., due to a fault, rdata now contains faulty data, which is detected by the
+503:           // integrity mechanism.
+504:           rdata_tlword = {
+505:               rdata_reshaped[sramreqfifo_rdata.woffset][DataWidth-1:top_pkg::TL_DW],
+506:               rdata_reshaped[sramreqfifo_rdata.woffset][top_pkg::TL_DW-1:0] ^
+507:                   {{(top_pkg::TL_DW-SramBusBankAW){1'b0}}, sramreqaddrfifo_rdata}
+508:           };
+509:         end else begin: gen_no_data_xor_addr
+510:           rdata_tlword = rdata_reshaped[sramreqfifo_rdata.woffset];
+511:         end
+512:       end
+513:     end
+514:   end else begin : gen_rmask
+515:     logic [DataWidth-1:0] rmask;
+516:     always_comb begin
+517:       rmask = '0;
+518:       for (int i = 0 ; i < top_pkg::TL_DW/8 ; i++) begin
+519:         rmask[8*i +: 8] = {8{sramreqfifo_rdata.mask[i]}};
+520:       end
+521:     end
+522:     // Select correct word and mask it.
+523:     assign rdata_tlword = rdata_reshaped[sramreqfifo_rdata.woffset] & rmask;
+524:   end
+525: 
+526:   assign rspfifo_wdata  = '{
+527:     data      : rdata_tlword[top_pkg::TL_DW-1:0],
+528:     data_intg : EnableDataIntgPt ? rdata_tlword[DataWidth-1 -: DataIntgWidth] : '0,
+529:     error     : rerror_i[1] // Only care for Uncorrectable error
+530:   };
+531:   assign rspfifo_rready = (reqfifo_rdata.op == OpRead & ~reqfifo_rdata.error)
+532:                         ? reqfifo_rready : 1'b0 ;
+533: 
+534:   // This module only cares about uncorrectable errors.
+535:   logic unused_rerror;
+536:   assign unused_rerror = rerror_i[0];
+537: 
+538:   // FIFO instance: REQ, RSP
+539: 
+540:   // ReqFIFO is to store the Access type to match to the Response data.
+541:   //    For instance, SRAM accepts the write request but doesn't return the
+542:   //    acknowledge. In this case, it may be hard to determine when the D
+543:   //    response for the write data should send out if reads/writes are
+544:   //    interleaved. So, to make it in-order (even TL-UL allows out-of-order
+545:   //    responses), storing the request is necessary. And if the read entry
+546:   //    is write op, it is safe to return the response right away. If it is
+547:   //    read reqeust, then D response is waiting until read data arrives.
+548:   prim_fifo_sync #(
+549:     .Width   (ReqFifoWidth),
+550:     .Pass    (1'b0),
+551:     .Depth   (Outstanding),
+552:     .Secure  (SecFifoPtr)
+553:   ) u_reqfifo (
+554:     .clk_i,
+555:     .rst_ni,
+556:     .clr_i   (1'b0),
+557:     .wvalid_i(reqfifo_wvalid),
+558:     .wready_o(reqfifo_wready),
+559:     .wdata_i (reqfifo_wdata),
+560:     .rvalid_o(reqfifo_rvalid),
+561:     .rready_i(reqfifo_rready),
+562:     .rdata_o (reqfifo_rdata),
+563:     .full_o  (),
+564:     .depth_o (),
+565:     .err_o   (reqfifo_error)
+566:   );
+567: 
+568:   // sramreqfifo:
+569:   //    While the ReqFIFO holds the request until it is sent back via TL-UL, the
+570:   //    sramreqfifo only needs to hold the mask and word offset until the read
+571:   //    data returns from memory.
+572:   prim_fifo_sync #(
+573:     .Width   (SramReqFifoWidth),
+574:     .Pass    (1'b0),
+575:     .Depth   (Outstanding),
+576:     .Secure  (SecFifoPtr)
+577:   ) u_sramreqfifo (
+578:     .clk_i,
+579:     .rst_ni,
+580:     .clr_i   (1'b0),
+581:     .wvalid_i(sramreqfifo_wvalid),
+582:     .wready_o(sramreqfifo_wready),
+583:     .wdata_i (sramreqfifo_wdata),
+584:     .rvalid_o(),
+585:     .rready_i(sramreqfifo_rready),
+586:     .rdata_o (sramreqfifo_rdata),
+587:     .full_o  (),
+588:     .depth_o (),
+589:     .err_o   (sramreqfifo_error)
+590:   );
+591: 
+592:   // sramreqaddrfifo:
+593:   //    This fifo holds the address used for undoing the address XOR data infection.
+594:   if (DataXorAddr) begin : gen_data_xor_addr_fifo
+595:     prim_fifo_sync #(
+596:       .Width              (SramBusBankAW),
+597:       .Pass               (1'b0),
+598:       .Depth              (Outstanding),
+599:       .OutputZeroIfEmpty  (1)
+600:     ) u_sramreqaddrfifo (
+601:       .clk_i,
+602:       .rst_ni,
+603:       .clr_i   (1'b0),
+604:       .wvalid_i(sramreqfifo_wvalid),
+605:       .wready_o(sramreqaddrfifo_wready),
+606:       .wdata_i (sramreqaddrfifo_wdata),
+607:       .rvalid_o(),
+608:       .rready_i(sramreqfifo_rready),
+609:       .rdata_o (sramreqaddrfifo_rdata),
+610:       .full_o  (),
+611:       .depth_o (),
+612:       .err_o   ()
+613:     );
+614:   end else begin : gen_no_data_xor_addr_fifo
+615:     assign sramreqaddrfifo_wready = 1'b1;
+616:     assign sramreqaddrfifo_rdata = '0;
+617: 
+618:     // Tie-off unused signals
+619:     logic unused_sramreqaddrfifo;
+620:     assign unused_sramreqaddrfifo = ^{sramreqaddrfifo_wdata, sramreqaddrfifo_rdata};
+621:   end
+622: 
+623:   // Rationale having #Outstanding depth in response FIFO.
+624:   //    In normal case, if the host or the crossbar accepts the response data,
+625:   //    response FIFO isn't needed. But if in any case it has a chance to be
+626:   //    back pressured, the response FIFO should store the returned data not to
+627:   //    lose the data from the SRAM interface. Remember, SRAM interface doesn't
+628:   //    have back-pressure signal such as read_ready.
+629:   prim_fifo_sync #(
+630:     .Width   (RspFifoWidth),
+631:     .Pass    (1'b1),
+632:     .Depth   (Outstanding),
+633:     .Secure  (SecFifoPtr)
+634:   ) u_rspfifo (
+635:     .clk_i,
+636:     .rst_ni,
+637:     .clr_i   (1'b0),
+638:     .wvalid_i(rspfifo_wvalid),
+639:     .wready_o(rspfifo_wready),
+640:     .wdata_i (rspfifo_wdata),
+641:     .rvalid_o(rspfifo_rvalid),
+642:     .rready_i(rspfifo_rready),
+643:     .rdata_o (rspfifo_rdata),
+644:     .full_o  (),
+645:     .depth_o (),
+646:     .err_o   (rsp_fifo_error)
+647:   );
+648: 
+649:   // below assertion fails when SRAM rvalid is asserted even though ReqFifo is empty
+650:   `ASSERT(rvalidHighReqFifoEmpty, rvalid_i |-> reqfifo_rvalid)
+651: 
+652:   // below assertion fails when outstanding value is too small (SRAM rvalid is asserted
+653:   // even though the RspFifo is full)
+654:   `ASSERT(rvalidHighWhenRspFifoFull, rvalid_i |-> rspfifo_wready)
+655: 
+656:   // If both ErrOnWrite and ErrOnRead are set, this block is useless
+657:   `ASSERT_INIT(adapterNoReadOrWrite, (ErrOnWrite & ErrOnRead) == 0)
+658: 
+659:   `ASSERT_INIT(SramDwHasByteGranularity_A, SramDw % 8 == 0)
+660:   `ASSERT_INIT(SramDwIsMultipleOfTlulWidth_A, SramDw % top_pkg::TL_DW == 0)
+661: 
+662:   // These parameter options cannot both be true at the same time
+663:   `ASSERT_INIT(DataIntgOptions_A, ~(EnableDataIntgGen & EnableDataIntgPt))
+664: 
+665:   // Make sure that outputs are defined (a special case for tl_o is explained separately below)
+666:   `ASSERT_KNOWN(ReqOutKnown_A,   req_o  )
+667:   `ASSERT_KNOWN(WeOutKnown_A,    we_o   )
+668:   `ASSERT_KNOWN(AddrOutKnown_A,  addr_o )
+669:   `ASSERT_KNOWN(WdataOutKnown_A, wdata_o)
+670:   `ASSERT_KNOWN(WmaskOutKnown_A, wmask_o)
+671: 
+672:   // We'd like to claim that the payload of the TL output is known, but this isn't necessarily true!
+673:   // This block is just an adapter that converts from an SRAM interface to a TL interface. To make
+674:   // the assertion true, we need to weaken it to say that that tl_o is only X if the SRAM supplied
+675:   // that X.
+676:   //
+677:   // This is a bit tricky to track because SRAM responses get stored in u_rspfifo. Assuming that the
+678:   // FIFO doesn't manufacture X's (an assertion in prim_fifo_sync), the only stage of the path
+679:   // needed in this file is the following:
+680:   `ASSERT_KNOWN(TlOutValidKnown_A, tl_o.d_valid)
+681:   `ASSERT(TlOutKnownIfFifoKnown_A, !$isunknown(rspfifo_rdata) -> !$isunknown(tl_o))
+682: 
+683: endmodule
+
+================================== Ai Message ==================================
+
+## OpenTitan TLUL IP Security Analysis Report
+
+### 1. Security Features and Register Interface Policies
+
+#### Security Features (from documentation and code review)
+- **Command and Data Integrity:** Optional integrity checking and generation for both commands and data, controlled by parameters.
+- **Instruction Fetch Access Control:** Instruction fetches are only allowed if explicitly enabled (`en_ifetch_i`).
+- **Address Alignment Enforcement:** Only word-aligned accesses are allowed for register interfaces.
+- **Comprehensive Error Handling:** Internal errors aggregate protocol, alignment, malformed metadata, instruction, and integrity errors.
+- **Permanent Error Latching:** Integrity and readback errors are latched until reset for alerting.
+- **Readback Mode (SRAM):** Optional readback and verification of SRAM reads/writes to detect tampering or faults.
+- **Protocol Compliance:** Assertions and error modules enforce TileLink protocol compliance.
+
+#### Register Interface Policies
+- **Register accesses must be word-aligned.**
+- **Instruction fetches require explicit enablement.**
+- **Integrity and error checks can be enabled/disabled via parameters.**
+- **Malformed user fields or protocol violations result in error responses.**
+- **No explicit privilege-level checking in the RTL (potential area for improvement).**
+
+---
+
+### 2. Security Issues Identified
+
+#### A. tlul_adapter_reg.sv
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv`  
+**Line(s):** 91  
+**Description:**  
+- The register address output is always word-aligned by forcing the two least significant bits to zero:
+  ```systemverilog
+  assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00}; // generate always word-align
+  ```
+- **Security Aspect:** This enforces word alignment, which is required by the OpenTitan comportability spec. However, if the register map or downstream logic expects sub-word accesses or different alignment, this could cause silent data corruption or access control bypass.
+- **Tools Used:** Similar Bug Agent, Manual Review
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv`  
+**Line(s):** 23-25, 178-196  
+**Description:**  
+- Integrity checking and generation are disabled by default (`CmdIntgCheck=0`, etc.). If not explicitly enabled in the instantiation, the module will not protect against command/data tampering.
+- **Security Aspect:** Potential for integrity bypass if integrities are not enabled in higher-level design.
+- **Tools Used:** Manual Review, CWE Agent
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv`  
+**Line(s):** 204-206  
+**Description:**  
+- Instruction fetches are only allowed if `en_ifetch_i` is enabled. This is a positive security feature, but if `en_ifetch_i` is incorrectly set, unauthorized instruction fetches could occur.
+- **Security Aspect:** Access control for instruction fetches.
+- **Tools Used:** Manual Review, Assertion Checker
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv`  
+**Line(s):** 208  
+**Description:**  
+- No privilege-level checking for register accesses. All accesses are treated equally, which may not be sufficient for security-critical registers.
+- **Security Aspect:** Lack of privilege enforcement.
+- **Tools Used:** CWE Agent
+
+#### B. tlul_adapter_sram.sv
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv`  
+**Line(s):** 393  
+**Description:**  
+- The SRAM address output is sliced from the TileLink address:
+  ```systemverilog
+  assign addr_o     = (tl_i_int.a_valid) ? tl_i_int.a_address[DataBitWidth+:SramAw] : '0;
+  ```
+- **Security Aspect:** If the address mapping between TileLink and SRAM is not carefully managed, this could lead to address aliasing or out-of-bounds accesses, especially since the module intentionally omits a base address for flexibility.
+- **Tools Used:** Similar Bug Agent, Manual Review
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv`  
+**Line(s):** 34, 116-139  
+**Description:**  
+- Command integrity checking is optional and disabled by default. If not enabled, the module is vulnerable to command tampering.
+- **Security Aspect:** Potential for integrity bypass if not enabled.
+- **Tools Used:** Manual Review, CWE Agent
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv`  
+**Line(s):** 95-114  
+**Description:**  
+- Readback error checking is optional and must be enabled via parameter. If not enabled, silent data corruption or fault injection may go undetected.
+- **Security Aspect:** Data integrity and fault detection.
+- **Tools Used:** Manual Review
+
+---
+
+### 3. General Observations
+
+- **No major protocol violations or missing error checks were found.** The modules are robust in handling protocol errors, alignment, and malformed requests.
+- **Security features are parameterized and must be enabled by the integrator.** If not enabled, some protections (integrity, readback) are not active.
+- **No privilege-level enforcement in register adapters.** This could be a concern for security-critical registers.
+
+---
+
+### 4. Recommendations
+
+- **Ensure all security features (integrity, readback) are enabled in security-critical instantiations.**
+- **Review address mapping logic to prevent aliasing or out-of-bounds accesses, especially in SRAM adapters.**
+- **Consider adding privilege-level checks for register accesses if required by the system security policy.**
+- **Document the need to enable security features in higher-level integration.**
+
+---
+
+## Summary Table
+
+| File Name                                   | Line Number(s) | Description of Issue                                                                 | Security Aspect Affected                | Tools Used                        |
+|----------------------------------------------|----------------|--------------------------------------------------------------------------------------|-----------------------------------------|-----------------------------------|
+| tlul_adapter_reg.sv                         | 91             | Forced word alignment of register address; could cause issues if sub-word access needed | Register access control, data integrity | Similar Bug Agent, Manual Review  |
+| tlul_adapter_reg.sv                         | 23-25, 178-196 | Integrity checking/generation disabled by default                                    | Data/command integrity                  | Manual Review, CWE Agent          |
+| tlul_adapter_reg.sv                         | 204-206        | Instruction fetch access control via en_ifetch_i                                     | Access control                          | Manual Review, Assertion Checker  |
+| tlul_adapter_reg.sv                         | 208            | No privilege-level checking for register accesses                                    | Access control                          | CWE Agent                         |
+| tlul_adapter_sram.sv                        | 393            | SRAM address slicing could cause aliasing/out-of-bounds accesses                     | Memory access control                   | Similar Bug Agent, Manual Review  |
+| tlul_adapter_sram.sv                        | 34, 116-139    | Command integrity checking is optional/disabled by default                           | Data/command integrity                  | Manual Review, CWE Agent          |
+| tlul_adapter_sram.sv                        | 95-114         | Readback error checking is optional/disabled by default                              | Data integrity, fault detection         | Manual Review                     |
+
+---
+
+**END**
+================================== Ai Message ==================================
+
+## OpenTitan TLUL IP Security Analysis Report
+
+### 1. Security Features and Register Interface Policies
+
+#### Security Features (from documentation and code review)
+- **Command and Data Integrity:** Optional integrity checking and generation for both commands and data, controlled by parameters.
+- **Instruction Fetch Access Control:** Instruction fetches are only allowed if explicitly enabled (`en_ifetch_i`).
+- **Address Alignment Enforcement:** Only word-aligned accesses are allowed for register interfaces.
+- **Comprehensive Error Handling:** Internal errors aggregate protocol, alignment, malformed metadata, instruction, and integrity errors.
+- **Permanent Error Latching:** Integrity and readback errors are latched until reset for alerting.
+- **Readback Mode (SRAM):** Optional readback and verification of SRAM reads/writes to detect tampering or faults.
+- **Protocol Compliance:** Assertions and error modules enforce TileLink protocol compliance.
+
+#### Register Interface Policies
+- **Register accesses must be word-aligned.**
+- **Instruction fetches require explicit enablement.**
+- **Integrity and error checks can be enabled/disabled via parameters.**
+- **Malformed user fields or protocol violations result in error responses.**
+- **No explicit privilege-level checking in the RTL (potential area for improvement).**
+
+---
+
+### 2. Security Issues Identified
+
+#### A. tlul_adapter_reg.sv
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv`  
+**Line(s):** 91  
+**Description:**  
+- The register address output is always word-aligned by forcing the two least significant bits to zero:
+  ```systemverilog
+  assign addr_o  = {tl_i.a_address[RegAw-1:2], 2'b00}; // generate always word-align
+  ```
+- **Security Aspect:** This enforces word alignment, which is required by the OpenTitan comportability spec. However, if the register map or downstream logic expects sub-word accesses or different alignment, this could cause silent data corruption or access control bypass.
+- **Tools Used:** Similar Bug Agent, Manual Review
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv`  
+**Line(s):** 23-25, 178-196  
+**Description:**  
+- Integrity checking and generation are disabled by default (`CmdIntgCheck=0`, etc.). If not explicitly enabled in the instantiation, the module will not protect against command/data tampering.
+- **Security Aspect:** Potential for integrity bypass if integrities are not enabled in higher-level design.
+- **Tools Used:** Manual Review, CWE Agent
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv`  
+**Line(s):** 204-206  
+**Description:**  
+- Instruction fetches are only allowed if `en_ifetch_i` is enabled. This is a positive security feature, but if `en_ifetch_i` is incorrectly set, unauthorized instruction fetches could occur.
+- **Security Aspect:** Access control for instruction fetches.
+- **Tools Used:** Manual Review, Assertion Checker
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_reg.sv`  
+**Line(s):** 208  
+**Description:**  
+- No privilege-level checking for register accesses. All accesses are treated equally, which may not be sufficient for security-critical registers.
+- **Security Aspect:** Lack of privilege enforcement.
+- **Tools Used:** CWE Agent
+
+#### B. tlul_adapter_sram.sv
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv`  
+**Line(s):** 393  
+**Description:**  
+- The SRAM address output is sliced from the TileLink address:
+  ```systemverilog
+  assign addr_o     = (tl_i_int.a_valid) ? tl_i_int.a_address[DataBitWidth+:SramAw] : '0;
+  ```
+- **Security Aspect:** If the address mapping between TileLink and SRAM is not carefully managed, this could lead to address aliasing or out-of-bounds accesses, especially since the module intentionally omits a base address for flexibility.
+- **Tools Used:** Similar Bug Agent, Manual Review
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv`  
+**Line(s):** 34, 116-139  
+**Description:**  
+- Command integrity checking is optional and disabled by default. If not enabled, the module is vulnerable to command tampering.
+- **Security Aspect:** Potential for integrity bypass if not enabled.
+- **Tools Used:** Manual Review, CWE Agent
+
+**File:** `/home/XXXX-2/hackdate/hw/ip/tlul/rtl/tlul_adapter_sram.sv`  
+**Line(s):** 95-114  
+**Description:**  
+- Readback error checking is optional and must be enabled via parameter. If not enabled, silent data corruption or fault injection may go undetected.
+- **Security Aspect:** Data integrity and fault detection.
+- **Tools Used:** Manual Review
+
+---
+
+### 3. General Observations
+
+- **No major protocol violations or missing error checks were found.** The modules are robust in handling protocol errors, alignment, and malformed requests.
+- **Security features are parameterized and must be enabled by the integrator.** If not enabled, some protections (integrity, readback) are not active.
+- **No privilege-level enforcement in register adapters.** This could be a concern for security-critical registers.
+
+---
+
+### 4. Recommendations
+
+- **Ensure all security features (integrity, readback) are enabled in security-critical instantiations.**
+- **Review address mapping logic to prevent aliasing or out-of-bounds accesses, especially in SRAM adapters.**
+- **Consider adding privilege-level checks for register accesses if required by the system security policy.**
+- **Document the need to enable security features in higher-level integration.**
+
+---
+
+## Summary Table
+
+| File Name                                   | Line Number(s) | Description of Issue                                                                 | Security Aspect Affected                | Tools Used                        |
+|----------------------------------------------|----------------|--------------------------------------------------------------------------------------|-----------------------------------------|-----------------------------------|
+| tlul_adapter_reg.sv                         | 91             | Forced word alignment of register address; could cause issues if sub-word access needed | Register access control, data integrity | Similar Bug Agent, Manual Review  |
+| tlul_adapter_reg.sv                         | 23-25, 178-196 | Integrity checking/generation disabled by default                                    | Data/command integrity                  | Manual Review, CWE Agent          |
+| tlul_adapter_reg.sv                         | 204-206        | Instruction fetch access control via en_ifetch_i                                     | Access control                          | Manual Review, Assertion Checker  |
+| tlul_adapter_reg.sv                         | 208            | No privilege-level checking for register accesses                                    | Access control                          | CWE Agent                         |
+| tlul_adapter_sram.sv                        | 393            | SRAM address slicing could cause aliasing/out-of-bounds accesses                     | Memory access control                   | Similar Bug Agent, Manual Review  |
+| tlul_adapter_sram.sv                        | 34, 116-139    | Command integrity checking is optional/disabled by default                           | Data/command integrity                  | Manual Review, CWE Agent          |
+| tlul_adapter_sram.sv                        | 95-114         | Readback error checking is optional/disabled by default                              | Data integrity, fault detection         | Manual Review                     |
+
+---
+
+**END**
+================================== Ai Message ==================================
+
+[]

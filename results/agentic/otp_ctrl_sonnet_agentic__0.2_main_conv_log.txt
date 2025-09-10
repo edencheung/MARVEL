@@ -1,0 +1,3148 @@
+================================ System Message ================================
+
+
+    You are a supervisor agent in a multi-agent system focused on identifying hardware security vulnerabilities in RTL code. 
+    Your objective is to analyze the given SoC and generate a detailed security report.
+
+    You have access to the following tools: ['run_anomaly_detector_agent', 'run_verilator_agent', 'run_llm_cwe_checker_agent', 'run_assertions_checker_agent', 'run_linter_agent', 'run_similar_bug_agent', 'list_dir', 'read_file', 'read_file_with_line_numbers']. Each tool specializes in a specific task:
+
+    - Verilator Agent: Runs Verilator tests on the given IP and analyzes failing test reports to detect potential security issues.
+    - Assertion Agent: Takes a Verilog file, a top module name, and a security aspect to check. It generates and runs security assertions on the RTL. Failing assertions indicate potential issues that require further localization.
+    - Linter Agent: Accepts a Verilog file, top module, and security focus. It selects relevant lint checks and flags design violations tied to security concerns.
+    - CWE Agent: Given a Verilog file, a top module, and a security aspect, this agent maps the RTL code to relevant CWEs and detects CWE-related vulnerabilities.
+    - Similar Bug Agent: Accepts a file path and a line number (where a bug was found) to locate similar patterns or recurring bugs throughout the RTL code.
+
+    Instructions for analysis:
+
+    - Read the documentataion to identify security features and register interfaces policies.
+    - Use Verilator, Assertion, Anomaly and Linter agents to uncover initial issues in the design.
+    - If a bug is detected but not localized, use the CWE Agent to further inspect the related security aspect in the surrounding RTL.
+    - After detecting any bugs, use the Similar Bug Agent to scan similar files (of the same or of different IPs) for similar vulnerabilities.
+
+    Output Format:
+
+    - For each identified issue, report:
+    - File name
+    - Line number(s)
+    - Brief description of the issue
+    - Security aspect affected
+    - Tools used to identify the issue
+
+    When your analysis is complete, end your response with "END".
+    
+================================ Human Message =================================
+
+Identify security issues in the otp_ctrl IP of the OpenTitan SoC, located at /home/XXXX-2/hackdate.
+
+    - All IPs are located in the 'hw/ip' directory.
+    - RTL code for each IP is located in its 'rtl' subdirectory, with source files having the '.sv' extension.
+        - reg_top files contain the register interface for the IP.
+        - control/fsm files contain the control logic for the IP.
+        - core files contain the core logic for the IP.
+    - Documentation files (.md) are located in the 'doc' directories of each IP.
+        - theory_of_operation explains the properties of the IP and its security features.
+        - registers.md files contain the register interface and its read/write access policies.
+    - Ignore '.core' files; they are used by build tools and are not relevant for security analysis.
+
+    Focus on the otp_ctrl IP and make sure to analyze it thoroughly.
+
+    First, identify the relevant security properties and read/write policies of the register interfaces from the documentation. 
+    Then, use all available tools to perform a comprehensive security analysis on the RTL code.
+    
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_Qh8X8idjiyTpkIe4wt2EdZ32)
+ Call ID: call_Qh8X8idjiyTpkIe4wt2EdZ32
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/doc
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/otp_ctrl/doc:
+checklist.md interfaces.md otp_ctrl_behavioral_model.svg otp_ctrl_blockdiag.svg otp_ctrl_buf_part_fsm.svg otp_ctrl_dai_fsm.svg otp_ctrl_digest_mechanism.svg otp_ctrl_digests.md otp_ctrl_field_descriptions.md otp_ctrl_kdi_fsm.svg otp_ctrl_key_req_ack.svg otp_ctrl_lci_fsm.svg otp_ctrl_mmap.md otp_ctrl_overview.svg otp_ctrl_partitions.md otp_ctrl_prim_otp.svg otp_ctrl_unbuf_part_fsm.svg programmers_guide.md registers.md theory_of_operation.md
+
+Directories in /home/XXXX-2/hackdate/hw/ip/otp_ctrl/doc:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_bf9bVQzCb3cv7xbgmWyKYrmB)
+ Call ID: call_bf9bVQzCb3cv7xbgmWyKYrmB
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/doc/theory_of_operation.md
+================================= Tool Message =================================
+Name: read_file
+
+# Theory of Operation
+
+Conceptually speaking, the OTP functionality is at a high level split into "front-end" and "back-end".
+The "front-end" contains the logical partitions that feed the hardware and software consumer interfaces of the system.
+The "back-end" represents the programming interface used by hardware and software components to stage the upcoming values.
+The diagram below illustrates this behavioral model.
+
+![OTP Controller Block Diagram](../doc/otp_ctrl_behavioral_model.svg)
+
+Note that the front-end contains both buffered and unbuffered partitions.
+Buffered partitions are sensed once per power cycle and their contents are stored in registers, whereas unbuffered partitions are read on-demand.
+The former are typically partitions that contain data like hardware configuration bits, key material and the life cycle state that need to be always available to the hardware, whereas the latter are large partitions that are accessed infrequently, such as the software configurations.
+Values that are programmed into a buffered partition via the programming interface (coupled with read verification) are merely "staged", and do not take effect until the next power cycle.
+
+The sections below describe the operation of various pieces of the OTP controller and how it supports the described functionality.
+
+## Logical Partitions
+
+The OTP is logically separated into partitions that represent different functions.
+This means the isolation is virtual and maintained by the OTP controller instead of the underlying OTP IP.
+
+Within each logical partition, there are specific enforceable properties
+
+- Confidentiality via secret partitions
+  - This controls whether a particular partition contains secret data.
+  - If secret, a partition is not readable by software once locked, and is scrambled in storage.
+- Read lockability
+  - This controls whether a particular partition disables software readability for later stage software.
+  - Some partitions can be locked statically (by computing and storing an associated digest in OTP), others can be read locked at runtime via CSRs.
+- Write lockability
+  - This controls whether a partition is locked and prevented from future updates.
+  - A locked partition is stored alongside a digest to be used later for integrity verification.
+- Integrity Verification
+  - Once a partition is write-locked by calculating and writing a non-zero [digest](#locking-a-partition) to it, it can undergo periodic verification (time-scale configurable by software).
+This verification takes two forms, partition integrity checks, and storage consistency checks.
+
+Since the OTP is memory-like in nature (it only outputs a certain number of bits per address location), some of the logical partitions are buffered in registers for instantaneous and parallel access by hardware.
+This is a critical point, since after power-up, these particular OTP contents are stored in flip flops and sourced to the system.
+I.e., buffered partitions are **NOT** directly sourced from the OTP macro itself.
+Thus the security of both volatile (OTP controller) and non-volatile (OTP IP) storage becomes important.
+
+### Partition Listing and Description
+
+The OTP controller for OpenTitan contains the seven logical partitions shown below.
+
+{{#include otp_ctrl_partitions.md}}
+
+Generally speaking, the production life cycle of a device is split into 5 stages "Manufacturing" -> "Calibration and Testing" -> "Provisioning" -> "Mission" -> "RMA".
+OTP values are usually programmed during "Calibration and Testing", "Provisioning" and "RMA" stages, as explained below.
+A detailed listing of all the items and the corresponding memory map can be found in the [Programmer's Guide](programmers_guide.md)) further below.
+
+### Calibration and Test
+
+During this stage, the device is tested for functionality and calibrated to ensure uniformity.
+The calibration can focus on a number of things, but usually is centered around adjusting clock, voltage and timing sources to remove process variation.
+These calibration values are programmed into the CREATOR_SW_CFG partition, as they are non-secret values meant to be read out by software and programmed into respective peripherals.
+
+Early on during this stage, the various tokens are also programmed into the secret partitions and harvested by the silicon creator.
+
+### Provisioning
+
+During this stage, the device is provisioned with the final firmware and a "unique" seed or identity.
+The secret partitions are populated with root secrets and keys that are critical to establishing the device identity.
+
+As part of injecting the final firmware, the stock-keeping-unit-specific hardware and software configurations are also programmed.
+
+### Life Cycle Partition
+
+The life cycle partition is active throughout all stages and hence it is the **ONLY** partition that cannot be locked.
+After the device finishes provisioning and goes into production, it must retain the ability to transition back to RMA in case of unexpected failures.
+
+In order to support this transition, the [life cycle state](../../lc_ctrl/README.md) and counters must always be update-able.
+
+## Locking a Partition
+
+Write access to a partition can be permanently locked when software determines it will no longer make any updates to that partition.
+To lock, an integrity constant is calculated and programmed alongside the other data of that partition.
+The size of that integrity constant depends on the partition size granule, and is either 32bit or 64bit (see also [Direct Access Memory Map](#direct-access-memory-map)).
+
+Once the "integrity digest" is non-zero, no further updates are allowed.
+If the partition is secret, software is in addition no longer able to read its contents (see [Secret Partition description](#secret-vs-nonsecret-partitions)).
+
+Note however, in all partitions, the digest itself is **ALWAYS** readable.
+This gives software an opportunity to confirm that the locking operation has proceeded correctly, and if not, scrap the part immediately.
+
+Calculation of the integrity digest depends on whether the partition requires periodic background verification.
+
+### Vendor Test Partition
+
+The vendor test partition is intended to be used for OTP programming smoke checks during the manufacturing flow.
+The silicon creator may implement these checks inside the proprietary version of the `prim_otp` wrapper.
+This partition behaves like any other SW partition, with the exception that ECC uncorrectable errors will not lead to fatal errors / alerts as they do in all other partitions.
+This is due to the nature of the OTP programming smoke checks, which may leave certain OTP words in a state inconsistent with the ECC polynomial employed upon OTP readout.
+
+### Software Configuration Partitions
+
+The software configuration partitions are used as non-volatile storage for flags, configuration and calibration data.
+As such, the contents of this partition are usually consumed once as part of code execution, or moved to another storage compartment somewhere in the design.
+For example, the clock calibration values and the LDO calibration values are programmed to the analog sensor top (AST) at startup.
+
+As such, it is not necessary to check periodically at the OTP source.
+Instead, software can simply check as part of secure boot and take other measures when these values are programmed into peripherals.
+
+For this partition it is thus the responsibility of software to calculate the integrity digest and program it into the OTP.
+It is also reasonable to shadow (parts of) this partition in main memory, and there is not an immediate impact from OTP contents to hardware.
+
+### Hardware Configuration and Secret Partitions
+
+The hardware and secret partitions directly affect downstream hardware.
+The contents must go through periodic integrity checks and therefore the stored digest is calculated by hardware when software provides the intent to lock (as opposed to the software partitions where the digest has to be calculated by software).
+
+### Life Cycle Partition
+
+The life cycle partition cannot be locked and will therefore not contain a stored digest.
+Note however that only the life cycle controller has access to this partition, i.e., the Direct Access Interface (DAI) cannot read nor write from/to the life cycle partition.
+
+## Secret vs Non-Secret Partitions
+
+Non-secret OTP partitions hold data that can be public; or data that has no impact on security.
+For example, the current value of lock bits or clock calibration values.
+These values are stored in OTP as plaintext.
+
+Secret partitions contain data that are critical to security, for example FLASH scrambling keys, device root secret and unlock tokens.
+These values are stored scrambled in OTP, and are descrambled upon read.
+The currently employed cipher is PRESENT, as it lends itself well to iterative decomposition, and it is a proven lightweight block cipher (see also [PRESENT Scrambling Primitive](../../prim/doc/prim_present.md).
+The usage of a block cipher however implies that the secret partitions can only be written in 64bit chunks.
+
+Further, the contents of a particular secret partition are not readable by software once locked (other than the digest which must be always readable); while non-secret partitions are always readable unless read accessibility is explicitly removed by software.
+
+Unfortunately, secret partitions must utilize a global netlist key for the scrambling operation, as there is no other non-volatile storage to store a unique key.
+
+
+## Partition Checks
+
+### Integrity
+
+Once the appropriate partitions have been locked, the hardware integrity checker employs two integrity checks to verify the content of the volatile buffer registers:
+
+1. All buffered partitions have additional ECC protection (8bit ECC for each 64bit block) that is concurrently monitored.
+2. The digest of the partition is recomputed at semi-random intervals and compared to the digest stored alongside the partition.
+
+The purpose of this check is NOT to check between the storage flops and the OTP, but whether the buffer register contents remain consistent with the calculated digest.
+This verification is primarily concerned with whether the storage flops have experienced fault attacks.
+This check applies to only the HW_CFG* and SECRET* partitions.
+If a failure is encountered, the OTP controller will send out a `fatal_check_error` alert and reset all of its hardware outputs to their defaults.
+
+### Storage Consistency
+
+This verification ensures the value stored in the buffer registers remain consistent with those in the OTP.
+This process re-reads the OTP at semi-random intervals and confirms the value read is the same as the value stored.
+Note, given there are integrity checks in parallel, it is not necessary for some partitions to check ALL read contents for consistency.
+If there is an integrity digest, only the digest needs to be read; otherwise, all values must be read.
+
+
+This check applies to LIFE_CYCLE, HW_CFG* and SECRET* partitions.
+If a failure is encountered, the OTP controller will send out a `fatal_check_error` alert and reset all of its hardware outputs to their defaults.
+
+Note that checks applied to life cycle could cause a failure if life cycle is updated, because life cycle is the only partition that may contain live updates.
+The controller hence detects this condition based on the `lc_check_byp_en_i` signal coming from the life cycle controller, and pauses background checks on this partition in order to prevent false positives.
+
+### Secret Partition Integrity Checks
+
+Since the secret partitions are stored scrambled, this also implies the integrity digest is calculated over the scrambled form.
+In order to balance the amount of buffer registers needed, only the decrypted form of the secret partitions is held in buffer registers.
+Hardware calculates the digest by re-scrambling the data before passing it through the digest.
+
+
+## Power-up and Sense
+
+The OTP controller partition storage must output a specified safe default (it is not always 0 like a blank OTP) upon reset release.
+This default output must remain until the OTP controller completes all checks.
+
+The OTP controller reads from the OTP IP.
+If the reads pass OTP IP internal checks (for example ECC or redundancy), the partition storage is updated; however the output is still held at the default state via an output mux.
+After all read is complete, the OTP controller performs integrity checks on the HW_CFG* and SECRET* partitions.
+If a partition fails the integrity checks at this point it would signal an initialization error in the status CSR and abort further initialization.
+
+After all integrity checks are complete, the OTP controller releases the output gating and marks outputs as valid.
+However, any partition marked with "error" continues to hold its output in the default state.
+
+Once the above steps are complete, the partition storage in buffered registers is not updated again (except for updates to the life cycle partition through the life cycle interface).
+I.e., values programmed to OTP via the programming interface will not be visible in buffered registers until after the next power cycle.
+
+At this point, outputs of the partition storage are NOT expected to change unless a periodic check suddenly fails.
+When this failure occurs, all outputs are reverted to their default state, and an alert is immediately triggered to the alert handler.
+For timing purposes, OTP outputs can be treated as semi-static, as this error event should be rare and exceptional.
+
+
+## Partition Defaults
+
+Partition defaults are context specific.
+For example, a hardware configuration item that locks down specific access should default to "no access".
+This ensures that a glitch attack on the OTP cannot easily revert the design to an insecure state.
+
+This hence suggests that when an OTP is all 0's and all 1's, it should, whenever possible, reflect an invalid or inert state in the encoding space of the affected item.
+This also implies the reset state of consuming agents (for example key manager and life cycle), should default to invalid / inert state as well.
+
+
+## Program and Read Ports
+
+As shown previously, the OTP is split into a front and back end.
+The back-end interface is primarily used to update OTP contents, and read back for debug and verification purposes.
+Despite being a separate functional access port from the logical partitions, the program and read ports are subjected to the same access controls.
+
+When a partition is write-locked, programming accesses are disallowed.
+If the partition is secret, read accesses by the back-end interface are also disallowed (except for the digest which must always be readable).
+Software can also disable any read accesses to the software configuration partitions via CSR settings to prevent later stage software from reading any content.
+
+The exception to the above is the life cycle partition.
+The life cycle controller interface also acts as a "back-end" interface that always has programming access to ensure life cycle state can be advanced.
+
+Note, the program and read ports can conflict with ongoing background storage checks, and the OTP controller arbitrates between these two sides.
+An in-progress operation will always be completed.
+Afterwards, or when two requests arrive at the same time, the priority is life cycle > programming interface > on-demand read accesses via CSR windows > background checks.
+
+
+## Programming the OTP
+
+The OTP controller has two programming paths:
+
+1. a functional programming path through software (the program port),
+2. Life cycle programming path through hardware.
+
+The functional interface is used to update all partitions except for life cycle.
+As mentioned previously, any updates made during the current power cycle are **NOT** reflected in the buffered partitions until the next reboot.
+
+The life cycle interface is used to update the life cycle state and transition counter only.
+The commands are issued from the [life cycle controller](../../lc_ctrl/README.md), and similarly, successful or failed indications are also sent back to the life cycle controller.
+Similar to the functional interface, the life cycle controller allows only one update per power cycle, and after a requested transition reverts to an inert state until reboot.
+
+For more details on how the software programs the OTP, please refer to the [Programmer's Guide](programmers_guide.md)) further below.
+
+
+## Design Details
+
+### Block Diagram
+
+The following is a high-level block diagram that illustrates everything that has been discussed.
+
+![OTP Controller Block Diagram](../doc/otp_ctrl_blockdiag.svg)
+
+Each of the partitions P0-P7 has its [own controller FSM](#partition-implementations) that interacts with the OTP wrapper and the [scrambling datapath](#scrambling-datapath) to fulfill its tasks.
+The partitions expose the address ranges and access control information to the Direct Access Interface (DAI) in order to block accesses that go to locked address ranges.
+Further, the only two blocks that have (conditional) write access to the OTP are the DAI and the Life Cycle Interface (LCI) blocks.
+The partitions can only issue read transactions to the OTP macro.
+Note that the access ranges of the DAI and the LCI are mutually exclusive.
+I.e., the DAI cannot read from nor write to the life cycle partition.
+The LCI cannot read the OTP, but is allowed to write to the life cycle partition.
+
+The CSR node on the left side of this diagram connects to the DAI, the OTP partitions (P0-P7) and the OTP wrapper through a gated TL-UL interface.
+All connections from the partitions to the CSR node are read-only, and typically only carry a subset of the information available.
+E.g., the secret partitions only expose their digest value via the CSRs.
+
+The Key Derivation Interface (KDI) on the bottom right side interacts with the scrambling datapath, the EDN and the partition holding the scrambling root keys in order to derive static and ephemeral scrambling keys for FLASH and SRAM scrambling.
+
+The test access gate shown at the top of the block diagram is governed by the life cycle qualification signal `dft_en_i`, which is only enabled during the TEST_UNLOCKED* life cycle states.
+Otherwise, test access via this TL-UL window is locked down.
+
+In addition to the blocks mentioned so far, the OTP controller also contains an LFSR timer that creates pseudo-randomly distributed partition check requests, and provides pseudo random data at high bandwidth in the event of a secure erase request due to chip-wide alert escalation.
+For security reasons, the LFSR is periodically reseeded with entropy coming from EDN.
+
+### Data Allocation and Packing
+#### Software View
+
+The effective word width of an OTP IP typically depends on a couple of factors, including the redundancy scheme employed.
+For this the design at hand, it is assumed that this native OTP word-width is 16bit.
+For software convenience, however, these details are abstracted and the open-source OTP controller exposes the OTP storage as a linear address space of 32bit words, which is aligned with the machine word size of the Ibex processor.
+Since the OTP IP employs a redundancy mechanism similar to ECC, this implies however that write operations take place at a granularity of 32bit blocks for non-secret and 64bit blocks for secret partitions (due to the scrambling).
+Hence, software is responsible to appropriately pack and program items, since each 32bit location can only be programmed once.
+
+#### Life Cycle View
+
+Since the life cycle partition is the only partition that needs live updates in-field, proper care must be taken to properly encode data in this partition such that incremental updates are possible.
+The life cycle state is hence encoded such that incremental updates to the state are always carried out at the granularity of a 16bit word.
+Further, the life cycle transition counter is encoded such that each stroke consumes a full 16bit word for the same reason.
+
+See [life cycle controller documentation](../../lc_ctrl/README.md) for more details on the life cycle encoding.
+
+### Partition Controllers
+
+In RTL, we distinguish between buffered and unbuffered partition modules.
+These are parameterized, such that we can assemble the array of OTP partitions with these two modules only.
+The corresponding controller FSMs are explained in more detail below.
+
+#### Unbuffered Partition
+
+![Unbuffered Partition FSM](../doc/otp_ctrl_unbuf_part_fsm.svg)
+
+As shown above, the unbuffered partition module has a relatively simple controller FSM that only reads out the digest value of the partition upon initialization, and then basically waits for TL-UL read transactions to its corresponding window in the CSR space.
+
+Write access through the DAI will be locked in case the digest is set to a non-zero value.
+Also, read access through the DAI and the CSR window can be locked at runtime via a CSR.
+Read transactions through the CSR window will error out if they are out of bounds, or if read access is locked.
+
+Note that unrecoverable [OTP errors](#generalized-open-source-interface), ECC failures in the digest register or external escalation via `lc_escalate_en` will move the partition controller into a terminal error state.
+
+#### Buffered Partition
+
+![Buffered Partition FSM](../doc/otp_ctrl_buf_part_fsm.svg)
+
+The controller FSM of the buffered partition module is more complex than the unbuffered counterpart, since it has to account for scrambling and digest calculation.
+
+Upon initialization, the controller reads out the whole partition and descrambles it on the fly if needed.
+
+Then, right after the initial readout, the partition controller jumps into the first integrity check, which behaves somewhat differently, depending on whether the partition is digest protected (or not) and/or scrambled (or not).
+If the partition is not digest protected, or if the digest has not yet been computed, the check completes right away, and the buffered values are released for hardware broadcast.
+Otherwise, the partition contents in the buffer registers are re-scrambled if needed, and a digest is computed on the fly.
+If the computed digest matches with the one that has been read out before, the buffered registers are released for hardware broadcast.
+Otherwise, the buffered values are gated to their default, and an alert is triggered through the error handling logic.
+
+After initialization, the integrity check (as described above) and the consistency check can be triggered by the LFSR timer mechanism on a periodic basis.
+
+The consistency check behaves differently, depending on whether the partition is digest protected or not.
+If it is, the consistency check will read out the digest stored in OTP and compare it with the value stored in the buffer register.
+Otherwise, if no digest is available, the controller will read out the whole partition from OTP, and compare it to the contents stored in the buffer registers.
+In case of a mismatch, the buffered values are gated to their default, and an alert is triggered through the error handling logic.
+
+Note that in case of unrecoverable OTP errors or ECC failures in the buffer registers, the partition controller FSM is moved into a terminal error state, which locks down all access through DAI and clamps the values that are broadcast in hardware to their defaults.
+
+External escalation via the `lc_escalate_en` signal will move the partition controller FSM into the terminal error state as well.
+See [life cycle controller documentation](../../lc_ctrl/README.md) for more details.
+
+### Direct Access Interface Control
+
+![Direct Access Interface FSM](../doc/otp_ctrl_dai_fsm.svg)
+
+Upon reset release, the DAI controller first sends an initialization command to the OTP macro.
+Once the OTP macro becomes operational, an initialization request is sent to all partition controllers, which will read out and initialize the corresponding buffer registers.
+The DAI then becomes operational once all partitions have initialized, and supports read, write and digest calculation commands (see [here](#direct-access-interface) for more information about how to interact with the DAI through the CSRs).
+
+Read and write commands transfer either 32bit or 64bit of data from the OTP to the corresponding CSR and vice versa. The access size is determined automatically, depending on whether the partition is scrambled or not. Also, (de)scrambling is performed transparently, depending on whether the partition is scrambled or not.
+
+Digest calculation commands read out the complete contents of a particular partition, compute a digest and write that digest value to the predefined location at the end of the partition.
+
+Note that any unrecoverable OTP error will move the DAI into a terminal error state, where all access through the DAI will be locked.
+Also, the DAI consumes the read and write access information provided by the partition controller, and if a certain read or write access is not permitted, a recoverable error will be flagged in the status / error CSRs.
+
+### Life Cycle Interface Control
+
+![Life Cycle Interface FSM](../doc/otp_ctrl_lci_fsm.svg)
+
+Upon reset release the LCI FSM waits until the OTP controller has initialized and the LCI gets enabled.
+Once it is in the idle state, life cycle state updates can be initiated via the life cycle interface as [described here](#state-transitions).
+The LCI controller takes the life cycle state to be programmed and writes all 16bit words to OTP.
+In case of unrecoverable OTP errors, the FSM signals an error to the life cycle controller and moves into a terminal error state.
+
+### Key Derivation Interface
+
+![Key Derivation Interface FSM](../doc/otp_ctrl_kdi_fsm.svg)
+
+Upon reset release the KDI FSM waits until the OTP controller has initialized and the KDI gets enabled.
+Once it is in the idle state, key derivation can be requested via the [flash](#interface-to-flash-scrambler) and [sram](#interface-to-sram-and-otbn-scramblers) interfaces.
+Based on which interface makes the request, the KDI controller will evaluate a variant of the PRESENT digest mechanism as described in more detail below.
+
+### Scrambling Datapath
+
+![OTP Digest Mechanism](../doc/otp_ctrl_digest_mechanism.svg)
+
+The scrambling datapath is built around an iterative implementation of the [PRESENT lightweight cipher](../../prim/doc/prim_present.md) that performs one round per cycle.
+The datapath contains some additional multiplexing circuitry to enable the DAI, KDI and partition controllers to evaluate different functions with the same datapath.
+The algorithmic steps of these functions are explained in more detail below.
+
+#### Scrambling
+
+As illustrated in subfigure a) in the diagram above, the standard 128bit-key PRESENT configuration with 31 rounds is used for scrambling operations.
+The key used for scrambling is a global netlist constant chosen by the silicon creator, and all secret partitions are encrypted using the their own distinct netlist constant.
+Note that the amount of data that is being scrambled is small (160byte = 20 x 64bit blocks) and the scrambled data remains constant.
+Hence, no additional masking or diversification scheme is applied since only a very limited amount of information can be gathered by observing the scrambling operation via side-channels.
+
+#### Digest Calculation
+
+The integrity digests used in the [partition checks](#partition-checks) are computed using a custom [Merkle-Damgard](XXXX) scheme, where the employed one-way compression function F is constructed by using PRESENT in a [Davies-Meyer arrangement](XXXX).
+This is illustrated in subfigure b).
+
+At the beginning of the digest calculation the 64bit state is initialized with an initialization vector (IV).
+Then, the data to be digested is split into 128bit chunks, each of which is used as a 128bit key input for updating the 64bit state with the compression function F.
+Chunks that are not aligned with 128bit are padded with zero, and the finalization operation consists of another 31-round encryption pass with a finalization constant.
+Note that both the IV as well as the finalization constant are global netlist constants chosen by the silicon creator.
+
+#### Scrambling Key Derivation
+
+The key derivation functions for ephemeral SRAM and static FLASH scrambling keys employ a similar construction as the digest calculation function.
+In particular, the keys are derived by repeatedly reducing a (partially random) block of data into a 64bit block, as illustrated in subfigures c) and d).
+
+For ephemeral SRAM scrambling keys, the data block is composed of the 128bit SRAM_DATA_KEY_SEED stored in OTP, as well as 128bit of fresh entropy fetched from the EDN.
+This process is repeated twice in order to produce a 128bit key.
+
+For static FLASH scrambling keys, the data block is composed of a 128bit part of either the FLASH_DATA_KEY_SEED or the FLASH_ADDR_KEY_SEED stored in OTP.
+These key seeds are 256bit in size, allowing to use a unique chunk of 128bit of key seed data to derive a 64bit halve of a particular scrambling key.
+
+Note that the IV and finalization constants are distinct for SRAM and FLASH data and FLASH address scrambling keys.
+These constants are chosen by the silicon creator prior to the tapeout.
+
+### Access Arbitration
+
+Access to the OTP wrapper and the scrambling datapath are both round-robin arbitrated, where the former arbitration occurs at cycle level (i.e., individual OTP memory accesses), and the latter occurs at the level of complete transactions (i.e., full digest or encryption).
+Arbitration at transaction level is implemented similarly to cycle-based arbitration, with the difference that the grant signals remain asserted until the requestor deasserts the request (thereby releasing the arbiter, which acts as a mutex in this case).
+This is behavior illustrated in the example below.
+
+```wavejson
+{signal: [
+  {name: 'clk_i',                  wave: 'p............'},
+  {name: 'part_scrmbl_mtx_req[0]', wave: '01....0.1....'},
+  {name: 'part_scrmbl_mtx_req[1]', wave: '0.1......0...'},
+  {name: 'part_scrmbl_mtx_req[2]', wave: '0.1........0.'},
+  {},
+  {name: 'part_scrmbl_mtx_gnt[0]', wave: '01....0....1.'},
+  {name: 'part_scrmbl_mtx_gnt[1]', wave: '0.....1..0...'},
+  {name: 'part_scrmbl_mtx_gnt[2]', wave: '0........1.0.'},
+]}
+```
+
+### Primitive Wrapper and FPGA Emulation
+
+![OTP Wrapper Block Diagram](../doc/otp_ctrl_prim_otp.svg)
+
+The OTP IP is wrapped up in a primitive wrapper that exposes a TL-UL interface for testing purposes, and a generalized open-source interface for functional operation (described below).
+Any OTP redundancy mechanism like per-word ECC is assumed to be handled inside the wrapper, which means that the word width exposed as part of the generalized interface is the effective word width.
+
+Note that the register space exposed via the TL-UL test interface, as well as DFT and power-related signals are dependent on the underlying proprietary OTP IP.
+They are therefore not further described in this document.
+
+#### Generalized Open-source Interface
+
+The generalized open-source interface uses a couple of parameters (defaults set for Earlgrey configuration).
+
+Parameter      | Default | Top Earlgrey  | Description
+---------------|---------|---------------|---------------
+`Width`        | 16      | 16            | Native OTP word width.
+`Depth`        | 1024    | 1024          | Depth of OTP macro.
+`CmdWidth`     | 7       | 7             | Width of the OTP command.
+`ErrWidth`     | 3       | 3             | Width of error code output signal.
+`PwrSeqWidth`  | 2       | 2             | Width of power sequencing signals to/from AST.
+`SizeWidth`    | 2       | 2             | Width of the size field.
+`IfWidth`      | 2^`SizeWidth` * `Width` | 2^`SizeWidth` * `Width` | Data interface width.
+
+The generalized open-source interface is a simple command interface with a ready / valid handshake that makes it possible to introduce back pressure if the OTP macro is not able to accept a command due to an ongoing operation.
+
+In order to facilitate the scrambling and digest operations, the data width has been sized such that data blocks up to the PRESENT block size (64bit) can be transferred across the generalized interface. The actual size of a transfer is determined via the size_i field. Transfer sizes are specified in multiples of the native OTP block size, as listed below.
+
+Value of `size_i` | #Native OTP Words | Bit Slice
+------------------|-------------------|------------
+2'b00             |                 1 | `{word0} = data[15:0]`
+2'b01             |                 2 | `{word1, word0} = data[31:0]`
+2'b10             |                 3 | `{word2, word1, word0} = data[47:0]`
+2'b11             |                 4 | `{word3, word2, word1, word0} = data[63:0]`
+
+Responses are returned in-order via an unidirectional response interface (i.e., without back pressure capability).
+Downstream logic must be able to sink the response in any case.
+The response optionally carries read data, depending on whether the operation that took place was a read or not.
+Also, an error signal returns a non-zero error code in case an error occurred while carrying out the OTP command.
+
+The signals pertaining to the generalized open-source interface are listed below.
+
+Signal                  | Direction        | Type                        | Description
+------------------------|------------------|-----------------------------|---------------
+`fatal_alert_o`         | `output`         | `logic`                     | Fatal alert output from the primitive. This is connected to a separate alert channel in the instantiating IP. The instantiating IP latches the alert indication and continuously outputs alert events until reset.
+`recov_alert_o`         | `output`         | `logic`                     | Recoverable alert output from the primitive. This is connected to a separate alert channel in the instantiating IP. Should only be pulsed high for each alert occurrence. The instantiating IP then sends out a single alert event for each pulse.
+`ready_o`               | `output`         | `logic`                     | Ready signal for the command handshake.
+`valid_i`               | `input`          | `logic`                     | Valid signal for the command handshake.
+`size_i`                | `input`          | `logic [SizeWidth-1:0]`     | Number of native OTP words to transfer, minus one: `2'b00 = 1 native word` ... `2'b11 = 4 native words`.
+`cmd_i`                 | `input`          | `logic [CmdWidth-1:0]`      | OTP command: `7'b1000101 = read`, `7'b0110111 = write`, `7'b1111001 = read raw`, `7'b1100010 = write raw`,  `7'b0101100 = initialize`
+`addr_i`                | `input`          | `logic [$clog2(Depth)-1:0]` | OTP word address.
+`wdata_i`               | `input`          | `logic [IfWidth-1:0]`       | Write data for write commands.
+`valid_o`               | `output`         | `logic`                     | Valid signal for command response.
+`rdata_o`               | `output`         | `logic [IfWidth-1:0]`       | Read data from read commands.
+`err_o`                 | `output`         | `logic [ErrWidth-1:0]`      | Error code.
+
+The `write raw` and `read raw` command instructs the `prim_otp` wrapper to store / read the data in raw format without generating nor checking integrity information.
+That means that the wrapper must return the raw, uncorrected data and no integrity errors.
+
+The `prim_otp` wrapper implements the `Macro*` error codes (0x0 - 0x4) defined in [OTP error handling](#error-handling).
+
+The timing diagram below illustrates the timing of a command.
+Note that both read and write commands return a response, and each command is independent of the previously issued commands.
+The latency from accepting a command to returning a response depends on the underlying OTP IP and is typically larger than 10 cycles.
+The returned values depend on the command type and whether an error occurred or not.
+
+```wavejson
+{
+  signal: [
+    { name: 'clk_i',    wave: 'p.............' },
+    { name: 'ready_o',  wave: '0..10|.10.|...' , node: '...a...c'},
+    { name: 'valid_i',  wave: '01..0|1.0.|...' },
+    { name: 'size_i',   wave: '03..0|3.0.|...' },
+    { name: 'cmd_i',    wave: '04..0|4.0.|...' },
+    { name: 'wdata_i',  wave: '05..0|5.0.|...' },
+    { name: 'valid_o',  wave: '0....|..10|.10' , node: '........b...d'},
+    { name: 'rdata_o',  wave: '0....|..50|.50' },
+    { name: 'err_o',    wave: '0....|..40|.40' },
+  ],
+  edge: [
+   'a~>b',
+   'c~>d',
+  ],
+  head: {
+    text: 'Timing of an OTP command.',
+  },
+  foot: {
+    text: "Cmd's are accepted in cycles 3/7, and the corresponding responses return in cycles 8/12.",
+    tick: 0,
+  }
+}
+```
+
+Note that the open source OTP controller allows up to two outstanding OTP commands, meaning that it is permissible to acknowledge an incoming command and start working on it while the results of the last command are still in the process of being output (e.g., due to an output register stage).
+
+#### Generic Simulation and FPGA Emulation Model
+
+For open-source simulation and FPGA emulation, a synthesizable and generic OTP wrapper module is provided (`prim_generic_otp`).
+This is automatically selected in the OpenTitan build flow via the technology primitive mechanism if no proprietary OTP IP is available for a specific technology.
+The OTP storage in `prim_generic_otp` is emulated using a standard RAM primitive `prim_generic_ram_1p`.
+While this storage element is volatile, the primitive is constructed such that the contents are not wiped upon a system-wide reset.
+I.e., only a power-cycle wipes the RAM primitive, thereby enabling limited emulation of the OTP function and life cycle transitions also on an FPGA device.
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_hLHByQGhyBNde6ikRTOI6KSh)
+ Call ID: call_hLHByQGhyBNde6ikRTOI6KSh
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/doc/registers.md
+================================= Tool Message =================================
+Name: read_file
+
+# Registers
+
+<!-- BEGIN CMDGEN util/regtool.py -d ./hw/ip/otp_ctrl/data/otp_ctrl.hjson -->
+## Summary of the **`core`** interface's registers
+
+| Name                                                                                   | Offset   |   Length | Description                                                                                         |
+|:---------------------------------------------------------------------------------------|:---------|---------:|:----------------------------------------------------------------------------------------------------|
+| otp_ctrl.[`INTR_STATE`](#intr_state)                                                   | 0x0      |        4 | Interrupt State Register                                                                            |
+| otp_ctrl.[`INTR_ENABLE`](#intr_enable)                                                 | 0x4      |        4 | Interrupt Enable Register                                                                           |
+| otp_ctrl.[`INTR_TEST`](#intr_test)                                                     | 0x8      |        4 | Interrupt Test Register                                                                             |
+| otp_ctrl.[`ALERT_TEST`](#alert_test)                                                   | 0xc      |        4 | Alert Test Register                                                                                 |
+| otp_ctrl.[`STATUS`](#status)                                                           | 0x10     |        4 | OTP status register.                                                                                |
+| otp_ctrl.[`ERR_CODE_0`](#err_code)                                                     | 0x14     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_1`](#err_code)                                                     | 0x18     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_2`](#err_code)                                                     | 0x1c     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_3`](#err_code)                                                     | 0x20     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_4`](#err_code)                                                     | 0x24     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_5`](#err_code)                                                     | 0x28     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_6`](#err_code)                                                     | 0x2c     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_7`](#err_code)                                                     | 0x30     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_8`](#err_code)                                                     | 0x34     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_9`](#err_code)                                                     | 0x38     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_10`](#err_code)                                                    | 0x3c     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_11`](#err_code)                                                    | 0x40     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`ERR_CODE_12`](#err_code)                                                    | 0x44     |        4 | This register holds information about error conditions that occurred in the agents                  |
+| otp_ctrl.[`DIRECT_ACCESS_REGWEN`](#direct_access_regwen)                               | 0x48     |        4 | Register write enable for all direct access interface registers.                                    |
+| otp_ctrl.[`DIRECT_ACCESS_CMD`](#direct_access_cmd)                                     | 0x4c     |        4 | Command register for direct accesses.                                                               |
+| otp_ctrl.[`DIRECT_ACCESS_ADDRESS`](#direct_access_address)                             | 0x50     |        4 | Address register for direct accesses.                                                               |
+| otp_ctrl.[`DIRECT_ACCESS_WDATA_0`](#direct_access_wdata)                               | 0x54     |        4 | Write data for direct accesses.                                                                     |
+| otp_ctrl.[`DIRECT_ACCESS_WDATA_1`](#direct_access_wdata)                               | 0x58     |        4 | Write data for direct accesses.                                                                     |
+| otp_ctrl.[`DIRECT_ACCESS_RDATA_0`](#direct_access_rdata)                               | 0x5c     |        4 | Read data for direct accesses.                                                                      |
+| otp_ctrl.[`DIRECT_ACCESS_RDATA_1`](#direct_access_rdata)                               | 0x60     |        4 | Read data for direct accesses.                                                                      |
+| otp_ctrl.[`CHECK_TRIGGER_REGWEN`](#check_trigger_regwen)                               | 0x64     |        4 | Register write enable for !!CHECK_TRIGGER.                                                          |
+| otp_ctrl.[`CHECK_TRIGGER`](#check_trigger)                                             | 0x68     |        4 | Command register for direct accesses.                                                               |
+| otp_ctrl.[`CHECK_REGWEN`](#check_regwen)                                               | 0x6c     |        4 | Register write enable for !!INTEGRITY_CHECK_PERIOD and !!CONSISTENCY_CHECK_PERIOD.                  |
+| otp_ctrl.[`CHECK_TIMEOUT`](#check_timeout)                                             | 0x70     |        4 | Timeout value for the integrity and consistency checks.                                             |
+| otp_ctrl.[`INTEGRITY_CHECK_PERIOD`](#integrity_check_period)                           | 0x74     |        4 | This value specifies the maximum period that can be generated pseudo-randomly.                      |
+| otp_ctrl.[`CONSISTENCY_CHECK_PERIOD`](#consistency_check_period)                       | 0x78     |        4 | This value specifies the maximum period that can be generated pseudo-randomly.                      |
+| otp_ctrl.[`VENDOR_TEST_READ_LOCK`](#vendor_test_read_lock)                             | 0x7c     |        4 | Runtime read lock for the VENDOR_TEST partition.                                                    |
+| otp_ctrl.[`CREATOR_SW_CFG_READ_LOCK`](#creator_sw_cfg_read_lock)                       | 0x80     |        4 | Runtime read lock for the CREATOR_SW_CFG partition.                                                 |
+| otp_ctrl.[`OWNER_SW_CFG_READ_LOCK`](#owner_sw_cfg_read_lock)                           | 0x84     |        4 | Runtime read lock for the OWNER_SW_CFG partition.                                                   |
+| otp_ctrl.[`ROT_CREATOR_AUTH_CODESIGN_READ_LOCK`](#rot_creator_auth_codesign_read_lock) | 0x88     |        4 | Runtime read lock for the ROT_CREATOR_AUTH_CODESIGN partition.                                      |
+| otp_ctrl.[`ROT_CREATOR_AUTH_STATE_READ_LOCK`](#rot_creator_auth_state_read_lock)       | 0x8c     |        4 | Runtime read lock for the ROT_CREATOR_AUTH_STATE partition.                                         |
+| otp_ctrl.[`VENDOR_TEST_DIGEST_0`](#vendor_test_digest)                                 | 0x90     |        4 | Integrity digest for the VENDOR_TEST partition.                                                     |
+| otp_ctrl.[`VENDOR_TEST_DIGEST_1`](#vendor_test_digest)                                 | 0x94     |        4 | Integrity digest for the VENDOR_TEST partition.                                                     |
+| otp_ctrl.[`CREATOR_SW_CFG_DIGEST_0`](#creator_sw_cfg_digest)                           | 0x98     |        4 | Integrity digest for the CREATOR_SW_CFG partition.                                                  |
+| otp_ctrl.[`CREATOR_SW_CFG_DIGEST_1`](#creator_sw_cfg_digest)                           | 0x9c     |        4 | Integrity digest for the CREATOR_SW_CFG partition.                                                  |
+| otp_ctrl.[`OWNER_SW_CFG_DIGEST_0`](#owner_sw_cfg_digest)                               | 0xa0     |        4 | Integrity digest for the OWNER_SW_CFG partition.                                                    |
+| otp_ctrl.[`OWNER_SW_CFG_DIGEST_1`](#owner_sw_cfg_digest)                               | 0xa4     |        4 | Integrity digest for the OWNER_SW_CFG partition.                                                    |
+| otp_ctrl.[`ROT_CREATOR_AUTH_CODESIGN_DIGEST_0`](#rot_creator_auth_codesign_digest)     | 0xa8     |        4 | Integrity digest for the ROT_CREATOR_AUTH_CODESIGN partition.                                       |
+| otp_ctrl.[`ROT_CREATOR_AUTH_CODESIGN_DIGEST_1`](#rot_creator_auth_codesign_digest)     | 0xac     |        4 | Integrity digest for the ROT_CREATOR_AUTH_CODESIGN partition.                                       |
+| otp_ctrl.[`ROT_CREATOR_AUTH_STATE_DIGEST_0`](#rot_creator_auth_state_digest)           | 0xb0     |        4 | Integrity digest for the ROT_CREATOR_AUTH_STATE partition.                                          |
+| otp_ctrl.[`ROT_CREATOR_AUTH_STATE_DIGEST_1`](#rot_creator_auth_state_digest)           | 0xb4     |        4 | Integrity digest for the ROT_CREATOR_AUTH_STATE partition.                                          |
+| otp_ctrl.[`HW_CFG0_DIGEST_0`](#hw_cfg0_digest)                                         | 0xb8     |        4 | Integrity digest for the HW_CFG0 partition.                                                         |
+| otp_ctrl.[`HW_CFG0_DIGEST_1`](#hw_cfg0_digest)                                         | 0xbc     |        4 | Integrity digest for the HW_CFG0 partition.                                                         |
+| otp_ctrl.[`HW_CFG1_DIGEST_0`](#hw_cfg1_digest)                                         | 0xc0     |        4 | Integrity digest for the HW_CFG1 partition.                                                         |
+| otp_ctrl.[`HW_CFG1_DIGEST_1`](#hw_cfg1_digest)                                         | 0xc4     |        4 | Integrity digest for the HW_CFG1 partition.                                                         |
+| otp_ctrl.[`SECRET0_DIGEST_0`](#secret0_digest)                                         | 0xc8     |        4 | Integrity digest for the SECRET0 partition.                                                         |
+| otp_ctrl.[`SECRET0_DIGEST_1`](#secret0_digest)                                         | 0xcc     |        4 | Integrity digest for the SECRET0 partition.                                                         |
+| otp_ctrl.[`SECRET1_DIGEST_0`](#secret1_digest)                                         | 0xd0     |        4 | Integrity digest for the SECRET1 partition.                                                         |
+| otp_ctrl.[`SECRET1_DIGEST_1`](#secret1_digest)                                         | 0xd4     |        4 | Integrity digest for the SECRET1 partition.                                                         |
+| otp_ctrl.[`SECRET2_DIGEST_0`](#secret2_digest)                                         | 0xd8     |        4 | Integrity digest for the SECRET2 partition.                                                         |
+| otp_ctrl.[`SECRET2_DIGEST_1`](#secret2_digest)                                         | 0xdc     |        4 | Integrity digest for the SECRET2 partition.                                                         |
+| otp_ctrl.[`SW_CFG_WINDOW`](#sw_cfg_window)                                             | 0x800    |     2048 | Any read to this window directly maps to the corresponding offset in the creator and owner software |
+
+## INTR_STATE
+Interrupt State Register
+- Offset: `0x0`
+- Reset default: `0x0`
+- Reset mask: `0x3`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "otp_operation_done", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "otp_error", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"bits": 30}], "config": {"lanes": 1, "fontsize": 10, "vspace": 200}}
+```
+
+|  Bits  |  Type  |  Reset  | Name               | Description                                                                                                      |
+|:------:|:------:|:-------:|:-------------------|:-----------------------------------------------------------------------------------------------------------------|
+|  31:2  |        |         |                    | Reserved                                                                                                         |
+|   1    |  rw1c  |   0x0   | otp_error          | An error has occurred in the OTP controller. Check the [`ERR_CODE`](#err_code) register to get more information. |
+|   0    |  rw1c  |   0x0   | otp_operation_done | A direct access command or digest calculation operation has completed.                                           |
+
+## INTR_ENABLE
+Interrupt Enable Register
+- Offset: `0x4`
+- Reset default: `0x0`
+- Reset mask: `0x3`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "otp_operation_done", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "otp_error", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 30}], "config": {"lanes": 1, "fontsize": 10, "vspace": 200}}
+```
+
+|  Bits  |  Type  |  Reset  | Name               | Description                                                                  |
+|:------:|:------:|:-------:|:-------------------|:-----------------------------------------------------------------------------|
+|  31:2  |        |         |                    | Reserved                                                                     |
+|   1    |   rw   |   0x0   | otp_error          | Enable interrupt when [`INTR_STATE.otp_error`](#intr_state) is set.          |
+|   0    |   rw   |   0x0   | otp_operation_done | Enable interrupt when [`INTR_STATE.otp_operation_done`](#intr_state) is set. |
+
+## INTR_TEST
+Interrupt Test Register
+- Offset: `0x8`
+- Reset default: `0x0`
+- Reset mask: `0x3`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "otp_operation_done", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "otp_error", "bits": 1, "attr": ["wo"], "rotate": -90}, {"bits": 30}], "config": {"lanes": 1, "fontsize": 10, "vspace": 200}}
+```
+
+|  Bits  |  Type  |  Reset  | Name               | Description                                                           |
+|:------:|:------:|:-------:|:-------------------|:----------------------------------------------------------------------|
+|  31:2  |        |         |                    | Reserved                                                              |
+|   1    |   wo   |   0x0   | otp_error          | Write 1 to force [`INTR_STATE.otp_error`](#intr_state) to 1.          |
+|   0    |   wo   |   0x0   | otp_operation_done | Write 1 to force [`INTR_STATE.otp_operation_done`](#intr_state) to 1. |
+
+## ALERT_TEST
+Alert Test Register
+- Offset: `0xc`
+- Reset default: `0x0`
+- Reset mask: `0x1f`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "fatal_macro_error", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "fatal_check_error", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "fatal_bus_integ_error", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "fatal_prim_otp_alert", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "recov_prim_otp_alert", "bits": 1, "attr": ["wo"], "rotate": -90}, {"bits": 27}], "config": {"lanes": 1, "fontsize": 10, "vspace": 230}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                  | Description                                      |
+|:------:|:------:|:-------:|:----------------------|:-------------------------------------------------|
+|  31:5  |        |         |                       | Reserved                                         |
+|   4    |   wo   |   0x0   | recov_prim_otp_alert  | Write 1 to trigger one alert event of this kind. |
+|   3    |   wo   |   0x0   | fatal_prim_otp_alert  | Write 1 to trigger one alert event of this kind. |
+|   2    |   wo   |   0x0   | fatal_bus_integ_error | Write 1 to trigger one alert event of this kind. |
+|   1    |   wo   |   0x0   | fatal_check_error     | Write 1 to trigger one alert event of this kind. |
+|   0    |   wo   |   0x0   | fatal_macro_error     | Write 1 to trigger one alert event of this kind. |
+
+## STATUS
+OTP status register.
+- Offset: `0x10`
+- Reset default: `0x0`
+- Reset mask: `0xfffff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "VENDOR_TEST_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "CREATOR_SW_CFG_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "OWNER_SW_CFG_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "ROT_CREATOR_AUTH_CODESIGN_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "ROT_CREATOR_AUTH_STATE_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "HW_CFG0_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "HW_CFG1_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "SECRET0_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "SECRET1_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "SECRET2_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "LIFE_CYCLE_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "DAI_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "LCI_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "TIMEOUT_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "LFSR_FSM_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "SCRAMBLING_FSM_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "KEY_DERIV_FSM_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "BUS_INTEG_ERROR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "DAI_IDLE", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "CHECK_PENDING", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 12}], "config": {"lanes": 1, "fontsize": 10, "vspace": 330}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                            | Description                                                                                                                                           |
+|:------:|:------:|:-------:|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 31:20  |        |         |                                 | Reserved                                                                                                                                              |
+|   19   |   ro   |   0x0   | CHECK_PENDING                   | Set to 1 if an integrity or consistency check triggered by the LFSR timer or via [`CHECK_TRIGGER`](#check_trigger) is pending.                        |
+|   18   |   ro   |   0x0   | DAI_IDLE                        | Set to 1 if the DAI is idle and ready to accept commands.                                                                                             |
+|   17   |   ro   |   0x0   | BUS_INTEG_ERROR                 | This bit is set to 1 if a fatal bus integrity fault is detected. This error triggers a fatal_bus_integ_error alert.                                   |
+|   16   |   ro   |   0x0   | KEY_DERIV_FSM_ERROR             | Set to 1 if the key derivation FSM has reached an invalid state. This raises an fatal_check_error alert and is an unrecoverable error condition.      |
+|   15   |   ro   |   0x0   | SCRAMBLING_FSM_ERROR            | Set to 1 if the scrambling datapath FSM has reached an invalid state. This raises an fatal_check_error alert and is an unrecoverable error condition. |
+|   14   |   ro   |   0x0   | LFSR_FSM_ERROR                  | Set to 1 if the LFSR timer FSM has reached an invalid state. This raises an fatal_check_error alert and is an unrecoverable error condition.          |
+|   13   |   ro   |   0x0   | TIMEOUT_ERROR                   | Set to 1 if an integrity or consistency check times out. This raises an fatal_check_error alert and is an unrecoverable error condition.              |
+|   12   |   ro   |   0x0   | LCI_ERROR                       | Set to 1 if an error occurred in the LCI. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.               |
+|   11   |   ro   |   0x0   | DAI_ERROR                       | Set to 1 if an error occurred in the DAI. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.               |
+|   10   |   ro   |   0x0   | LIFE_CYCLE_ERROR                | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   9    |   ro   |   0x0   | SECRET2_ERROR                   | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   8    |   ro   |   0x0   | SECRET1_ERROR                   | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   7    |   ro   |   0x0   | SECRET0_ERROR                   | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   6    |   ro   |   0x0   | HW_CFG1_ERROR                   | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   5    |   ro   |   0x0   | HW_CFG0_ERROR                   | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   4    |   ro   |   0x0   | ROT_CREATOR_AUTH_STATE_ERROR    | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   3    |   ro   |   0x0   | ROT_CREATOR_AUTH_CODESIGN_ERROR | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   2    |   ro   |   0x0   | OWNER_SW_CFG_ERROR              | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   1    |   ro   |   0x0   | CREATOR_SW_CFG_ERROR            | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+|   0    |   ro   |   0x0   | VENDOR_TEST_ERROR               | Set to 1 if an error occurred in this partition. If set to 1, SW should check the [`ERR_CODE`](#err_code) register at the corresponding index.        |
+
+## ERR_CODE
+This register holds information about error conditions that occurred in the agents
+interacting with the OTP macro via the internal bus. The error codes should be checked
+if the partitions, DAI or LCI flag an error in the [`STATUS`](#status) register, or when an
+[`INTR_STATE.otp_error`](#intr_state) has been triggered. Note that all errors trigger an otp_error
+interrupt, and in addition some errors may trigger either an fatal_macro_error or an
+fatal_check_error alert.
+- Reset default: `0x0`
+- Reset mask: `0x7`
+
+### Instances
+
+| Name        | Offset   |
+|:------------|:---------|
+| ERR_CODE_0  | 0x14     |
+| ERR_CODE_1  | 0x18     |
+| ERR_CODE_2  | 0x1c     |
+| ERR_CODE_3  | 0x20     |
+| ERR_CODE_4  | 0x24     |
+| ERR_CODE_5  | 0x28     |
+| ERR_CODE_6  | 0x2c     |
+| ERR_CODE_7  | 0x30     |
+| ERR_CODE_8  | 0x34     |
+| ERR_CODE_9  | 0x38     |
+| ERR_CODE_10 | 0x3c     |
+| ERR_CODE_11 | 0x40     |
+| ERR_CODE_12 | 0x44     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "ERR_CODE", "bits": 3, "attr": ["ro"], "rotate": -90}, {"bits": 29}], "config": {"lanes": 1, "fontsize": 10, "vspace": 100}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                            |
+|:------:|:------:|:-------:|:--------------------------------|
+|  31:3  |        |         | Reserved                        |
+|  2:0   |   ro   |   0x0   | [ERR_CODE](#err_code--err_code) |
+
+### ERR_CODE . ERR_CODE
+
+| Value   | Name                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|:--------|:------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0x0     | NO_ERROR                | No error condition has occurred.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 0x1     | MACRO_ERROR             | Returned if the OTP macro command was invalid or did not complete successfully due to a macro malfunction. This error should never occur during normal operation and is not recoverable. This error triggers an fatal_macro_error alert.                                                                                                                                                                                                                                                                                                                                                                             |
+| 0x2     | MACRO_ECC_CORR_ERROR    | A correctable ECC error has occured during an OTP read operation. The corresponding controller automatically recovers from this error when issuing a new command.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 0x3     | MACRO_ECC_UNCORR_ERROR  | An uncorrectable ECC error has occurred during an OTP read operation. This error should never occur during normal operation and is not recoverable. If this error is present this may be a sign that the device is malfunctioning. This error triggers an fatal_macro_error alert.                                                                                                                                                                                                                                                                                                                                   |
+| 0x4     | MACRO_WRITE_BLANK_ERROR | This error is returned if a programming operation attempted to clear a bit that has previously been programmed to 1. The corresponding controller automatically recovers from this error when issuing a new command. Note however that the affected OTP word may be left in an inconsistent state if this error occurs. This can cause several issues when the word is accessed again (either as part of a regular read operation, as part of the readout at boot, or as part of a background check). It is important that SW ensures that each word is only written once, since this can render the device useless. |
+| 0x5     | ACCESS_ERROR            | This error indicates that a locked memory region has been accessed. The corresponding controller automatically recovers from this error when issuing a new command.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 0x6     | CHECK_FAIL_ERROR        | An ECC, integrity or consistency mismatch has been detected in the buffer registers. This error should never occur during normal operation and is not recoverable. This error triggers an fatal_check_error alert.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 0x7     | FSM_STATE_ERROR         | The FSM of the corresponding controller has reached an invalid state, or the FSM has been moved into a terminal error state due to an escalation action via lc_escalate_en_i. This error should never occur during normal operation and is not recoverable. If this error is present, this is a sign that the device has fallen victim to an invasive attack. This error triggers an fatal_check_error alert.                                                                                                                                                                                                        |
+
+
+## DIRECT_ACCESS_REGWEN
+Register write enable for all direct access interface registers.
+- Offset: `0x48`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "DIRECT_ACCESS_REGWEN", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 220}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                                                |
+|:------:|:------:|:-------:|:--------------------------------------------------------------------|
+|  31:1  |        |         | Reserved                                                            |
+|   0    |  rw0c  |   0x1   | [DIRECT_ACCESS_REGWEN](#direct_access_regwen--direct_access_regwen) |
+
+### DIRECT_ACCESS_REGWEN . DIRECT_ACCESS_REGWEN
+This bit controls whether the DAI registers can be written.
+Write 0 to it in order to clear the bit.
+
+Note that the hardware also modulates this bit and sets it to 0 temporarily
+during an OTP operation such that the corresponding address and data registers
+cannot be modified while an operation is pending. The [`DAI_IDLE`](#dai_idle) status bit
+will also be set to 0 in such a case.
+
+## DIRECT_ACCESS_CMD
+Command register for direct accesses.
+- Offset: `0x4c`
+- Reset default: `0x0`
+- Reset mask: `0x7`
+- Register enable: [`DIRECT_ACCESS_REGWEN`](#direct_access_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "RD", "bits": 1, "attr": ["r0w1c"], "rotate": -90}, {"name": "WR", "bits": 1, "attr": ["r0w1c"], "rotate": -90}, {"name": "DIGEST", "bits": 1, "attr": ["r0w1c"], "rotate": -90}, {"bits": 29}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                                                                                                                                                                                                                                                                                |
+|:------:|:------:|:-------:|:-------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|  31:3  |        |         |        | Reserved                                                                                                                                                                                                                                                                                   |
+|   2    | r0w1c  |   0x0   | DIGEST | Initiates the digest calculation and locking sequence for the partition specified by [`DIRECT_ACCESS_ADDRESS.`](#direct_access_address)                                                                                                                                                    |
+|   1    | r0w1c  |   0x0   | WR     | Initiates a programming sequence that writes the data in [`DIRECT_ACCESS_WDATA_0`](#direct_access_wdata_0) and [`DIRECT_ACCESS_WDATA_1`](#direct_access_wdata_1) (for 64bit partitions) to the location specified by [`DIRECT_ACCESS_ADDRESS.`](#direct_access_address)                    |
+|   0    | r0w1c  |   0x0   | RD     | Initiates a readout sequence that reads the location specified by [`DIRECT_ACCESS_ADDRESS.`](#direct_access_address) The command places the data read into [`DIRECT_ACCESS_RDATA_0`](#direct_access_rdata_0) and [`DIRECT_ACCESS_RDATA_1`](#direct_access_rdata_1) (for 64bit partitions). |
+
+## DIRECT_ACCESS_ADDRESS
+Address register for direct accesses.
+- Offset: `0x50`
+- Reset default: `0x0`
+- Reset mask: `0x7ff`
+- Register enable: [`DIRECT_ACCESS_REGWEN`](#direct_access_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "DIRECT_ACCESS_ADDRESS", "bits": 11, "attr": ["rw"], "rotate": -90}, {"bits": 21}], "config": {"lanes": 1, "fontsize": 10, "vspace": 230}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                                                   |
+|:------:|:------:|:-------:|:-----------------------------------------------------------------------|
+| 31:11  |        |         | Reserved                                                               |
+|  10:0  |   rw   |   0x0   | [DIRECT_ACCESS_ADDRESS](#direct_access_address--direct_access_address) |
+
+### DIRECT_ACCESS_ADDRESS . DIRECT_ACCESS_ADDRESS
+This is the address for the OTP word to be read or written through
+the direct access interface. Note that the address is aligned to the access size
+internally, hence bits 1:0 are ignored for 32bit accesses, and bits 2:0 are ignored
+for 64bit accesses.
+
+For the digest calculation command, set this register to the partition base offset.
+
+## DIRECT_ACCESS_WDATA
+Write data for direct accesses.
+Hardware automatically determines the access granule (32bit or 64bit) based on which
+partition is being written to.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name                  | Offset   |
+|:----------------------|:---------|
+| DIRECT_ACCESS_WDATA_0 | 0x54     |
+| DIRECT_ACCESS_WDATA_1 | 0x58     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "DIRECT_ACCESS_WDATA", "bits": 32, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                | Description   |
+|:------:|:------:|:-------:|:--------------------|:--------------|
+|  31:0  |   rw   |   0x0   | DIRECT_ACCESS_WDATA |               |
+
+## DIRECT_ACCESS_RDATA
+Read data for direct accesses.
+Hardware automatically determines the access granule (32bit or 64bit) based on which
+partition is read from.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name                  | Offset   |
+|:----------------------|:---------|
+| DIRECT_ACCESS_RDATA_0 | 0x5c     |
+| DIRECT_ACCESS_RDATA_1 | 0x60     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "DIRECT_ACCESS_RDATA", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                | Description   |
+|:------:|:------:|:-------:|:--------------------|:--------------|
+|  31:0  |   ro   |   0x0   | DIRECT_ACCESS_RDATA |               |
+
+## CHECK_TRIGGER_REGWEN
+Register write enable for [`CHECK_TRIGGER.`](#check_trigger)
+- Offset: `0x64`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "CHECK_TRIGGER_REGWEN", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 220}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                 | Description                                                                                                             |
+|:------:|:------:|:-------:|:---------------------|:------------------------------------------------------------------------------------------------------------------------|
+|  31:1  |        |         |                      | Reserved                                                                                                                |
+|   0    |  rw0c  |   0x1   | CHECK_TRIGGER_REGWEN | When cleared to 0, the [`CHECK_TRIGGER`](#check_trigger) register cannot be written anymore. Write 0 to clear this bit. |
+
+## CHECK_TRIGGER
+Command register for direct accesses.
+- Offset: `0x68`
+- Reset default: `0x0`
+- Reset mask: `0x3`
+- Register enable: [`CHECK_TRIGGER_REGWEN`](#check_trigger_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "INTEGRITY", "bits": 1, "attr": ["r0w1c"], "rotate": -90}, {"name": "CONSISTENCY", "bits": 1, "attr": ["r0w1c"], "rotate": -90}, {"bits": 30}], "config": {"lanes": 1, "fontsize": 10, "vspace": 130}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                       |
+|:------:|:------:|:-------:|:-------------------------------------------|
+|  31:2  |        |         | Reserved                                   |
+|   1    | r0w1c  |   0x0   | [CONSISTENCY](#check_trigger--consistency) |
+|   0    | r0w1c  |   0x0   | [INTEGRITY](#check_trigger--integrity)     |
+
+### CHECK_TRIGGER . CONSISTENCY
+Writing 1 to this bit triggers a consistency check. SW should monitor [`STATUS.CHECK_PENDING`](#status)
+and wait until the check has been completed. If there are any errors, those will be flagged
+in the [`STATUS`](#status) and [`ERR_CODE`](#err_code) registers, and via interrupts and alerts.
+
+### CHECK_TRIGGER . INTEGRITY
+Writing 1 to this bit triggers an integrity check. SW should monitor [`STATUS.CHECK_PENDING`](#status)
+and wait until the check has been completed. If there are any errors, those will be flagged
+in the [`STATUS`](#status) and [`ERR_CODE`](#err_code) registers, and via the interrupts and alerts.
+
+## CHECK_REGWEN
+Register write enable for [`INTEGRITY_CHECK_PERIOD`](#integrity_check_period) and [`CONSISTENCY_CHECK_PERIOD.`](#consistency_check_period)
+- Offset: `0x6c`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "CHECK_REGWEN", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 140}}
+```
+
+|  Bits  |  Type  |  Reset  | Name         | Description                                                                                                                                                                                        |
+|:------:|:------:|:-------:|:-------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|  31:1  |        |         |              | Reserved                                                                                                                                                                                           |
+|   0    |  rw0c  |   0x1   | CHECK_REGWEN | When cleared to 0, [`INTEGRITY_CHECK_PERIOD`](#integrity_check_period) and [`CONSISTENCY_CHECK_PERIOD`](#consistency_check_period) registers cannot be written anymore. Write 0 to clear this bit. |
+
+## CHECK_TIMEOUT
+Timeout value for the integrity and consistency checks.
+- Offset: `0x70`
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+- Register enable: [`CHECK_REGWEN`](#check_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "CHECK_TIMEOUT", "bits": 32, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                           |
+|:------:|:------:|:-------:|:-----------------------------------------------|
+|  31:0  |   rw   |   0x0   | [CHECK_TIMEOUT](#check_timeout--check_timeout) |
+
+### CHECK_TIMEOUT . CHECK_TIMEOUT
+Timeout value in cycles for the for the integrity and consistency checks. If an integrity or consistency
+check does not complete within the timeout window, an error will be flagged in the [`STATUS`](#status) register,
+an otp_error interrupt will be raised, and an fatal_check_error alert will be sent out. The timeout should
+be set to a large value to stay on the safe side. The maximum check time can be upper bounded by the
+number of cycles it takes to readout, scramble and digest the entire OTP array. Since this amounts to
+roughly 25k cycles, it is recommended to set this value to at least 100'000 cycles in order to stay on the
+safe side. A value of zero disables the timeout mechanism (default).
+
+## INTEGRITY_CHECK_PERIOD
+This value specifies the maximum period that can be generated pseudo-randomly.
+Only applies to the HW_CFG* and SECRET* partitions once they are locked.
+- Offset: `0x74`
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+- Register enable: [`CHECK_REGWEN`](#check_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "INTEGRITY_CHECK_PERIOD", "bits": 32, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                                                      |
+|:------:|:------:|:-------:|:--------------------------------------------------------------------------|
+|  31:0  |   rw   |   0x0   | [INTEGRITY_CHECK_PERIOD](#integrity_check_period--integrity_check_period) |
+
+### INTEGRITY_CHECK_PERIOD . INTEGRITY_CHECK_PERIOD
+The pseudo-random period is generated using a 40bit LFSR internally, and this register defines
+the bit mask to be applied to the LFSR output in order to limit its range. The value of this
+register is left shifted by 8bits and the lower bits are set to 8'hFF in order to form the 40bit mask.
+A recommended value is 0x3_FFFF, corresponding to a maximum period of ~2.8s at 24MHz.
+A value of zero disables the timer (default). Note that a one-off check can always be triggered via
+[`CHECK_TRIGGER.INTEGRITY.`](#check_trigger)
+
+## CONSISTENCY_CHECK_PERIOD
+This value specifies the maximum period that can be generated pseudo-randomly.
+This applies to the LIFE_CYCLE partition and the HW_CFG* and SECRET* partitions once they are locked.
+- Offset: `0x78`
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+- Register enable: [`CHECK_REGWEN`](#check_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "CONSISTENCY_CHECK_PERIOD", "bits": 32, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                                                            |
+|:------:|:------:|:-------:|:--------------------------------------------------------------------------------|
+|  31:0  |   rw   |   0x0   | [CONSISTENCY_CHECK_PERIOD](#consistency_check_period--consistency_check_period) |
+
+### CONSISTENCY_CHECK_PERIOD . CONSISTENCY_CHECK_PERIOD
+The pseudo-random period is generated using a 40bit LFSR internally, and this register defines
+the bit mask to be applied to the LFSR output in order to limit its range. The value of this
+register is left shifted by 8bits and the lower bits are set to 8'hFF in order to form the 40bit mask.
+A recommended value is 0x3FF_FFFF, corresponding to a maximum period of ~716s at 24MHz.
+A value of zero disables the timer (default). Note that a one-off check can always be triggered via
+[`CHECK_TRIGGER.CONSISTENCY.`](#check_trigger)
+
+## VENDOR_TEST_READ_LOCK
+Runtime read lock for the VENDOR_TEST partition.
+- Offset: `0x7c`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+- Register enable: [`DIRECT_ACCESS_REGWEN`](#direct_access_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "VENDOR_TEST_READ_LOCK", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 230}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                  | Description                                                                                       |
+|:------:|:------:|:-------:|:----------------------|:--------------------------------------------------------------------------------------------------|
+|  31:1  |        |         |                       | Reserved                                                                                          |
+|   0    |  rw0c  |   0x1   | VENDOR_TEST_READ_LOCK | When cleared to 0, read access to the VENDOR_TEST partition is locked. Write 0 to clear this bit. |
+
+## CREATOR_SW_CFG_READ_LOCK
+Runtime read lock for the CREATOR_SW_CFG partition.
+- Offset: `0x80`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+- Register enable: [`DIRECT_ACCESS_REGWEN`](#direct_access_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "CREATOR_SW_CFG_READ_LOCK", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 260}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                     | Description                                                                                          |
+|:------:|:------:|:-------:|:-------------------------|:-----------------------------------------------------------------------------------------------------|
+|  31:1  |        |         |                          | Reserved                                                                                             |
+|   0    |  rw0c  |   0x1   | CREATOR_SW_CFG_READ_LOCK | When cleared to 0, read access to the CREATOR_SW_CFG partition is locked. Write 0 to clear this bit. |
+
+## OWNER_SW_CFG_READ_LOCK
+Runtime read lock for the OWNER_SW_CFG partition.
+- Offset: `0x84`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+- Register enable: [`DIRECT_ACCESS_REGWEN`](#direct_access_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "OWNER_SW_CFG_READ_LOCK", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 240}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                   | Description                                                                                        |
+|:------:|:------:|:-------:|:-----------------------|:---------------------------------------------------------------------------------------------------|
+|  31:1  |        |         |                        | Reserved                                                                                           |
+|   0    |  rw0c  |   0x1   | OWNER_SW_CFG_READ_LOCK | When cleared to 0, read access to the OWNER_SW_CFG partition is locked. Write 0 to clear this bit. |
+
+## ROT_CREATOR_AUTH_CODESIGN_READ_LOCK
+Runtime read lock for the ROT_CREATOR_AUTH_CODESIGN partition.
+- Offset: `0x88`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+- Register enable: [`DIRECT_ACCESS_REGWEN`](#direct_access_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "ROT_CREATOR_AUTH_CODESIGN_READ_LOCK", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 370}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                | Description                                                                                                     |
+|:------:|:------:|:-------:|:------------------------------------|:----------------------------------------------------------------------------------------------------------------|
+|  31:1  |        |         |                                     | Reserved                                                                                                        |
+|   0    |  rw0c  |   0x1   | ROT_CREATOR_AUTH_CODESIGN_READ_LOCK | When cleared to 0, read access to the ROT_CREATOR_AUTH_CODESIGN partition is locked. Write 0 to clear this bit. |
+
+## ROT_CREATOR_AUTH_STATE_READ_LOCK
+Runtime read lock for the ROT_CREATOR_AUTH_STATE partition.
+- Offset: `0x8c`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+- Register enable: [`DIRECT_ACCESS_REGWEN`](#direct_access_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "ROT_CREATOR_AUTH_STATE_READ_LOCK", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 340}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                             | Description                                                                                                  |
+|:------:|:------:|:-------:|:---------------------------------|:-------------------------------------------------------------------------------------------------------------|
+|  31:1  |        |         |                                  | Reserved                                                                                                     |
+|   0    |  rw0c  |   0x1   | ROT_CREATOR_AUTH_STATE_READ_LOCK | When cleared to 0, read access to the ROT_CREATOR_AUTH_STATE partition is locked. Write 0 to clear this bit. |
+
+## VENDOR_TEST_DIGEST
+Integrity digest for the VENDOR_TEST partition.
+The integrity digest is 0 by default. Software must write this
+digest value via the direct access interface in order to lock the partition.
+After a reset, write access to the VENDOR_TEST partition is locked and
+the digest becomes visible in this CSR.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name                 | Offset   |
+|:---------------------|:---------|
+| VENDOR_TEST_DIGEST_0 | 0x90     |
+| VENDOR_TEST_DIGEST_1 | 0x94     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "VENDOR_TEST_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name               | Description   |
+|:------:|:------:|:-------:|:-------------------|:--------------|
+|  31:0  |   ro   |   0x0   | VENDOR_TEST_DIGEST |               |
+
+## CREATOR_SW_CFG_DIGEST
+Integrity digest for the CREATOR_SW_CFG partition.
+The integrity digest is 0 by default. Software must write this
+digest value via the direct access interface in order to lock the partition.
+After a reset, write access to the CREATOR_SW_CFG partition is locked and
+the digest becomes visible in this CSR.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name                    | Offset   |
+|:------------------------|:---------|
+| CREATOR_SW_CFG_DIGEST_0 | 0x98     |
+| CREATOR_SW_CFG_DIGEST_1 | 0x9c     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "CREATOR_SW_CFG_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                  | Description   |
+|:------:|:------:|:-------:|:----------------------|:--------------|
+|  31:0  |   ro   |   0x0   | CREATOR_SW_CFG_DIGEST |               |
+
+## OWNER_SW_CFG_DIGEST
+Integrity digest for the OWNER_SW_CFG partition.
+The integrity digest is 0 by default. Software must write this
+digest value via the direct access interface in order to lock the partition.
+After a reset, write access to the OWNER_SW_CFG partition is locked and
+the digest becomes visible in this CSR.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name                  | Offset   |
+|:----------------------|:---------|
+| OWNER_SW_CFG_DIGEST_0 | 0xa0     |
+| OWNER_SW_CFG_DIGEST_1 | 0xa4     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "OWNER_SW_CFG_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                | Description   |
+|:------:|:------:|:-------:|:--------------------|:--------------|
+|  31:0  |   ro   |   0x0   | OWNER_SW_CFG_DIGEST |               |
+
+## ROT_CREATOR_AUTH_CODESIGN_DIGEST
+Integrity digest for the ROT_CREATOR_AUTH_CODESIGN partition.
+The integrity digest is 0 by default. Software must write this
+digest value via the direct access interface in order to lock the partition.
+After a reset, write access to the ROT_CREATOR_AUTH_CODESIGN partition is locked and
+the digest becomes visible in this CSR.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name                               | Offset   |
+|:-----------------------------------|:---------|
+| ROT_CREATOR_AUTH_CODESIGN_DIGEST_0 | 0xa8     |
+| ROT_CREATOR_AUTH_CODESIGN_DIGEST_1 | 0xac     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "ROT_CREATOR_AUTH_CODESIGN_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                             | Description   |
+|:------:|:------:|:-------:|:---------------------------------|:--------------|
+|  31:0  |   ro   |   0x0   | ROT_CREATOR_AUTH_CODESIGN_DIGEST |               |
+
+## ROT_CREATOR_AUTH_STATE_DIGEST
+Integrity digest for the ROT_CREATOR_AUTH_STATE partition.
+The integrity digest is 0 by default. Software must write this
+digest value via the direct access interface in order to lock the partition.
+After a reset, write access to the ROT_CREATOR_AUTH_STATE partition is locked and
+the digest becomes visible in this CSR.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name                            | Offset   |
+|:--------------------------------|:---------|
+| ROT_CREATOR_AUTH_STATE_DIGEST_0 | 0xb0     |
+| ROT_CREATOR_AUTH_STATE_DIGEST_1 | 0xb4     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "ROT_CREATOR_AUTH_STATE_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                          | Description   |
+|:------:|:------:|:-------:|:------------------------------|:--------------|
+|  31:0  |   ro   |   0x0   | ROT_CREATOR_AUTH_STATE_DIGEST |               |
+
+## HW_CFG0_DIGEST
+Integrity digest for the HW_CFG0 partition.
+The integrity digest is 0 by default. The digest calculation can be triggered via the [`DIRECT_ACCESS_CMD.`](#direct_access_cmd)
+After a reset, the digest then becomes visible in this CSR, and the corresponding partition becomes write-locked.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name             | Offset   |
+|:-----------------|:---------|
+| HW_CFG0_DIGEST_0 | 0xb8     |
+| HW_CFG0_DIGEST_1 | 0xbc     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "HW_CFG0_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name           | Description   |
+|:------:|:------:|:-------:|:---------------|:--------------|
+|  31:0  |   ro   |   0x0   | HW_CFG0_DIGEST |               |
+
+## HW_CFG1_DIGEST
+Integrity digest for the HW_CFG1 partition.
+The integrity digest is 0 by default. The digest calculation can be triggered via the [`DIRECT_ACCESS_CMD.`](#direct_access_cmd)
+After a reset, the digest then becomes visible in this CSR, and the corresponding partition becomes write-locked.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name             | Offset   |
+|:-----------------|:---------|
+| HW_CFG1_DIGEST_0 | 0xc0     |
+| HW_CFG1_DIGEST_1 | 0xc4     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "HW_CFG1_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name           | Description   |
+|:------:|:------:|:-------:|:---------------|:--------------|
+|  31:0  |   ro   |   0x0   | HW_CFG1_DIGEST |               |
+
+## SECRET0_DIGEST
+Integrity digest for the SECRET0 partition.
+The integrity digest is 0 by default. The digest calculation can be triggered via the [`DIRECT_ACCESS_CMD.`](#direct_access_cmd)
+After a reset, the digest then becomes visible in this CSR, and the corresponding partition becomes write-locked.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name             | Offset   |
+|:-----------------|:---------|
+| SECRET0_DIGEST_0 | 0xc8     |
+| SECRET0_DIGEST_1 | 0xcc     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "SECRET0_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name           | Description   |
+|:------:|:------:|:-------:|:---------------|:--------------|
+|  31:0  |   ro   |   0x0   | SECRET0_DIGEST |               |
+
+## SECRET1_DIGEST
+Integrity digest for the SECRET1 partition.
+The integrity digest is 0 by default. The digest calculation can be triggered via the [`DIRECT_ACCESS_CMD.`](#direct_access_cmd)
+After a reset, the digest then becomes visible in this CSR, and the corresponding partition becomes write-locked.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name             | Offset   |
+|:-----------------|:---------|
+| SECRET1_DIGEST_0 | 0xd0     |
+| SECRET1_DIGEST_1 | 0xd4     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "SECRET1_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name           | Description   |
+|:------:|:------:|:-------:|:---------------|:--------------|
+|  31:0  |   ro   |   0x0   | SECRET1_DIGEST |               |
+
+## SECRET2_DIGEST
+Integrity digest for the SECRET2 partition.
+The integrity digest is 0 by default. The digest calculation can be triggered via the [`DIRECT_ACCESS_CMD.`](#direct_access_cmd)
+After a reset, the digest then becomes visible in this CSR, and the corresponding partition becomes write-locked.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name             | Offset   |
+|:-----------------|:---------|
+| SECRET2_DIGEST_0 | 0xd8     |
+| SECRET2_DIGEST_1 | 0xdc     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "SECRET2_DIGEST", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name           | Description   |
+|:------:|:------:|:-------:|:---------------|:--------------|
+|  31:0  |   ro   |   0x0   | SECRET2_DIGEST |               |
+
+## SW_CFG_WINDOW
+Any read to this window directly maps to the corresponding offset in the creator and owner software
+config partitions, and triggers an OTP readout of the bytes requested. Note that the transaction
+will block until OTP readout has completed.
+
+- Word Aligned Offset Range: `0x800`to`0xffc`
+- Size (words): `512`
+- Access: `ro`
+- Byte writes are *not* supported.
+
+## Summary of the **`prim`** interface's registers
+
+| Name                     | Offset   |   Length | Description   |
+|:-------------------------|:---------|---------:|:--------------|
+| otp_ctrl.[`CSR0`](#csr0) | 0x0      |        4 |               |
+| otp_ctrl.[`CSR1`](#csr1) | 0x4      |        4 |               |
+| otp_ctrl.[`CSR2`](#csr2) | 0x8      |        4 |               |
+| otp_ctrl.[`CSR3`](#csr3) | 0xc      |        4 |               |
+| otp_ctrl.[`CSR4`](#csr4) | 0x10     |        4 |               |
+| otp_ctrl.[`CSR5`](#csr5) | 0x14     |        4 |               |
+| otp_ctrl.[`CSR6`](#csr6) | 0x18     |        4 |               |
+| otp_ctrl.[`CSR7`](#csr7) | 0x1c     |        4 |               |
+
+## CSR0
+
+- Offset: `0x0`
+- Reset default: `0x0`
+- Reset mask: `0x7ff3ff7`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "field0", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "field1", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "field2", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 1}, {"name": "field3", "bits": 10, "attr": ["rw"], "rotate": 0}, {"bits": 2}, {"name": "field4", "bits": 11, "attr": ["rw"], "rotate": 0}, {"bits": 5}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+| 31:27  |        |         |        | Reserved      |
+| 26:16  |   rw   |   0x0   | field4 |               |
+| 15:14  |        |         |        | Reserved      |
+|  13:4  |   rw   |   0x0   | field3 |               |
+|   3    |        |         |        | Reserved      |
+|   2    |   rw   |   0x0   | field2 |               |
+|   1    |   rw   |   0x0   | field1 |               |
+|   0    |   rw   |   0x0   | field0 |               |
+
+## CSR1
+
+- Offset: `0x4`
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "field0", "bits": 7, "attr": ["rw"], "rotate": 0}, {"name": "field1", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "field2", "bits": 7, "attr": ["rw"], "rotate": 0}, {"name": "field3", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "field4", "bits": 16, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+| 31:16  |   rw   |   0x0   | field4 |               |
+|   15   |   rw   |   0x0   | field3 |               |
+|  14:8  |   rw   |   0x0   | field2 |               |
+|   7    |   rw   |   0x0   | field1 |               |
+|  6:0   |   rw   |   0x0   | field0 |               |
+
+## CSR2
+
+- Offset: `0x8`
+- Reset default: `0x0`
+- Reset mask: `0x1`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "field0", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+|  31:1  |        |         |        | Reserved      |
+|   0    |   rw   |   0x0   | field0 |               |
+
+## CSR3
+
+- Offset: `0xc`
+- Reset default: `0x0`
+- Reset mask: `0x7f3ff7`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "field0", "bits": 3, "attr": ["rw1c"], "rotate": -90}, {"bits": 1}, {"name": "field1", "bits": 10, "attr": ["rw1c"], "rotate": 0}, {"bits": 2}, {"name": "field2", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "field3", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "field4", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "field5", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "field6", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "field7", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "field8", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 9}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+| 31:23  |        |         |        | Reserved      |
+|   22   |   ro   |   0x0   | field8 |               |
+|   21   |   ro   |   0x0   | field7 |               |
+|   20   |   ro   |   0x0   | field6 |               |
+|   19   |   ro   |   0x0   | field5 |               |
+|   18   |   ro   |   0x0   | field4 |               |
+|   17   |   ro   |   0x0   | field3 |               |
+|   16   |  rw1c  |   0x0   | field2 |               |
+| 15:14  |        |         |        | Reserved      |
+|  13:4  |  rw1c  |   0x0   | field1 |               |
+|   3    |        |         |        | Reserved      |
+|  2:0   |  rw1c  |   0x0   | field0 |               |
+
+## CSR4
+
+- Offset: `0x10`
+- Reset default: `0x0`
+- Reset mask: `0x73ff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "field0", "bits": 10, "attr": ["rw"], "rotate": 0}, {"bits": 2}, {"name": "field1", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "field2", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "field3", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 17}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+| 31:15  |        |         |        | Reserved      |
+|   14   |   rw   |   0x0   | field3 |               |
+|   13   |   rw   |   0x0   | field2 |               |
+|   12   |   rw   |   0x0   | field1 |               |
+| 11:10  |        |         |        | Reserved      |
+|  9:0   |   rw   |   0x0   | field0 |               |
+
+## CSR5
+
+- Offset: `0x14`
+- Reset default: `0x0`
+- Reset mask: `0xffff3fff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "field0", "bits": 6, "attr": ["rw"], "rotate": 0}, {"name": "field1", "bits": 2, "attr": ["rw"], "rotate": -90}, {"name": "field2", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "field3", "bits": 3, "attr": ["ro"], "rotate": -90}, {"name": "field4", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "field5", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 2}, {"name": "field6", "bits": 16, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+| 31:16  |   rw   |   0x0   | field6 |               |
+| 15:14  |        |         |        | Reserved      |
+|   13   |   ro   |   0x0   | field5 |               |
+|   12   |   ro   |   0x0   | field4 |               |
+|  11:9  |   ro   |   0x0   | field3 |               |
+|   8    |   ro   |   0x0   | field2 |               |
+|  7:6   |   rw   |   0x0   | field1 |               |
+|  5:0   |   rw   |   0x0   | field0 |               |
+
+## CSR6
+
+- Offset: `0x18`
+- Reset default: `0x0`
+- Reset mask: `0xffff1bff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "field0", "bits": 10, "attr": ["rw"], "rotate": 0}, {"bits": 1}, {"name": "field1", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "field2", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 3}, {"name": "field3", "bits": 16, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+| 31:16  |   rw   |   0x0   | field3 |               |
+| 15:13  |        |         |        | Reserved      |
+|   12   |   rw   |   0x0   | field2 |               |
+|   11   |   rw   |   0x0   | field1 |               |
+|   10   |        |         |        | Reserved      |
+|  9:0   |   rw   |   0x0   | field0 |               |
+
+## CSR7
+
+- Offset: `0x1c`
+- Reset default: `0x0`
+- Reset mask: `0xc73f`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "field0", "bits": 6, "attr": ["ro"], "rotate": 0}, {"bits": 2}, {"name": "field1", "bits": 3, "attr": ["ro"], "rotate": -90}, {"bits": 3}, {"name": "field2", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "field3", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 16}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+| 31:16  |        |         |        | Reserved      |
+|   15   |   ro   |   0x0   | field3 |               |
+|   14   |   ro   |   0x0   | field2 |               |
+| 13:11  |        |         |        | Reserved      |
+|  10:8  |   ro   |   0x0   | field1 |               |
+|  7:6   |        |         |        | Reserved      |
+|  5:0   |   ro   |   0x0   | field0 |               |
+
+
+<!-- END CMDGEN -->
+
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_6mV8bRegR0cCRNMHVge8vBzg)
+ Call ID: call_6mV8bRegR0cCRNMHVge8vBzg
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl:
+otp_ctrl.sv otp_ctrl_core_reg_top.sv otp_ctrl_dai.sv otp_ctrl_ecc_reg.sv otp_ctrl_kdi.sv otp_ctrl_lci.sv otp_ctrl_lfsr_timer.sv otp_ctrl_part_buf.sv otp_ctrl_part_pkg.sv otp_ctrl_part_unbuf.sv otp_ctrl_pkg.sv otp_ctrl_prim_reg_top.sv otp_ctrl_reg_pkg.sv otp_ctrl_scrmbl.sv otp_ctrl_token_const.sv
+
+Directories in /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl:
+
+================================== Ai Message ==================================
+Tool Calls:
+  run_verilator_agent (call_U6MOYnGv3qeTpRsKLus4RpRg)
+ Call ID: call_U6MOYnGv3qeTpRsKLus4RpRg
+  Args:
+    ip: otp_ctrl
+================================= Tool Message =================================
+Name: run_verilator_agent
+
+I apologize, but it seems there was an issue running the verilator tests for the otp_ctrl IP. The build process failed to complete successfully, which means we can't analyze the test results as planned.
+
+To proceed with the security analysis, we need to:
+
+1. Check if the otp_ctrl IP exists in the system
+2. Verify the correct path or name for the IP
+3. Ensure the build environment is properly set up
+
+Could you please confirm the correct name of the IP you want to analyze? Alternatively, we could try to list the available IPs in the system to identify the correct one to test.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_EtnZqmVtEKYzXrTzXOQeKsqJ)
+ Call ID: call_EtnZqmVtEKYzXrTzXOQeKsqJ
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_core_reg_top.sv
+    top_module: otp_ctrl_core_reg_top
+    security_objective: register interface security and access control
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check results for the module otp_ctrl_core_reg_top in the file otp_ctrl_core_reg_top.sv show a large number of errors (278 total) including:
+
+- 6 errors related to CheckPortType-ML: Ports of struct types are used in the module interface which is not allowed.
+- 58 errors related to RegInput-ML: Many input ports are not registered.
+- 183 errors related to RegInputOutput-ML: Many ports and signals are not registered.
+- 13 errors related to PortOrder_A: Ports are not declared in the recommended order.
+- 17 errors related to W240: Inputs declared but not read.
+
+These errors indicate issues with the coding style and module interface declarations, especially the use of complex struct types in ports and lack of registering inputs and outputs.
+
+Regarding security concerns related to register interface security and access control:
+
+- The RTL code does implement access control mechanisms such as gated write enables (e.g., direct_access_cmd_gated_we gated by direct_access_regwen_qs).
+- There is address decoding and byte enable checking for writes to ensure only permitted bits are written.
+- Integrity error checking and error reporting are implemented.
+- However, the lint errors about unregistered inputs/outputs and port types could lead to potential issues in synthesis or simulation, which might indirectly affect security if the design does not behave as intended.
+
+In summary, while the RTL code includes register interface security and access control logic, the lint errors indicate coding and interface declaration issues that should be resolved to ensure robust and secure operation. The lint errors do not directly indicate a security vulnerability but highlight potential risks due to coding practices.
+
+Recommendation:
+- Fix the lint errors, especially the use of struct types in module ports and register all inputs and outputs properly.
+- Review the access control logic to ensure it meets security requirements once the lint issues are resolved.
+
+No explicit security vulnerabilities related to register interface access control were found from the lint output, but the coding issues should be addressed to avoid indirect risks.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_UIFjBiJh031LRmgRodDaWKj9)
+ Call ID: call_UIFjBiJh031LRmgRodDaWKj9
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_dai.sv
+    top_module: otp_ctrl_dai
+    security_objective: direct access interface security, partition locking, and error handling
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check on the module otp_ctrl_dai for security concerns related to direct access interface security, partition locking, and error handling reported the following:
+
+- There are 2 errors of type W240: "Input declared but not read" in the submodule prim_arbiter_fixed instance u_part_sel_idx. The inputs clk_i and rst_ni are declared but not read in that module.
+
+No other errors or warnings related to the queried security concerns were reported by the lint tool.
+
+Summary:
+- No direct security issues were flagged in the otp_ctrl_dai module itself regarding direct access interface security, partition locking, or error handling.
+- The only issues found are in a submodule prim_arbiter_fixed where clock and reset inputs are declared but not used, which might be a coding issue but not necessarily a security vulnerability.
+
+Based on this lint check, there are no explicit security issues detected in the provided RTL code related to the requested concerns. However, the unused inputs in the submodule could be reviewed for correctness.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_UO31PSyr5k4TYhkJ2fT4YT2K)
+ Call ID: call_UO31PSyr5k4TYhkJ2fT4YT2K
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_part_buf.sv
+    top_module: otp_ctrl_part_buf
+    security_objective: partition integrity, ECC, and error state handling
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check was performed on the provided RTL code for the module otp_ctrl_part_buf with a focus on security concerns related to partition integrity, ECC, and error state handling.
+
+The lint tool reported 4 errors, all related to the lint tag STARC05-2.10.8.2, which indicates that the width of the left side expression of a division operator exceeds 12 bits. Specifically, these errors occur in the following lines:
+
+- Line 86: Expression involving int'(Info.size) - ScrmblBlockWidth/8
+- Line 87: Expression involving int'(Info.size) / (ScrmblBlockWidth/8)
+- Line 641: Expression involving {cnt, {$clog2(ScrmblBlockWidth/8){1'b0}}} + addr_base
+- Line 650: Expression involving ScrmblBlockWidth / OtpWidth
+
+These errors are related to arithmetic operations on wide signals, which might not be optimal or could cause synthesis or simulation issues, but they do not directly indicate a security vulnerability.
+
+No other lint errors or warnings related to security issues such as partition integrity, ECC error handling, or error state handling were reported.
+
+Summary:
+- No direct security issues were found related to partition integrity, ECC, or error state handling.
+- The reported lint errors are related to signal width in arithmetic operations and should be reviewed for potential impact on implementation but are not inherently security vulnerabilities.
+
+Recommendation:
+- Review and possibly refactor the arithmetic expressions to comply with the lint rule STARC05-2.10.8.2 to avoid potential synthesis or simulation issues.
+- Continue to monitor and test for security properties through formal verification or additional security-focused lint checks if available.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_IKxsekiFAAzfexSzyUnIZymg)
+ Call ID: call_IKxsekiFAAzfexSzyUnIZymg
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_part_unbuf.sv
+    top_module: otp_ctrl_part_unbuf
+    security_objective: partition access control, error state handling
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint checks related to partition access control and error state handling security for the module otp_ctrl_part_unbuf in the file otp_ctrl_part_unbuf.sv were executed. The lint checker did not report any issues or warnings.
+
+Based on the lint check results, there are no detected security issues in the RTL code concerning partition access control and error state handling. The design appears to handle error states and access control properly, including locking mechanisms and error escalation to a terminal error state.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_eAyYg4MtPtnBoOpkLeCD7lMF)
+ Call ID: call_eAyYg4MtPtnBoOpkLeCD7lMF
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_lci.sv
+    top_module: otp_ctrl_lci
+    security_objective: life cycle interface access control and error handling
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check results for the module otp_ctrl_lci in the file /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_lci.sv show the following issues:
+
+1. DeadCode (4 errors):
+   - The input signal lc_data_i[2039:2032] does not drive anything.
+   - In the prim_count module, the output cnt_after_commit_o[6:0] does not drive anything.
+   - In the prim_sparse_fsm_flop module, the signal unused_err_o is assigned but not used.
+   - The signal unused_rdata in otp_ctrl_lci is assigned but not used.
+
+2. UniqueInputOutputSampling-ML (1 error):
+   - The output port error_o[2:0] is not sampled uniquely.
+
+Regarding security concerns related to life cycle interface access control and error handling:
+
+- The dead code issues indicate some signals are not used or driving any logic. This might not directly cause a security vulnerability but could indicate incomplete or redundant logic which should be reviewed.
+- The unique input/output sampling error on the error_o output port suggests that the error signal might not be reliably sampled or latched, which could affect error reporting and handling. This could potentially lead to missed or incorrect error signaling, impacting the robustness of error handling in the life cycle interface.
+
+No direct critical security vulnerabilities such as combinational loops, gated clocks, or asynchronous reset issues were reported.
+
+Summary:
+- The RTL has some dead code and a unique sampling issue on the error output.
+- These issues should be addressed to ensure robust error handling and clean design.
+- No immediate severe security flaws related to access control or error handling were detected by the lint checks.
+
+Recommendation:
+- Review and remove or properly use the dead code signals.
+- Fix the unique input/output sampling issue on error_o to ensure reliable error signaling.
+- Conduct further security reviews and dynamic testing to confirm the design's security posture.
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_qwuheu8hfFJ5HwBYXvuzTsDq)
+ Call ID: call_qwuheu8hfFJ5HwBYXvuzTsDq
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_core_reg_top.sv
+    top_module: otp_ctrl_core_reg_top
+    security_objective: register access policy enforcement, privilege escalation prevention
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+[{"text": "I need to provide the assertions parameter with specific assertions to check. Let me create those:", "type": "text"}, {"id": "toolu_01RQJAUy6UXPNuBn8Cpytahc", "input": {"design_filepath": "/home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_core_reg_top.sv", "top_module": "otp_ctrl_core_reg_top", "clock_signal": "clk_i", "reset_signal": "rst_ni", "reset_active": "low", "assertions": {"direct_access_regwen_enforced": "property direct_access_regwen_enforced;\n  @(posedge clk_i) disable iff(!rst_ni)\n  (direct_access_cmd_we && !direct_access_regwen_qs) |-> !direct_access_cmd_gated_we;\nendproperty\nassert property (direct_access_regwen_enforced);", "check_trigger_regwen_enforced": "property check_trigger_regwen_enforced;\n  @(posedge clk_i) disable iff(!rst_ni)\n  (check_trigger_we && !check_trigger_regwen_qs) |-> !check_trigger_gated_we;\nendproperty\nassert property (check_trigger_regwen_enforced);", "check_regwen_enforced": "property check_regwen_enforced;\n  @(posedge clk_i) disable iff(!rst_ni)\n  (check_timeout_we && !check_regwen_qs) |-> !check_timeout_gated_we;\nendproperty\nassert property (check_regwen_enforced);", "read_lock_enforced_vendor_test": "property read_lock_enforced_vendor_test;\n  @(posedge clk_i) disable iff(!rst_ni)\n  (!vendor_test_read_lock_qs && vendor_test_digest_0_re) |-> 0;\nendproperty\nassert property (read_lock_enforced_vendor_test);", "integrity_error_propagation": "property integrity_error_propagation;\n  @(posedge clk_i) disable iff(!rst_ni)\n  (intg_err || reg_we_err) |=> intg_err_o;\nendproperty\nassert property (integrity_error_propagation);"}}, "name": "assertion_checker_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_2iDV55dNghNhVtYiAxqq8mwD)
+ Call ID: call_2iDV55dNghNhVtYiAxqq8mwD
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_dai.sv
+    top_module: otp_ctrl_dai
+    security_objective: partition locking, privilege escalation, error propagation
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+[{"text": "Let me simplify the assertions and try again:", "type": "text"}, {"id": "toolu_011dvdDNbk74ZsdZzcizXmZZ", "input": {"design_filepath": "/home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_dai.sv", "top_module": "otp_ctrl_dai", "assertions": {"lock_bypass_check": "property lock_bypass_check;\n  @(posedge clk_i) disable iff (!rst_ni)\n  (lock_cnt == Predictor_Mask && part_sel_valid && mubi8_test_true_strict(part_access_i[part_idx].read_lock)) |-> !otp_access_grant;\nendproperty\nassert property (lock_bypass_check);"}, "clock_signal": "clk_i", "reset_signal": "rst_ni", "reset_active": "low"}, "name": "assertion_checker_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_ILRyYd3FOo6toEfSpAQRGTY2)
+ Call ID: call_ILRyYd3FOo6toEfSpAQRGTY2
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_part_buf.sv
+    top_module: otp_ctrl_part_buf
+    security_objective: integrity error handling, ECC error propagation, terminal error state enforcement
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+Based on the assertion checker results, I've identified a security concern in the RTL code:
+
+## Security Issue Found:
+
+The assertion `error_state_lock` was falsified, which indicates a potential security vulnerability. This assertion checks whether the partition is properly locked when in the error state.
+
+### Issue Details:
+- When the module enters the `ErrorSt` (error state), the `dout_locked_q` signal should always be set to `MuBi8True` to lock access to the partition.
+- The falsified assertion indicates that there are scenarios where the module can be in the error state but the partition is not properly locked.
+
+### Impact:
+This vulnerability could potentially allow:
+1. Unauthorized access to the OTP partition data even after an error has been detected
+2. Bypassing of security controls when the system is in a compromised state
+3. Failure to properly isolate faulty or tampered data
+
+### Root Cause Analysis:
+Looking at the RTL code, in the `ErrorSt` case of the FSM, there is the following code:
+```verilog
+ErrorSt: begin
+  dout_locked_d = MuBi8True;
+  if (error_q == NoError) begin
+    error_d = FsmStateError;
+  end
+  // If we are in error state, we cannot execute the checks anymore.
+  // Hence the acknowledgements are returned immediately.
+  cnsty_chk_ack_o = 1'b1;
+  integ_chk_ack_o = 1'b1;
+end
+```
+
+While the code attempts to set `dout_locked_d = MuBi8True`, there appears to be a timing or synchronization issue where the lock is not always effective when the state is `ErrorSt`. This could be due to:
+
+1. Race conditions in the state transitions
+2. Improper handling of the multi-bit encoding for the lock signal
+3. Potential glitches that could cause the lock to be temporarily ineffective
+
+The other assertions related to error propagation, escalation to terminal state, and integrity/consistency check failures were not falsified, indicating that those aspects of the security implementation are working correctly.
+
+## Recommendation:
+
+To address this security concern, the RTL should be modified to ensure that the partition is always locked when in the error state. Possible fixes include:
+
+1. Strengthen the locking mechanism by adding redundant locking controls
+2. Ensure proper synchronization of the lock signal with the error state
+3. Add additional checks to verify the lock status when in error state
+4. Consider implementing a more robust multi-bit encoding scheme for the lock signal
+
+This issue is particularly concerning since it relates to integrity error handling and terminal error state enforcement, which are critical security controls for protecting sensitive OTP data.
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_9y0QqlCFL6xtJRnr8JMi9WvN)
+ Call ID: call_9y0QqlCFL6xtJRnr8JMi9WvN
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_part_buf.sv
+    top_module: otp_ctrl_part_buf
+    security_objective: partition lock enforcement and error state handling
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+[{"id": "toolu_01LAVHi1oaXrBxQnDSnaKGW6", "input": {"security_issue": "hardware state machine glitch attack"}, "name": "llm_cwe_details_retriever_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_lryKjt7psFmX956ohDd8JAXh)
+ Call ID: call_lryKjt7psFmX956ohDd8JAXh
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_part_buf.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Buffered partition for OTP controller.
+6: //
+7: 
+8: `include "prim_flop_macros.sv"
+9: 
+10: module otp_ctrl_part_buf
+11:   import otp_ctrl_pkg::*;
+12:   import otp_ctrl_reg_pkg::*;
+13:   import otp_ctrl_part_pkg::*;
+14: #(
+15:   // Partition information.
+16:   parameter part_info_t             Info = PartInfoDefault,
+17:   parameter logic [Info.size*8-1:0] DataDefault = '0
+18: ) (
+19:   input                               clk_i,
+20:   input                               rst_ni,
+21:   // Pulse to start partition initialisation (required once per power cycle).
+22:   input                               init_req_i,
+23:   output logic                        init_done_o,
+24:   // Integrity check requests
+25:   input                               integ_chk_req_i,
+26:   output logic                        integ_chk_ack_o,
+27:   // Consistency check requests
+28:   input                               cnsty_chk_req_i,
+29:   output logic                        cnsty_chk_ack_o,
+30:   // Escalation input. This moves the FSM into a terminal state and locks down
+31:   // the partition.
+32:   input  lc_ctrl_pkg::lc_tx_t         escalate_en_i,
+33:   // Check bypass enable. This bypasses integrity and consistency checks and
+34:   // acknowledges all incoming check requests (only used by life cycle).
+35:   input  lc_ctrl_pkg::lc_tx_t         check_byp_en_i,
+36:   // Output error state of partition, to be consumed by OTP error/alert logic.
+37:   // Note that most errors are not recoverable and move the partition FSM into
+38:   // a terminal error state.
+39:   output otp_err_e                    error_o,
+40:   // This error signal is pulsed high if the FSM has been glitched into an invalid state.
+41:   // Although it is somewhat redundant with the error code in error_o above, it is
+42:   // meant to cover cases where we already latched an error code while the FSM is
+43:   // glitched into an invalid state (since in that case, the error code will not be
+44:   // overridden with the FSM error code so that the original error code is still
+45:   // discoverable).
+46:   output logic                        fsm_err_o,
+47:   // Access/lock status
+48:   // SEC_CM: ACCESS.CTRL.MUBI
+49:   input  part_access_t                access_i, // runtime lock from CSRs
+50:   output part_access_t                access_o,
+51:   // Buffered 64bit digest output.
+52:   output logic [ScrmblBlockWidth-1:0] digest_o,
+53:   output logic [Info.size*8-1:0]      data_o,
+54:   // OTP interface
+55:   output logic                        otp_req_o,
+56:   output prim_otp_pkg::cmd_e          otp_cmd_o,
+57:   output logic [OtpSizeWidth-1:0]     otp_size_o,
+58:   output logic [OtpIfWidth-1:0]       otp_wdata_o,
+59:   output logic [OtpAddrWidth-1:0]     otp_addr_o,
+60:   input                               otp_gnt_i,
+61:   input                               otp_rvalid_i,
+62:   input  [ScrmblBlockWidth-1:0]       otp_rdata_i,
+63:   input  prim_otp_pkg::err_e          otp_err_i,
+64:   // Scrambling mutex request
+65:   output logic                        scrmbl_mtx_req_o,
+66:   input                               scrmbl_mtx_gnt_i,
+67:   // Scrambling datapath interface
+68:   output otp_scrmbl_cmd_e             scrmbl_cmd_o,
+69:   output digest_mode_e                scrmbl_mode_o,
+70:   output logic [ConstSelWidth-1:0]    scrmbl_sel_o,
+71:   output logic [ScrmblBlockWidth-1:0] scrmbl_data_o,
+72:   output logic                        scrmbl_valid_o,
+73:   input  logic                        scrmbl_ready_i,
+74:   input  logic                        scrmbl_valid_i,
+75:   input  logic [ScrmblBlockWidth-1:0] scrmbl_data_i
+76: );
+77: 
+78:   ////////////////////////
+79:   // Integration Checks //
+80:   ////////////////////////
+81: 
+82:   import prim_mubi_pkg::*;
+83:   import prim_util_pkg::vbits;
+84: 
+85:   localparam int unsigned DigestOffsetInt = (int'(Info.offset) +
+86:                                              int'(Info.size) - ScrmblBlockWidth/8);
+87:   localparam int NumScrmblBlocks = int'(Info.size) / (ScrmblBlockWidth/8);
+88:   localparam int CntWidth = vbits(NumScrmblBlocks);
+89: 
+90:   localparam bit [OtpByteAddrWidth-1:0] DigestOffset = DigestOffsetInt[OtpByteAddrWidth-1:0];
+91: 
+92:   localparam int unsigned LastScrmblBlockInt = NumScrmblBlocks - 1;
+93:   localparam int unsigned PenultimateScrmblBlockInt = NumScrmblBlocks - 2;
+94:   localparam bit [CntWidth-1:0] LastScrmblBlock = LastScrmblBlockInt[CntWidth-1:0];
+95:   localparam bit [CntWidth-1:0] PenultimateScrmblBlock = PenultimateScrmblBlockInt[CntWidth-1:0];
+96: 
+97:   // Integration checks for parameters.
+98:   `ASSERT_INIT(OffsetMustBeBlockAligned_A, (Info.offset % (ScrmblBlockWidth/8)) == 0)
+99:   `ASSERT_INIT(SizeMustBeBlockAligned_A, (Info.size % (ScrmblBlockWidth/8)) == 0)
+100:   `ASSERT_INIT(DigestOffsetMustBeRepresentable_A, DigestOffsetInt == int'(DigestOffset))
+101:   `ASSERT(ScrambledImpliesDigest_A, Info.secret |-> Info.hw_digest)
+102:   `ASSERT(WriteLockImpliesDigest_A, Info.read_lock |-> Info.hw_digest)
+103:   `ASSERT(ReadLockImpliesDigest_A, Info.write_lock |-> Info.hw_digest)
+104: 
+105:   // This feature is only supposed to be used with partitions that are not scrambled
+106:   // and that do not have a digest.
+107:   `ASSERT(BypassEnable0_A, Info.secret    |-> lc_ctrl_pkg::lc_tx_test_false_strict(check_byp_en_i))
+108:   `ASSERT(BypassEnable1_A, Info.hw_digest |-> lc_ctrl_pkg::lc_tx_test_false_strict(check_byp_en_i))
+109: 
+110:   ///////////////////////
+111:   // OTP Partition FSM //
+112:   ///////////////////////
+113: 
+114:   // SEC_CM: PART.FSM.SPARSE
+115:   // Encoding generated with:
+116:   // $ ./util/design/sparse-fsm-encode.py -d 5 -m 16 -n 12 \
+117:   //      -s 3370657881 --language=sv
+118:   //
+119:   // Hamming distance histogram:
+120:   //
+121:   //  0: --
+122:   //  1: --
+123:   //  2: --
+124:   //  3: --
+125:   //  4: --
+126:   //  5: |||||||||||||| (28.33%)
+127:   //  6: |||||||||||||||||||| (38.33%)
+128:   //  7: |||||||||| (19.17%)
+129:   //  8: ||| (5.83%)
+130:   //  9: || (4.17%)
+131:   // 10: | (2.50%)
+132:   // 11:  (0.83%)
+133:   // 12:  (0.83%)
+134:   //
+135:   // Minimum Hamming distance: 5
+136:   // Maximum Hamming distance: 12
+137:   // Minimum Hamming weight: 4
+138:   // Maximum Hamming weight: 8
+139:   //
+140:   localparam int StateWidth = 12;
+141:   typedef enum logic [StateWidth-1:0] {
+142:     ResetSt         = 12'b011000001110,
+143:     InitSt          = 12'b110100100111,
+144:     InitWaitSt      = 12'b001110110001,
+145:     InitDescrSt     = 12'b110010000100,
+146:     InitDescrWaitSt = 12'b100110101000,
+147:     IdleSt          = 12'b010101001101,
+148:     IntegScrSt      = 12'b110101011010,
+149:     IntegScrWaitSt  = 12'b100010011111,
+150:     IntegDigClrSt   = 12'b101001000001,
+151:     IntegDigSt      = 12'b011101100010,
+152:     IntegDigPadSt   = 12'b001101010111,
+153:     IntegDigFinSt   = 12'b011011100101,
+154:     IntegDigWaitSt  = 12'b100011110010,
+155:     CnstyReadSt     = 12'b000001101011,
+156:     CnstyReadWaitSt = 12'b101001111100,
+157:     ErrorSt         = 12'b010110111110
+158:   } state_e;
+159: 
+160:   typedef enum logic {
+161:     ScrmblData,
+162:     OtpData
+163:   } data_sel_e;
+164: 
+165:   typedef enum logic {
+166:     PartOffset,
+167:     DigOffset
+168:   } base_sel_e;
+169: 
+170:   state_e state_d, state_q;
+171:   otp_err_e error_d, error_q;
+172:   data_sel_e data_sel;
+173:   base_sel_e base_sel;
+174:   mubi8_t dout_locked_d, dout_locked_q;
+175:   logic [CntWidth-1:0] cnt;
+176:   logic cnt_en, cnt_clr, cnt_err;
+177:   logic ecc_err;
+178:   logic buffer_reg_en;
+179:   logic [ScrmblBlockWidth-1:0] data_mux;
+180: 
+181:   // Output partition error state.
+182:   assign error_o = error_q;
+183: 
+184:   // This partition cannot do any write accesses, hence we tie this
+185:   // constantly off.
+186:   assign otp_wdata_o = '0;
+187:   // Depending on the partition configuration, the wrapper is instructed to ignore integrity
+188:   // calculations and checks. To be on the safe side, the partition filters error responses at this
+189:   // point and does not report any integrity errors if integrity is disabled.
+190:   otp_err_e otp_err;
+191:   if (Info.integrity) begin : gen_integrity
+192:     assign otp_cmd_o = prim_otp_pkg::Read;
+193:     assign otp_err = otp_err_e'(otp_err_i);
+194:   end else begin : gen_no_integrity
+195:     assign otp_cmd_o = prim_otp_pkg::ReadRaw;
+196:     always_comb begin
+197:       if (otp_err_e'(otp_err_i) inside {MacroEccCorrError, MacroEccUncorrError}) begin
+198:         otp_err = NoError;
+199:       end else begin
+200:         otp_err = otp_err_e'(otp_err_i);
+201:       end
+202:     end
+203:   end
+204: 
+205:   always_comb begin : p_fsm
+206:     state_d = state_q;
+207: 
+208:     // Redundantly encoded lock signal for buffer regs.
+209:     dout_locked_d = dout_locked_q;
+210: 
+211:     // OTP signals
+212:     otp_req_o = 1'b0;
+213: 
+214:     // Scrambling mutex
+215:     scrmbl_mtx_req_o = 1'b0;
+216: 
+217:     // Scrambling datapath
+218:     scrmbl_cmd_o   = LoadShadow;
+219:     scrmbl_sel_o   = CnstyDigest;
+220:     scrmbl_mode_o  = StandardMode;
+221:     scrmbl_valid_o = 1'b0;
+222: 
+223:     // Counter
+224:     cnt_en   = 1'b0;
+225:     cnt_clr  = 1'b0;
+226:     base_sel = PartOffset;
+227: 
+228:     // Buffer register
+229:     buffer_reg_en = 1'b0;
+230:     data_sel = OtpData;
+231: 
+232:     // Error Register
+233:     error_d = error_q;
+234:     fsm_err_o = 1'b0;
+235: 
+236:     // Integrity/Consistency check responses
+237:     cnsty_chk_ack_o = 1'b0;
+238:     integ_chk_ack_o = 1'b0;
+239: 
+240:     unique case (state_q)
+241:       ///////////////////////////////////////////////////////////////////
+242:       // State right after reset. Wait here until we get a an
+243:       // initialization request.
+244:       ResetSt: begin
+245:         if (init_req_i) begin
+246:           state_d = InitSt;
+247:         end
+248:       end
+249:       ///////////////////////////////////////////////////////////////////
+250:       // Initialization reads out the digest only in unbuffered
+251:       // partitions. Wait here until the OTP request has been granted.
+252:       // And then wait until the OTP word comes back.
+253:       InitSt: begin
+254:         otp_req_o = 1'b1;
+255:         if (otp_gnt_i) begin
+256:           state_d = InitWaitSt;
+257:         end
+258:       end
+259:       ///////////////////////////////////////////////////////////////////
+260:       // Wait for OTP response and write to buffer register, then go to
+261:       // descrambling state. In case an OTP transaction fails, latch the
+262:       // OTP error code and jump to a
+263:       // terminal error state.
+264:       InitWaitSt: begin
+265:         if (otp_rvalid_i) begin
+266:           buffer_reg_en = 1'b1;
+267:           if (otp_err inside {NoError, MacroEccCorrError}) begin
+268:             // Once we've read and descrambled the whole partition, we can go to integrity
+269:             // verification. Note that the last block is the digest value, which does not
+270:             // have to be descrambled.
+271:             if (cnt == LastScrmblBlock) begin
+272:               state_d = IntegDigClrSt;
+273:             // Only need to descramble if this is a scrambled partition.
+274:             // Otherwise, we can just go back to InitSt and read the next block.
+275:             end else if (Info.secret) begin
+276:               state_d = InitDescrSt;
+277:             end else begin
+278:               state_d = InitSt;
+279:               cnt_en = 1'b1;
+280:             end
+281:             // At this point the only error that we could have gotten are correctable ECC errors.
+282:             if (otp_err != NoError) begin
+283:               error_d = MacroEccCorrError;
+284:             end
+285:           end else begin
+286:             state_d = ErrorSt;
+287:             error_d = otp_err;
+288:           end
+289:         end
+290:       end
+291:       ///////////////////////////////////////////////////////////////////
+292:       // Descrambling state. This first acquires the scrambling
+293:       // datapath mutex. Note that once the mutex is acquired, we have
+294:       // exclusive access to the scrambling datapath until we release
+295:       // the mutex by deasserting scrmbl_mtx_req_o.
+296:       // SEC_CM: SECRET.MEM.SCRAMBLE
+297:       InitDescrSt: begin
+298:         scrmbl_mtx_req_o = 1'b1;
+299:         scrmbl_valid_o = 1'b1;
+300:         scrmbl_cmd_o = Decrypt;
+301:         scrmbl_sel_o = Info.key_sel;
+302:         if (scrmbl_mtx_gnt_i && scrmbl_ready_i) begin
+303:           state_d = InitDescrWaitSt;
+304:         end
+305:       end
+306:       ///////////////////////////////////////////////////////////////////
+307:       // Wait for the descrambled data to return. Note that we release
+308:       // the mutex lock upon leaving this state.
+309:       // SEC_CM: SECRET.MEM.SCRAMBLE
+310:       InitDescrWaitSt: begin
+311:         scrmbl_mtx_req_o = 1'b1;
+312:         scrmbl_sel_o = Info.key_sel;
+313:         data_sel = ScrmblData;
+314:         if (scrmbl_valid_i) begin
+315:           state_d = InitSt;
+316:           buffer_reg_en = 1'b1;
+317:           cnt_en = 1'b1;
+318:         end
+319:       end
+320:       ///////////////////////////////////////////////////////////////////
+321:       // Idle state. We basically wait for integrity and consistency check
+322:       // triggers in this state.
+323:       IdleSt: begin
+324:         if (integ_chk_req_i) begin
+325:           if (Info.hw_digest) begin
+326:             state_d = IntegDigClrSt;
+327:           // In case there is nothing to check we can just
+328:           // acknowledge the request right away, without going to the
+329:           // integrity check.
+330:           end else begin
+331:             integ_chk_ack_o = 1'b1;
+332:           end
+333:         end else if (cnsty_chk_req_i) begin
+334:           state_d = CnstyReadSt;
+335:           cnt_clr = 1'b1;
+336:         end
+337:       end
+338:       ///////////////////////////////////////////////////////////////////
+339:       // Read the digest. Wait here until the OTP request has been granted.
+340:       // And then wait until the OTP word comes back.
+341:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+342:       CnstyReadSt: begin
+343:         otp_req_o = 1'b1;
+344:         // In case this partition has a hardware digest, we only have to read
+345:         // and compare the digest value. In that case we select the digest offset here.
+346:         // Otherwise we have to read and compare the whole partition, in which case we
+347:         // select the partition offset, which is the default assignment of base_sel.
+348:         if (Info.hw_digest) begin
+349:           base_sel = DigOffset;
+350:         end
+351:         if (otp_gnt_i) begin
+352:           state_d = CnstyReadWaitSt;
+353:         end
+354:       end
+355:       ///////////////////////////////////////////////////////////////////
+356:       // Wait for OTP response and compare the digest. In case there is
+357:       // a mismatch, lock down the partition and go into the terminal error
+358:       // state. In case an OTP transaction fails, latch the OTP error code
+359:       // and jump to a terminal error state.
+360:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+361:       CnstyReadWaitSt: begin
+362:         if (otp_rvalid_i) begin
+363:           if (otp_err inside {NoError, MacroEccCorrError}) begin
+364:             // Check whether we need to compare the digest or the full partition
+365:             // contents here.
+366:             if (Info.hw_digest) begin
+367:               // Note that we ignore this check if the digest is still blank.
+368:               if (digest_o == data_mux || digest_o == '0) begin
+369:                 state_d = IdleSt;
+370:                 cnsty_chk_ack_o = 1'b1;
+371:               // Error out and lock the partition if this check fails.
+372:               end else begin
+373:                 state_d = ErrorSt;
+374:                 error_d = CheckFailError;
+375:                 // The check has finished and found an error.
+376:                 cnsty_chk_ack_o = 1'b1;
+377:               end
+378:             end else begin
+379:               // Check whether the read data corresponds with the data buffered in regs.
+380:               // Note that this particular check can be bypassed in case a transition is ongoing.
+381:               if (scrmbl_data_o == data_mux ||
+382:                   lc_ctrl_pkg::lc_tx_test_true_strict(check_byp_en_i)) begin
+383:                 // Can go back to idle and acknowledge the
+384:                 // request if this is the last block.
+385:                 if (cnt == LastScrmblBlock) begin
+386:                   state_d = IdleSt;
+387:                   cnsty_chk_ack_o = 1'b1;
+388:                 // Need to go back and read out more blocks.
+389:                 end else begin
+390:                   state_d = CnstyReadSt;
+391:                   cnt_en = 1'b1;
+392:                 end
+393:               end else begin
+394:                 state_d = ErrorSt;
+395:                 error_d = CheckFailError;
+396:                 // The check has finished and found an error.
+397:                 cnsty_chk_ack_o = 1'b1;
+398:               end
+399:             end
+400:             // At this point the only error that we could have gotten are correctable ECC errors.
+401:             if (otp_err != NoError) begin
+402:               error_d = MacroEccCorrError;
+403:             end
+404:           end else begin
+405:             state_d = ErrorSt;
+406:             error_d = otp_err;
+407:             // The check has finished and found an error.
+408:             cnsty_chk_ack_o = 1'b1;
+409:           end
+410:         end
+411:       end
+412:       ///////////////////////////////////////////////////////////////////
+413:       // First, acquire the mutex for the digest and clear the digest state.
+414:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+415:       IntegDigClrSt: begin
+416:         // Check whether this partition requires checking at all.
+417:         if (Info.hw_digest) begin
+418:           scrmbl_mtx_req_o = 1'b1;
+419:           scrmbl_valid_o = 1'b1;
+420:           cnt_clr = 1'b1;
+421:           // Need to reset the digest state and set it to chained
+422:           // mode if this partition is scrambled.
+423:           scrmbl_cmd_o = DigestInit;
+424:           if (Info.secret) begin
+425:             scrmbl_mode_o = ChainedMode;
+426:             if (scrmbl_mtx_gnt_i && scrmbl_ready_i) begin
+427:               state_d = IntegScrSt;
+428:             end
+429:           // If this partition is not scrambled, we can just directly
+430:           // jump to the digest state.
+431:           end else begin
+432:             scrmbl_mode_o = StandardMode;
+433:             if (scrmbl_mtx_gnt_i && scrmbl_ready_i) begin
+434:               state_d = IntegDigSt;
+435:             end
+436:           end
+437:         // Otherwise, if this partition is not digest protected,
+438:         // we can just go to idle, since there is nothing to check.
+439:         // Note that we do not come back to this state in case there is no
+440:         // digest, and hence it is safe to unlock the buffer regs at this point.
+441:         // This is the only way the buffer regs can get unlocked.
+442:         end else begin
+443:           state_d = IdleSt;
+444:           if (mubi8_test_true_strict(dout_locked_q)) begin
+445:             dout_locked_d = MuBi8False;
+446:           end
+447:         end
+448:       end
+449:       ///////////////////////////////////////////////////////////////////
+450:       // Scramble buffered data (which is held in plaintext form).
+451:       // This moves the previous scrambling result into the shadow reg
+452:       // for later use.
+453:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+454:       IntegScrSt: begin
+455:           scrmbl_mtx_req_o = 1'b1;
+456:           scrmbl_valid_o = 1'b1;
+457:           scrmbl_cmd_o = Encrypt;
+458:           scrmbl_sel_o = Info.key_sel;
+459:           if (scrmbl_ready_i) begin
+460:             state_d = IntegScrWaitSt;
+461:           end
+462:       end
+463:       ///////////////////////////////////////////////////////////////////
+464:       // Wait for the scrambled data to return.
+465:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+466:       IntegScrWaitSt: begin
+467:         scrmbl_mtx_req_o = 1'b1;
+468:         scrmbl_sel_o = Info.key_sel;
+469:         if (scrmbl_valid_i) begin
+470:           state_d = IntegDigSt;
+471:         end
+472:       end
+473:       ///////////////////////////////////////////////////////////////////
+474:       // Push the word read into the scrambling datapath. The last
+475:       // block is repeated in case the number blocks in this partition
+476:       // is odd.
+477:       // SEC_CM: PART.MEM.DIGEST
+478:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+479:       IntegDigSt: begin
+480:         scrmbl_mtx_req_o = 1'b1;
+481:         scrmbl_valid_o = 1'b1;
+482:         if (scrmbl_ready_i) begin
+483:           cnt_en = 1'b1;
+484:           // No need to digest the digest value itself
+485:           if (cnt == PenultimateScrmblBlock) begin
+486:             // Note that the digest operates on 128bit blocks since the data is fed in via the
+487:             // PRESENT key input. Therefore, we only trigger a digest update on every second
+488:             // 64bit block that is pushed into the scrambling datapath.
+489:             if (cnt[0]) begin
+490:               scrmbl_cmd_o = Digest;
+491:               state_d = IntegDigFinSt;
+492:             end else begin
+493:               state_d = IntegDigPadSt;
+494:               cnt_en = 1'b0;
+495:             end
+496:           end else begin
+497:             // Trigger digest round in case this is the second block in a row.
+498:             if (cnt[0]) begin
+499:               scrmbl_cmd_o = Digest;
+500:             end
+501:             // Go back and scramble the next data block if this is
+502:             // a scrambled partition. Otherwise just stay here.
+503:             if (Info.secret) begin
+504:               state_d = IntegScrSt;
+505:             end
+506:           end
+507:         end
+508:       end
+509:       ///////////////////////////////////////////////////////////////////
+510:       // Padding state. When we get here, we've copied the last encryption
+511:       // result into the shadow register such that we've effectively
+512:       // repeated the last block twice in order to pad the data to 128bit.
+513:       // SEC_CM: PART.MEM.DIGEST
+514:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+515:       IntegDigPadSt: begin
+516:         scrmbl_mtx_req_o = 1'b1;
+517:         scrmbl_valid_o = 1'b1;
+518:         scrmbl_cmd_o = Digest;
+519:         if (scrmbl_ready_i) begin
+520:           state_d = IntegDigFinSt;
+521:         end
+522:       end
+523:       ///////////////////////////////////////////////////////////////////
+524:       // Trigger digest finalization and go wait for the result.
+525:       // SEC_CM: PART.MEM.DIGEST
+526:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+527:       IntegDigFinSt: begin
+528:         scrmbl_mtx_req_o = 1'b1;
+529:         scrmbl_valid_o = 1'b1;
+530:         scrmbl_cmd_o = DigestFinalize;
+531:         if (scrmbl_ready_i) begin
+532:           state_d = IntegDigWaitSt;
+533:         end
+534:       end
+535:       ///////////////////////////////////////////////////////////////////
+536:       // Wait for the digest to return, and double check whether the digest
+537:       // matches. If yes, unlock the partition. Otherwise, go into the terminal
+538:       // error state, where the partition will be locked down.
+539:       // SEC_CM: PART.MEM.DIGEST
+540:       // SEC_CM: PART.DATA_REG.BKGN_CHK
+541:       IntegDigWaitSt: begin
+542:         scrmbl_mtx_req_o = 1'b1;
+543:         data_sel = ScrmblData;
+544:         if (scrmbl_valid_i) begin
+545:           // This is the only way the buffer regs can get unlocked.
+546:           // Note that we ignore this check if the digest is still blank.
+547:           if (digest_o == data_mux || digest_o == '0) begin
+548:             state_d = IdleSt;
+549:             // If the partition is still locked, this is the first integrity check after
+550:             // initialization. This is the only way the buffer regs can get unlocked.
+551:             if (mubi8_test_true_strict(dout_locked_q)) begin
+552:               dout_locked_d = MuBi8False;
+553:             // Otherwise, this integrity check has requested by the LFSR timer, and we have
+554:             // to acknowledge its completion.
+555:             end else begin
+556:               integ_chk_ack_o = 1'b1;
+557:             end
+558:           // Error out and lock the partition if this check fails.
+559:           end else begin
+560:             state_d = ErrorSt;
+561:             error_d = CheckFailError;
+562:             // The check has finished and found an error.
+563:             integ_chk_ack_o = 1'b1;
+564:           end
+565:         end
+566:       end
+567:       ///////////////////////////////////////////////////////////////////
+568:       // Terminal Error State. This locks access to the partition.
+569:       // Make sure the partition signals an error state if no error
+570:       // code has been latched so far, and lock the buffer regs down.
+571:       ErrorSt: begin
+572:         dout_locked_d = MuBi8True;
+573:         if (error_q == NoError) begin
+574:           error_d = FsmStateError;
+575:         end
+576:         // If we are in error state, we cannot execute the checks anymore.
+577:         // Hence the acknowledgements are returned immediately.
+578:         cnsty_chk_ack_o = 1'b1;
+579:         integ_chk_ack_o = 1'b1;
+580:       end
+581:       ///////////////////////////////////////////////////////////////////
+582:       // We should never get here. If we do (e.g. via a malicious
+583:       // glitch), error out immediately.
+584:       default: begin
+585:         state_d = ErrorSt;
+586:         fsm_err_o = 1'b1;
+587:       end
+588:       ///////////////////////////////////////////////////////////////////
+589:     endcase // state_q
+590: 
+591: 
+592:     // Unconditionally jump into the terminal error state in case of
+593:     // an ECC error or escalation, and lock access to the partition down.
+594:     // SEC_CM: PART.FSM.LOCAL_ESC
+595:     if (ecc_err) begin
+596:       state_d = ErrorSt;
+597:       if (state_q != ErrorSt) begin
+598:         error_d = CheckFailError;
+599:       end
+600:     end
+601:     // SEC_CM: PART.FSM.LOCAL_ESC, PART.FSM.GLOBAL_ESC
+602:     if (lc_ctrl_pkg::lc_tx_test_true_loose(escalate_en_i) || cnt_err) begin
+603:       state_d = ErrorSt;
+604:       fsm_err_o = 1'b1;
+605:       if (state_q != ErrorSt) begin
+606:         error_d = FsmStateError;
+607:       end
+608:     end
+609:   end
+610: 
+611:   ////////////////////////////
+612:   // Address Calc and Muxes //
+613:   ////////////////////////////
+614: 
+615:   // Address counter - this is only used for computing a digest, hence the increment is
+616:   // fixed to 8 byte.
+617:   // SEC_CM: PART.CTR.REDUN
+618:   prim_count #(
+619:     .Width(CntWidth)
+620:   ) u_prim_count (
+621:     .clk_i,
+622:     .rst_ni,
+623:     .clr_i(cnt_clr),
+624:     .set_i(1'b0),
+625:     .set_cnt_i('0),
+626:     .incr_en_i(cnt_en),
+627:     .decr_en_i(1'b0),
+628:     .step_i(CntWidth'(1)),
+629:     .commit_i(1'b1),
+630:     .cnt_o(cnt),
+631:     .cnt_after_commit_o(),
+632:     .err_o(cnt_err)
+633:   );
+634: 
+635:   logic [OtpByteAddrWidth-1:0] addr_base;
+636:   assign addr_base = (base_sel == DigOffset) ? DigestOffset : Info.offset;
+637: 
+638:   // Note that OTP works on halfword (16bit) addresses, hence need to
+639:   // shift the addresses appropriately.
+640:   logic [OtpByteAddrWidth-1:0] addr_calc;
+641:   assign addr_calc = OtpByteAddrWidth'({cnt, {$clog2(ScrmblBlockWidth/8){1'b0}}}) + addr_base;
+642:   assign otp_addr_o = addr_calc[OtpByteAddrWidth-1:OtpAddrShift];
+643: 
+644:   if (OtpAddrShift > 0) begin : gen_unused
+645:     logic unused_bits;
+646:     assign unused_bits = ^addr_calc[OtpAddrShift-1:0];
+647:   end
+648: 
+649:   // Always transfer 64bit blocks.
+650:   assign otp_size_o = OtpSizeWidth'(unsigned'(ScrmblBlockWidth / OtpWidth) - 1);
+651: 
+652:   assign data_mux = (data_sel == ScrmblData) ? scrmbl_data_i : otp_rdata_i;
+653: 
+654:   /////////////////
+655:   // Buffer Regs //
+656:   /////////////////
+657: 
+658:   // SEC_CM: PART.DATA_REG.INTEGRITY
+659:   logic [Info.size*8-1:0] data;
+660:   otp_ctrl_ecc_reg #(
+661:     .Width ( ScrmblBlockWidth ),
+662:     .Depth ( NumScrmblBlocks  )
+663:   ) u_otp_ctrl_ecc_reg (
+664:     .clk_i,
+665:     .rst_ni,
+666:     .wren_i    ( buffer_reg_en ),
+667:     .addr_i    ( cnt           ),
+668:     .wdata_i   ( data_mux      ),
+669:     .rdata_o   ( scrmbl_data_o ),
+670:     .data_o    ( data          ),
+671:     .ecc_err_o ( ecc_err       )
+672:   );
+673: 
+674:   // We have successfully initialized the partition once it has been unlocked.
+675:   assign init_done_o = mubi8_test_false_strict(dout_locked_q);
+676:   // Hardware output gating.
+677:   // Note that this is decoupled from the DAI access rules further below.
+678:   assign data_o = data;
+679:   // The digest does not have to be gated.
+680:   assign digest_o = data[$high(data_o) -: ScrmblBlockWidth];
+681: 
+682:   ////////////////////////
+683:   // DAI Access Control //
+684:   ////////////////////////
+685: 
+686:   // Aggregate all possible DAI write /readlocks. The partition is also locked when uninitialized.
+687:   // Note that the locks are redundantly encoded values.
+688:   part_access_t access_pre;
+689:   prim_mubi8_sender #(
+690:     .AsyncOn(0)
+691:   ) u_prim_mubi8_sender_write_lock_pre (
+692:     .clk_i,
+693:     .rst_ni,
+694:     .mubi_i(mubi8_and_lo(dout_locked_q, access_i.write_lock)),
+695:     .mubi_o(access_pre.write_lock)
+696:   );
+697:   prim_mubi8_sender #(
+698:     .AsyncOn(0)
+699:   ) u_prim_mubi8_sender_read_lock_pre (
+700:     .clk_i,
+701:     .rst_ni,
+702:     .mubi_i(mubi8_and_lo(dout_locked_q, access_i.read_lock)),
+703:     .mubi_o(access_pre.read_lock)
+704:   );
+705: 
+706:   // SEC_CM: PART.MEM.SW_UNWRITABLE
+707:   if (Info.write_lock) begin : gen_digest_write_lock
+708:     mubi8_t digest_locked;
+709:     assign digest_locked = (digest_o != '0) ? MuBi8True : MuBi8False;
+710: 
+711:     // This prevents the synthesis tool from optimizing the multibit signal.
+712:     prim_mubi8_sender #(
+713:       .AsyncOn(0)
+714:     ) u_prim_mubi8_sender_write_lock (
+715:       .clk_i,
+716:       .rst_ni,
+717:       .mubi_i(mubi8_and_lo(access_pre.write_lock, digest_locked)),
+718:       .mubi_o(access_o.write_lock)
+719:     );
+720: 
+721:     `ASSERT(DigestWriteLocksPartition_A, digest_o |-> mubi8_test_true_loose(access_o.write_lock))
+722:   end else begin : gen_no_digest_write_lock
+723:     assign access_o.write_lock = access_pre.write_lock;
+724:   end
+725: 
+726:   // SEC_CM: PART.MEM.SW_UNREADABLE
+727:   if (Info.read_lock) begin : gen_digest_read_lock
+728:     mubi8_t digest_locked;
+729:     assign digest_locked = (digest_o != '0) ? MuBi8True : MuBi8False;
+730: 
+731:     // This prevents the synthesis tool from optimizing the multibit signal.
+732:     prim_mubi8_sender #(
+733:       .AsyncOn(0)
+734:     ) u_prim_mubi8_sender_read_lock (
+735:       .clk_i,
+736:       .rst_ni,
+737:       .mubi_i(mubi8_and_lo(access_pre.read_lock, digest_locked)),
+738:       .mubi_o(access_o.read_lock)
+739:     );
+740: 
+741:     `ASSERT(DigestReadLocksPartition_A, digest_o |-> mubi8_test_true_loose(access_o.read_lock))
+742:   end else begin : gen_no_digest_read_lock
+743:     assign access_o.read_lock = access_pre.read_lock;
+744:   end
+745: 
+746:   ///////////////
+747:   // Registers //
+748:   ///////////////
+749: 
+750:   `PRIM_FLOP_SPARSE_FSM(u_state_regs, state_d, state_q, state_e, ResetSt)
+751: 
+752:   always_ff @(posedge clk_i or negedge rst_ni) begin : p_regs
+753:     if (!rst_ni) begin
+754:       error_q       <= NoError;
+755:       // data output is locked by default
+756:       dout_locked_q <= MuBi8True;
+757:     end else begin
+758:       error_q       <= error_d;
+759:       dout_locked_q <= dout_locked_d;
+760:     end
+761:   end
+762: 
+763:   ////////////////
+764:   // Assertions //
+765:   ////////////////
+766: 
+767:   // Known assertions
+768:   `ASSERT_KNOWN(InitDoneKnown_A,     init_done_o)
+769:   `ASSERT_KNOWN(IntegChkAckKnown_A,  integ_chk_ack_o)
+770:   `ASSERT_KNOWN(CnstyChkAckKnown_A,  cnsty_chk_ack_o)
+771:   `ASSERT_KNOWN(ErrorKnown_A,        error_o)
+772:   `ASSERT_KNOWN(AccessKnown_A,       access_o)
+773:   `ASSERT_KNOWN(DigestKnown_A,       digest_o)
+774:   `ASSERT_KNOWN(DataKnown_A,         data_o)
+775:   `ASSERT_KNOWN(OtpReqKnown_A,       otp_req_o)
+776:   `ASSERT_KNOWN(OtpCmdKnown_A,       otp_cmd_o)
+777:   `ASSERT_KNOWN(OtpSizeKnown_A,      otp_size_o)
+778:   `ASSERT_KNOWN(OtpWdataKnown_A,     otp_wdata_o)
+779:   `ASSERT_KNOWN(OtpAddrKnown_A,      otp_addr_o)
+780:   `ASSERT_KNOWN(ScrmblMtxReqKnown_A, scrmbl_mtx_req_o)
+781:   `ASSERT_KNOWN(ScrmblCmdKnown_A,    scrmbl_cmd_o)
+782:   `ASSERT_KNOWN(ScrmblModeKnown_A,   scrmbl_mode_o)
+783:   `ASSERT_KNOWN(ScrmblSelKnown_A,    scrmbl_sel_o)
+784:   `ASSERT_KNOWN(ScrmblDataKnown_A,   scrmbl_data_o)
+785:   `ASSERT_KNOWN(ScrmblValidKnown_A,  scrmbl_valid_o)
+786: 
+787:   // Uninitialized partitions should always be locked, no matter what.
+788:   `ASSERT(InitWriteLocksPartition_A,
+789:       mubi8_test_true_loose(dout_locked_q)
+790:       |->
+791:       mubi8_test_true_loose(access_o.write_lock))
+792:   `ASSERT(InitReadLocksPartition_A,
+793:       mubi8_test_true_loose(dout_locked_q)
+794:       |->
+795:       mubi8_test_true_loose(access_o.read_lock))
+796:   // Incoming Lock propagation
+797:   `ASSERT(WriteLockPropagation_A,
+798:       mubi8_test_true_loose(access_i.write_lock)
+799:       |->
+800:       mubi8_test_true_loose(access_o.write_lock))
+801:   `ASSERT(ReadLockPropagation_A,
+802:       mubi8_test_true_loose(access_i.read_lock)
+803:       |->
+804:       mubi8_test_true_loose(access_o.read_lock))
+805:   // ECC error in buffer regs
+806:   `ASSERT(EccErrorState_A,
+807:       ecc_err
+808:       |=>
+809:       state_q == ErrorSt)
+810:   // OTP error response
+811:   `ASSERT(OtpErrorState_A,
+812:       state_q inside {InitWaitSt, CnstyReadWaitSt} && otp_rvalid_i &&
+813:       !(otp_err inside {NoError, MacroEccCorrError}) && !ecc_err
+814:       |=>
+815:       state_q == ErrorSt && error_o == $past(otp_err))
+816: 
+817:   // The partition size must be greater than one scrambling block for the address calculation
+818:   // and muxing to work correctly.
+819:   `ASSERT_INIT(OtpPartBufSize_A, Info.size > (ScrmblBlockWidth/8))
+820: 
+821: endmodule : otp_ctrl_part_buf
+
+================================== Ai Message ==================================
+Tool Calls:
+  run_similar_bug_agent (call_wxENmWShVjpwHsf8UUCRiaKb)
+ Call ID: call_wxENmWShVjpwHsf8UUCRiaKb
+  Args:
+    bug: dout_locked_d = MuBi8True;
+    file_path: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_part_buf.sv
+================================= Tool Message =================================
+Name: run_similar_bug_agent
+
+I apologize for the error. Let me try a more direct approach by carefully examining the code. 
+
+I found the line you mentioned in the ErrorSt state of the state machine, on line 572:
+
+```systemverilog
+dout_locked_d = MuBi8True;
+```
+
+This appears to be an intentional part of the error handling mechanism. When the partition enters the ErrorSt state, it sets `dout_locked_d` to `MuBi8True`, which locks down the partition's access.
+
+The context suggests this is not a bug, but a deliberate security mechanism to prevent access to the partition when an error occurs. Specifically:
+1. This happens in the ErrorSt state (lines 568-580)
+2. It's part of locking down the partition when an error is detected
+3. It's used to prevent further read or write access to the partition
+
+There are no other direct instances of this exact line that would suggest a repeated or mistaken bug. The code seems to be intentionally using this line to implement a security feature.
+
+If you believe this might still be a potential issue, I recommend a code review to confirm the intended behavior of locking the partition in the error state.
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_jFU6O43szimlK9mtexJuK58R)
+ Call ID: call_jFU6O43szimlK9mtexJuK58R
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_part_buf.sv
+    top_module: otp_ctrl_part_buf
+    security_objective: partition lock enforcement and error state handling
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+The anomaly detection found a few clusters of similar code lines. Notably, in Cluster 0, the following lines were identified:
+
+- `assign otp_wdata_o = '0;`
+- `assign otp_cmd_o = prim_otp_pkg::Read;`
+- `assign otp_err = otp_err_e'(otp_err_i);`
+- `assign otp_cmd_o = prim_otp_pkg::ReadRaw;`
+
+These lines are related to the OTP command and data handling, with two different assignments to `otp_cmd_o` depending on the integrity configuration. This could be an anomaly because there are two mutually exclusive assignments to `otp_cmd_o` observed:
+
+```verilog
+if (Info.integrity) begin
+  assign otp_cmd_o = prim_otp_pkg::Read;
+  assign otp_err = otp_err_e'(otp_err_i);
+end else begin
+  assign otp_cmd_o = prim_otp_pkg::ReadRaw;
+  always_comb begin
+    if (otp_err_e'(otp_err_i) inside {MacroEccCorrError, MacroEccUncorrError}) begin
+      otp_err = NoError;
+    end else begin
+      otp_err = otp_err_e'(otp_err_i);
+    end
+  end
+end
+```
+
+However, since these are inside different generate-if blocks based on the parameter `Info.integrity`, this is intended behavior and likely not an anomaly from a functional standpoint.
+
+Regarding partition lock enforcement and error state handling:
+
+- The design transitions to a terminal `ErrorSt` state on errors including ECC error, escalation (`escalate_en_i`), or check failure.
+- In `ErrorSt`, the partition locks the data output (`dout_locked_d = MuBi8True`), and the access locks (`access_o`) indicate locked state.
+- There is strict propagation of write and read locks.
+- Assertions ensure that the partition is locked if uninitialized or if errors occur.
+- The FSM also jumps to ErrorSt on any unexpected state, which also is a security defense.
+
+Conclusion:
+
+- The partition lock enforcement seems robust. Upon error or escalation, the partition is locked down by setting lock signals.
+- Error state handling properly transitions to a terminal error state that locks access.
+- The anomalous-looking dual assignment of OTP command signals respects configuration differences and is not a security issue.
+- No anomalous code was found that could represent a bypass or security flaw in the partition locking or error handling FSM.
+
+**Final assessment:** No RTL security issues related to partition lock enforcement and error state handling were identified in the provided design. The design correctly locks the partition on error states and escalation, protecting against unauthorized access.
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_boj6AW2T4fKVLxCbHlVnJf9X)
+ Call ID: call_boj6AW2T4fKVLxCbHlVnJf9X
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/otp_ctrl/rtl/otp_ctrl_part_buf.sv
+    top_module: otp_ctrl_part_buf
+    security_objective: hardware state machine glitch attack
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+Based on the CWE details, I'll analyze the RTL code for potential hardware state machine glitch attack vulnerabilities related to CWE-1245: Improper Finite State Machines (FSMs) in Hardware Logic.
+
+## Analysis of Security Concerns in the RTL
+
+The provided RTL code implements a buffered partition for an OTP (One-Time Programmable) controller with a state machine that handles initialization, integrity checks, and consistency checks. Let me analyze the state machine implementation for potential glitch attack vulnerabilities:
+
+### Positive Security Features
+
+1. **Sparse FSM Encoding**: The code uses sparse FSM encoding with a high Hamming distance (minimum of 5), which is a good security practice:
+   ```verilog
+   // SEC_CM: PART.FSM.SPARSE
+   // Encoding generated with:
+   // $ ./util/design/sparse-fsm-encode.py -d 5 -m 16 -n 12 \
+   //      -s 3370657881 --language=sv
+   ```
+   This makes it harder for an attacker to glitch the FSM into an invalid state.
+
+2. **FSM Error Detection**: The code includes explicit detection of invalid FSM states:
+   ```verilog
+   // This error signal is pulsed high if the FSM has been glitched into an invalid state.
+   output logic fsm_err_o;
+   ```
+   
+   And in the default case of the state machine:
+   ```verilog
+   default: begin
+     state_d = ErrorSt;
+     fsm_err_o = 1'b1;
+   end
+   ```
+
+3. **Escalation Handling**: The code has explicit handling for escalation signals:
+   ```verilog
+   // SEC_CM: PART.FSM.LOCAL_ESC, PART.FSM.GLOBAL_ESC
+   if (lc_ctrl_pkg::lc_tx_test_true_loose(escalate_en_i) || cnt_err) begin
+     state_d = ErrorSt;
+     fsm_err_o = 1'b1;
+     if (state_q != ErrorSt) begin
+       error_d = FsmStateError;
+     end
+   end
+   ```
+
+4. **Redundant Counter**: The design uses a redundant counter implementation:
+   ```verilog
+   // SEC_CM: PART.CTR.REDUN
+   prim_count #(
+     .Width(CntWidth)
+   ) u_prim_count (
+     // ...
+   );
+   ```
+
+5. **Multi-bit Encoding for Critical Signals**: The design uses multi-bit encoding for critical signals like locks:
+   ```verilog
+   // SEC_CM: ACCESS.CTRL.MUBI
+   ```
+
+### Potential Security Concerns
+
+Despite these security measures, there are some potential concerns:
+
+1. **State Transition Glitching**: While the FSM uses sparse encoding, the state transition logic could potentially be vulnerable to glitching attacks at the exact moment of state transitions. The code has a single-cycle window where a glitch could potentially affect the next state calculation.
+
+2. **Timing of Error Detection**: The FSM error detection happens after a potential glitch has already occurred. While this is a good detection mechanism, it might be too late to prevent some security implications if the glitch has already caused unintended behavior.
+
+3. **Error Handling in Specific States**: In some states, error handling is conditional on specific conditions. For example:
+   ```verilog
+   if (digest_o == data_mux || digest_o == '0) begin
+     // ...
+   end else begin
+     state_d = ErrorSt;
+     error_d = CheckFailError;
+   end
+   ```
+   A glitch at these decision points could potentially bypass security checks.
+
+4. **Mutex Handling**: The code uses a mutex for accessing the scrambling datapath. If a glitch occurs during mutex acquisition or release, it could potentially lead to race conditions or deadlocks:
+   ```verilog
+   scrmbl_mtx_req_o = 1'b1;
+   if (scrmbl_mtx_gnt_i && scrmbl_ready_i) begin
+     state_d = InitDescrWaitSt;
+   end
+   ```
+
+## Conclusion
+
+The RTL code implements several
+================================== Ai Message ==================================
+
+### OTP_CTRL Security Analysis: Documentation Summary
+
+#### Security Features and Register Interface Policies
+
+**From Documentation:**
+- OTP partitions are logically separated with properties: confidentiality (secret partitions), read/write lockability, and integrity verification.
+- Secret partitions are scrambled and unreadable by software once locked; digests are always readable.
+- Write access is permanently locked by programming a non-zero digest; read access can be locked at runtime via CSRs.
+- Life cycle partition is always writable by the life cycle controller, never locked.
+- Integrity and consistency checks are performed periodically and on demand, with errors triggering alerts and output lockdown.
+- Register interface includes explicit write enables (REGWEN), read locks, and digest registers for each partition.
+- Direct access interface is gated by write enables and access control logic.
+- Error conditions are reported via status and error code registers, with fatal errors escalating to terminal error states.
+
+---
+
+### RTL Security Analysis: Tool Results
+
+#### 1. **otp_ctrl_core_reg_top.sv**
+- **Lint Results:** 
+  - Numerous style and interface errors (struct ports, unregistered IOs, port order, unused inputs).
+  - **Security:** No direct vulnerabilities, but coding issues could cause synthesis/simulation mismatches, indirectly affecting security.
+  - **Recommendation:** Fix interface and registration issues to ensure robust enforcement of access control.
+
+#### 2. **otp_ctrl_dai.sv**
+- **Lint Results:** 
+  - Only minor issue: unused clock/reset in a submodule.
+  - **Security:** No direct vulnerabilities in partition locking, direct access, or error handling.
+- **Assertions:** No privilege escalation or partition lock bypass detected.
+
+#### 3. **otp_ctrl_part_buf.sv**
+- **Lint Results:** 
+  - Arithmetic width warnings (not security issues).
+- **Assertions:** 
+  - **Potential Issue:** Assertion for error state lock (`error_state_lock`) was falsified, suggesting a possible scenario where the partition is not locked in the error state.
+  - **Manual Review:** The code sets `dout_locked_d = MuBi8True;` in `ErrorSt`, which should lock the partition. No repeated or mistaken bugs found; this is intentional.
+- **Anomaly Detection:** 
+  - No anomalous or suspicious code patterns related to partition lock enforcement or error state handling.
+- **CWE/Glitch Attack Review:** 
+  - Uses sparse FSM encoding, explicit error state, multi-bit lock encoding, and escalation handling.
+  - **Potential Concern:** Single-cycle glitch attacks could theoretically affect state transitions, but the design includes detection and lockdown on invalid states.
+
+#### 4. **otp_ctrl_part_unbuf.sv**
+- **Lint Results:** 
+  - No issues found.
+  - **Security:** Partition access control and error state handling appear robust.
+
+#### 5. **otp_ctrl_lci.sv**
+- **Lint Results:** 
+  - Dead code (unused signals) and unique sampling issue on error output.
+  - **Security:** Could affect error reporting robustness; should be fixed, but not a direct vulnerability.
+
+---
+
+### **Identified Issues**
+
+#### 1. **File:** otp_ctrl_part_buf.sv  
+**Line(s):** 568-580 (ErrorSt state)  
+**Description:**  
+- Assertion for error state lock was falsified, indicating a possible scenario where the partition is not always locked when in the error state.  
+- Manual review shows the code attempts to lock the partition (`dout_locked_d = MuBi8True;`), but the assertion failure suggests a potential race or timing issue.  
+**Security Aspect:** Partition lock enforcement, error state handling  
+**Tools Used:** Assertion Checker, Manual Review
+
+#### 2. **File:** otp_ctrl_core_reg_top.sv  
+**Line(s):** Multiple (see lint output)  
+**Description:**  
+- Use of struct types in ports, unregistered IOs, and unused inputs.  
+- While not direct vulnerabilities, these issues could cause synthesis/simulation mismatches, potentially undermining access control or privilege enforcement.  
+**Security Aspect:** Register interface robustness, privilege escalation prevention  
+**Tools Used:** Linter
+
+#### 3. **File:** otp_ctrl_lci.sv  
+**Line(s):** Dead code and error_o output  
+**Description:**  
+- Unused signals and a unique sampling issue on the error output port.  
+- Could affect error reporting reliability, which is important for security monitoring and escalation.  
+**Security Aspect:** Error handling robustness  
+**Tools Used:** Linter
+
+---
+
+### **Summary Table**
+
+| File                        | Line(s)         | Description                                                                                   | Security Aspect                     | Tools Used           |
+|-----------------------------|-----------------|-----------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
+| otp_ctrl_part_buf.sv        | 568-580         | Possible race/timing issue: partition may not always lock in error state (assertion failure)  | Partition lock enforcement, error state handling | Assertion Checker, Manual Review |
+| otp_ctrl_core_reg_top.sv    | Multiple        | Struct ports, unregistered IOs, unused inputs; could cause mismatches affecting security      | Register interface robustness, privilege escalation prevention | Linter               |
+| otp_ctrl_lci.sv             | Multiple        | Dead code, unique sampling issue on error_o; could affect error reporting                     | Error handling robustness           | Linter               |
+
+---
+
+### **General Security Posture**
+
+- The OTP controller implements strong security features: partition isolation, lock enforcement, integrity/consistency checks, and robust error escalation.
+- FSMs use sparse encoding and explicit error states to mitigate glitch/fault attacks.
+- Most issues found are related to coding practices and robustness, not direct vulnerabilities.
+- One assertion failure in partition lock enforcement should be investigated and tested further to rule out race/timing issues.
+
+---
+
+**Recommendations:**
+- Fix all lint and assertion issues, especially those related to error state handling and register interface robustness.
+- Review and test the error state lock logic in `otp_ctrl_part_buf.sv` to ensure the partition is always locked in error states.
+- Address dead code and sampling issues in `otp_ctrl_lci.sv` to ensure reliable error reporting.
+- Consider formal verification or additional assertion coverage for FSM transitions and lock enforcement.
+
+---
+
+**END**
+================================== Ai Message ==================================
+
+### OTP_CTRL Security Analysis: Documentation Summary
+
+#### Security Features and Register Interface Policies
+
+**From Documentation:**
+- OTP partitions are logically separated with properties: confidentiality (secret partitions), read/write lockability, and integrity verification.
+- Secret partitions are scrambled and unreadable by software once locked; digests are always readable.
+- Write access is permanently locked by programming a non-zero digest; read access can be locked at runtime via CSRs.
+- Life cycle partition is always writable by the life cycle controller, never locked.
+- Integrity and consistency checks are performed periodically and on demand, with errors triggering alerts and output lockdown.
+- Register interface includes explicit write enables (REGWEN), read locks, and digest registers for each partition.
+- Direct access interface is gated by write enables and access control logic.
+- Error conditions are reported via status and error code registers, with fatal errors escalating to terminal error states.
+
+---
+
+### RTL Security Analysis: Tool Results
+
+#### 1. **otp_ctrl_core_reg_top.sv**
+- **Lint Results:** 
+  - Numerous style and interface errors (struct ports, unregistered IOs, port order, unused inputs).
+  - **Security:** No direct vulnerabilities, but coding issues could cause synthesis/simulation mismatches, indirectly affecting security.
+  - **Recommendation:** Fix interface and registration issues to ensure robust enforcement of access control.
+
+#### 2. **otp_ctrl_dai.sv**
+- **Lint Results:** 
+  - Only minor issue: unused clock/reset in a submodule.
+  - **Security:** No direct vulnerabilities in partition locking, direct access, or error handling.
+- **Assertions:** No privilege escalation or partition lock bypass detected.
+
+#### 3. **otp_ctrl_part_buf.sv**
+- **Lint Results:** 
+  - Arithmetic width warnings (not security issues).
+- **Assertions:** 
+  - **Potential Issue:** Assertion for error state lock (`error_state_lock`) was falsified, suggesting a possible scenario where the partition is not locked in the error state.
+  - **Manual Review:** The code sets `dout_locked_d = MuBi8True;` in `ErrorSt`, which should lock the partition. No repeated or mistaken bugs found; this is intentional.
+- **Anomaly Detection:** 
+  - No anomalous or suspicious code patterns related to partition lock enforcement or error state handling.
+- **CWE/Glitch Attack Review:** 
+  - Uses sparse FSM encoding, explicit error state, multi-bit lock encoding, and escalation handling.
+  - **Potential Concern:** Single-cycle glitch attacks could theoretically affect state transitions, but the design includes detection and lockdown on invalid states.
+
+#### 4. **otp_ctrl_part_unbuf.sv**
+- **Lint Results:** 
+  - No issues found.
+  - **Security:** Partition access control and error state handling appear robust.
+
+#### 5. **otp_ctrl_lci.sv**
+- **Lint Results:** 
+  - Dead code (unused signals) and unique sampling issue on error output.
+  - **Security:** Could affect error reporting robustness; should be fixed, but not a direct vulnerability.
+
+---
+
+### **Identified Issues**
+
+#### 1. **File:** otp_ctrl_part_buf.sv  
+**Line(s):** 568-580 (ErrorSt state)  
+**Description:**  
+- Assertion for error state lock was falsified, indicating a possible scenario where the partition is not always locked when in the error state.  
+- Manual review shows the code attempts to lock the partition (`dout_locked_d = MuBi8True;`), but the assertion failure suggests a potential race or timing issue.  
+**Security Aspect:** Partition lock enforcement, error state handling  
+**Tools Used:** Assertion Checker, Manual Review
+
+#### 2. **File:** otp_ctrl_core_reg_top.sv  
+**Line(s):** Multiple (see lint output)  
+**Description:**  
+- Use of struct types in ports, unregistered IOs, and unused inputs.  
+- While not direct vulnerabilities, these issues could cause synthesis/simulation mismatches, potentially undermining access control or privilege enforcement.  
+**Security Aspect:** Register interface robustness, privilege escalation prevention  
+**Tools Used:** Linter
+
+#### 3. **File:** otp_ctrl_lci.sv  
+**Line(s):** Dead code and error_o output  
+**Description:**  
+- Unused signals and a unique sampling issue on the error output port.  
+- Could affect error reporting reliability, which is important for security monitoring and escalation.  
+**Security Aspect:** Error handling robustness  
+**Tools Used:** Linter
+
+---
+
+### **Summary Table**
+
+| File                        | Line(s)         | Description                                                                                   | Security Aspect                     | Tools Used           |
+|-----------------------------|-----------------|-----------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
+| otp_ctrl_part_buf.sv        | 568-580         | Possible race/timing issue: partition may not always lock in error state (assertion failure)  | Partition lock enforcement, error state handling | Assertion Checker, Manual Review |
+| otp_ctrl_core_reg_top.sv    | Multiple        | Struct ports, unregistered IOs, unused inputs; could cause mismatches affecting security      | Register interface robustness, privilege escalation prevention | Linter               |
+| otp_ctrl_lci.sv             | Multiple        | Dead code, unique sampling issue on error_o; could affect error reporting                     | Error handling robustness           | Linter               |
+
+---
+
+### **General Security Posture**
+
+- The OTP controller implements strong security features: partition isolation, lock enforcement, integrity/consistency checks, and robust error escalation.
+- FSMs use sparse encoding and explicit error states to mitigate glitch/fault attacks.
+- Most issues found are related to coding practices and robustness, not direct vulnerabilities.
+- One assertion failure in partition lock enforcement should be investigated and tested further to rule out race/timing issues.
+
+---
+
+**Recommendations:**
+- Fix all lint and assertion issues, especially those related to error state handling and register interface robustness.
+- Review and test the error state lock logic in `otp_ctrl_part_buf.sv` to ensure the partition is always locked in error states.
+- Address dead code and sampling issues in `otp_ctrl_lci.sv` to ensure reliable error reporting.
+- Consider formal verification or additional assertion coverage for FSM transitions and lock enforcement.
+
+---
+
+**END**
+================================== Ai Message ==================================
+
+[]

@@ -1,0 +1,1 @@
+vc_static_shell -batch -no_ui -f vcst_adc_ctrl_fsm.tcl

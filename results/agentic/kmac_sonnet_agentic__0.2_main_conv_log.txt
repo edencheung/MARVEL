@@ -1,0 +1,3157 @@
+================================ System Message ================================
+
+
+    You are a supervisor agent in a multi-agent system focused on identifying hardware security vulnerabilities in RTL code. 
+    Your objective is to analyze the given SoC and generate a detailed security report.
+
+    You have access to the following tools: ['run_anomaly_detector_agent', 'run_verilator_agent', 'run_llm_cwe_checker_agent', 'run_assertions_checker_agent', 'run_linter_agent', 'run_similar_bug_agent', 'list_dir', 'read_file', 'read_file_with_line_numbers']. Each tool specializes in a specific task:
+
+    - Verilator Agent: Runs Verilator tests on the given IP and analyzes failing test reports to detect potential security issues.
+    - Assertion Agent: Takes a Verilog file, a top module name, and a security aspect to check. It generates and runs security assertions on the RTL. Failing assertions indicate potential issues that require further localization.
+    - Linter Agent: Accepts a Verilog file, top module, and security focus. It selects relevant lint checks and flags design violations tied to security concerns.
+    - CWE Agent: Given a Verilog file, a top module, and a security aspect, this agent maps the RTL code to relevant CWEs and detects CWE-related vulnerabilities.
+    - Similar Bug Agent: Accepts a file path and a line number (where a bug was found) to locate similar patterns or recurring bugs throughout the RTL code.
+
+    Instructions for analysis:
+
+    - Read the documentataion to identify security features and register interfaces policies.
+    - Use Verilator, Assertion, Anomaly and Linter agents to uncover initial issues in the design.
+    - If a bug is detected but not localized, use the CWE Agent to further inspect the related security aspect in the surrounding RTL.
+    - After detecting any bugs, use the Similar Bug Agent to scan similar files (of the same or of different IPs) for similar vulnerabilities.
+
+    Output Format:
+
+    - For each identified issue, report:
+    - File name
+    - Line number(s)
+    - Brief description of the issue
+    - Security aspect affected
+    - Tools used to identify the issue
+
+    When your analysis is complete, end your response with "END".
+    
+================================ Human Message =================================
+
+Identify security issues in the kmac IP of the OpenTitan SoC, located at /home/XXXX-2/hackdate.
+
+    - All IPs are located in the 'hw/ip' directory.
+    - RTL code for each IP is located in its 'rtl' subdirectory, with source files having the '.sv' extension.
+        - reg_top files contain the register interface for the IP.
+        - control/fsm files contain the control logic for the IP.
+        - core files contain the core logic for the IP.
+    - Documentation files (.md) are located in the 'doc' directories of each IP.
+        - theory_of_operation explains the properties of the IP and its security features.
+        - registers.md files contain the register interface and its read/write access policies.
+    - Ignore '.core' files; they are used by build tools and are not relevant for security analysis.
+
+    Focus on the kmac IP and make sure to analyze it thoroughly.
+
+    First, identify the relevant security properties and read/write policies of the register interfaces from the documentation. 
+    Then, use all available tools to perform a comprehensive security analysis on the RTL code.
+    
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_j73hQpodf6RwrOcQQ9ymPptb)
+ Call ID: call_j73hQpodf6RwrOcQQ9ymPptb
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/kmac/doc
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/kmac/doc:
+application-interface.svg checklist.md interfaces.md keccak-round.svg kmac-block-diagram.svg kmac-padding.svg programmers_guide.md registers.md sha3-padding-fsm.svg sha3-padding.svg theory_of_operation.md
+
+Directories in /home/XXXX-2/hackdate/hw/ip/kmac/doc:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_CFIyXLwCyeD4eW5F8FellBC3)
+ Call ID: call_CFIyXLwCyeD4eW5F8FellBC3
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/kmac/doc/theory_of_operation.md
+================================= Tool Message =================================
+Name: read_file
+
+# Theory of Operation
+
+## Block Diagram
+
+![](../doc/kmac-block-diagram.svg)
+
+The above figure shows the KMAC/SHA3 HWIP block diagram.
+The KMAC has register interfaces for SW to configure the module, initiate the hashing process, and acquire the result digest from the STATE memory region.
+It also has an interface to the KeyMgr to get the secret key (masked).
+The IP has N x [application interfaces](#application-interface), which allows other HWIPs to request any pre-defined hashing operations.
+
+As similar with HMAC, KMAC HWIP also has a message FIFO (MSG_FIFO) whose depth was determined based on a few criteria such as the register interface width, and its latency, the latency of hashing algorithm (Keccak).
+Based on the given criteria, the MSG_FIFO depth was determined to store the incoming message while the SHA3 core is in computation.
+
+The MSG_FIFO has a packer in front.
+It packs any partial writes into the size of internal datapath (64bit) and stores in MSG_FIFO.
+It frees the software from having to align the messages.
+It also doesn't need the message length information.
+
+The fed messages go into the KMAC core regardless of KMAC enabled or not.
+The KMAC core forwards the messages to SHA3 core in case KMAC hash functionality is disabled.
+KMAC core prepends the encoded secret key as described in the SHA3 Derived Functions specification.
+It is expected that the software writes the encoded output length at the end of the message.
+For hashing operations triggered by an IP through the application interface, the encoded output length is appended inside the AppIntf module in the KMAC HWIP.
+
+The SHA3 core is the main Keccak processing module.
+It supports SHA3 hashing functions, SHAKE128, SHAKE256 extended output functions, and also cSHAKE128, cSHAKE256 functions in order to support KMAC operation.
+To support multiple hashing functions, it has the padding logic inside.
+The padding logic mainly pads the predefined bits at the end of the message and also performs `pad10*1()` function.
+If cSHAKE mode is set, the padding logic also prepends the encoded function name `N` and the customization string `S` prior to the incoming messages according to the spec requirements.
+
+Both the internal state width and the masking of the Keccak core are configurable via compile-time Verilog parameters.
+By default, 1600 bits of internal state are used and stored in two shares (1st order masking).
+The masked Keccak core takes 4 clock cycles per round if sufficient entropy is available.
+If desired, the masking can be disabled and the internal state width can be reduced to 25, 50, or 100 bits at compile time.
+
+## Design Details
+
+### Keccak Round
+
+A Keccak round implements the Keccak_f function described in the SHA3 specification.
+Keccak round logic in KMAC/SHA3 HWIP not only supports 1600 bit internal states but also all possible values {50, 100, 200, 400, 800, 1600} based on a parameter `Width`.
+If masking is disabled via compile-time Verilog parameter `EnMasking`, also 25 can be selected as state width.
+Keccak permutations in the specification allow arbitrary number of rounds.
+This module, however, supports Keccak_f which always runs `12 + 2*L` rounds, where $$ L = log_2 {( {Width \over 25} )} $$ .
+For instance, 200 bits of internal state run 18 rounds.
+KMAC/SHA3 instantiates the Keccak round module with 1600 bit.
+
+![](../doc/keccak-round.svg)
+
+Keccak round logic has two phases inside.
+Theta, Rho, Pi functions are executed at the 1st phase.
+Chi and Iota functions run at the 2nd phase.
+If the compile-time Verilog parameter `EnMasking` is not set, i.e., if masking is not enabled, the first phase and the second phase run at the same cycle.
+
+If masking is enabled, the Keccak round logic stores the intermediate state after processing the 1st phase.
+The stored values are then fed into the 2nd phase computing the Chi and Iota functions.
+The Chi function leverages first-order [Domain-Oriented Masking (DOM)](XXXX) to deter SCA attacks.
+
+To balance circuit area and SCA hardening, the Chi function uses 800 instead 1600 DOM multipliers but the multipliers are fully pipelined.
+The Chi and Iota functions are thus separately applied to the two halves of the state and the 2nd phase takes in total three clock cycles to complete.
+In the first clock cycle of the 2nd phase, the first stage of Chi is computed for the first lane halves of the state.
+In the second clock cycle, the new first lane halves are output and written to state register.
+At the same time, the first stage of Chi is computed for the second lane halves.
+In the third clock cycle, the new second lane halves are output and written to the state register.
+
+The 800 DOM multipliers need 800 bits of fresh entropy for remasking.
+If fresh entropy is not available, the DOM multipliers do not move forward and the 2nd phase will take more than three clock cycles.
+Processing a Keccak_f (1600 bit state) takes a total of 96 cycles (24 rounds X 4 cycles/round) including the 1st and 2nd phases.
+
+If the masking compile time option is enabled, Keccak round logic requires an additional 3200 flip flops to store the intermediate half state inside the 800 DOM multipliers.
+In addition to that Keccak round logic needs two sets of the same Theta, Rho, and Pi functions.
+As a result, the masked Keccak round logic takes more than twice as much as area than the unmasked version of it.
+
+### Padding for Keccak
+
+Padding logic supports SHA3/SHAKE/cSHAKE algorithms.
+cSHAKE needs the extra inputs for the Function-name `N` and the Customization string `S`.
+Other than that, SHA3, SHAKE, and cSHAKE share similar datapath inside the padding module except the last part added next to the end of the message.
+SHA3 adds `2'b 10`, SHAKE adds `4'b 1111`, cSHAKE adds `2'b00` then `pad10*1()` follows.
+All are little-endian values.
+
+Interface between this padding logic and the MSG_FIFO follows the conventional FIFO interface.
+So `prim_fifo_*` can talk to the padding logic directly.
+This module talks to Keccak round logic with a more memory-like interface.
+The interface has an additional address signal on top of the valid, ready, and data signals.
+
+![](../doc/sha3-padding.svg)
+
+The hashing process begins when the software issues the start command to [`CMD`](registers.md#cmd) .
+If cSHAKE is enabled, the padding logic expands the prefix value (`N || S` above) into a block size.
+The block size is determined by the [`CFG_SHADOWED.kstrength`](registers.md#cfg_shadowed) .
+If the value is 128, the block size will be 168 bytes.
+If it is 256, the block size will be 136 bytes.
+The expanded prefix value is transmitted to the Keccak round logic.
+After sending the block size, the padding logic triggers the Keccak round logic to run a full 24 rounds.
+
+If the mode is not cSHAKE, or cSHAKE mode and the prefix block has been processed, the padding logic accepts the incoming message bitstream and forward the data to the Keccak round logic in a block granularity.
+The padding logic controls the data flow and makes the Keccak logic to run after sending a block size.
+
+After the software writes the message bitstream, it should issue the Process command into [`CMD`](registers.md#cmd) register.
+The padding logic, after receiving the Process command, appends proper ending bits with respect to the [`CFG_SHADOWED.mode`](registers.md#cfg_shadowed) value.
+The logic writes 0 up to the block size to the Keccak round logic then ends with 1 at the end of the block.
+
+![](../doc/sha3-padding-fsm.svg)
+
+After the Keccak round completes the last block, the padding logic asserts an `absorbed` signal to notify the software.
+The signal generates the `kmac_done` interrupt.
+At this point, the software is able to read the digest in [`STATE`](registers.md#state) memory region.
+If the output length is greater than the Keccak block rate in SHAKE and cSHAKE mode, the software may run the Keccak round manually by issuing Run command to [`CMD`](registers.md#cmd) register.
+
+The software completes the operation by issuing Done command after reading the digest.
+The padding logic clears internal variables and goes back to Idle state.
+
+### Padding for KMAC
+
+![](../doc/kmac-padding.svg)
+
+KMAC core prepends and appends additional bitstream on top of Keccak padding logic in SHA3 core.
+The [NIST SP 800-185](XXXX) defines `KMAC[128,256](K, X, L, S)` as a cSHAKE function.
+See the section 4.3 in NIST SP 800-185 for details.
+If KMAC is enabled, the software should configure [`CMD.mode`](registers.md#cmd) to cSHAKE and the first six bytes of [`PREFIX`](registers.md#prefix) to `0x01204B4D4143` (bigendian).
+The first six bytes of [`PREFIX`](registers.md#prefix) represents the value of `encode_string("KMAC")`.
+
+The KMAC padding logic prepends a block containing the encoded secret key to the output message.
+The KMAC first sends the block of secret key then accepts the incoming message bitstream.
+At the end of the message, the software writes `right_encode(output_length)` to MSG_FIFO prior to issue Process command.
+
+### Message FIFO
+
+The KMAC HWIP has a compile-time configurable depth message FIFO inside.
+The message FIFO receives incoming message bitstream regardless of its byte position in a word.
+Then it packs the partial message bytes into the internal 64 bit data width.
+After packing the data, the logic stores the data into the FIFO until the internal KMAC/SHA3 engine consumes the data.
+
+#### FIFO Depth calculation
+
+The depth of the message FIFO is chosen to cover the throughput of the software or other producers such as DMA engine.
+The size of the message FIFO is enough to hold the incoming data while the SHA3 engine is processing the previous block.
+Details are in `kmac_pkg::MsgFifoDepth` parameter.
+Default design parameters assume the system characteristics as below:
+
+- `kmac_pkg::RegLatency`: The register write takes 5 cycles.
+- `kmac_pkg::Sha3Latency`: Keccak round latency takes 96 cycles, which is the masked version of the Keccak round.
+
+#### FIFO Depth and Empty status
+
+If the SW is slow and the SHA3 engine pops the data fast enough, the Message FIFO's depth may remain **0**.
+The Message FIFO's `fifo_empty` status bit, however, is lowered for a cycle.
+
+However, if the SHA3 engine is currently busy or if the KMAC block is waiting for fresh entropy from EDN, the Message FIFO may actually run full (indicated by the `fifo_full` status bit).
+Resolving these conditions may take hundreds of cycles or more.
+After the SHA3 engine starts popping the data again, the Message FIFO will eventually run empty again and the `fifo_empty` status interrupt will fire.
+Note that the `fifo_empty` status interrupt will not fire if i) one of the hardware application interfaces is using the KMAC block, ii) the SHA3 core is not in the `Absorb` state, or iii) after software has written the `Process` command.
+
+The recommended approach for software to write messages is:
+
+1. Check the FIFO depth [`STATUS.fifo_depth`](registers.md#status). This represents the number of entry slots currently occupied in the FIFO.
+2. Calculate the remaining size as `<max number of fifo entries> - <STATUS.fifo_depth>) * <entry size>`.
+3. Write data to fill the remaining size.
+4. Repeat until all data is written.
+   In case the FIFO runs full (check [`STATUS.fifo_full`](registers.md#status)), software can optionally wait for the `fifo_empty` status interrupt before continuing.
+
+In code, this looks something like:
+```c
+/**
+ * Absorb input data into the Keccak computation.
+ *
+ * Assumes that the KMAC block is in the "absorb" state; it is the caller's
+ * responsibility to check before calling.
+ *
+ * @param in Input buffer.
+ * @param in_len Length of input buffer (bytes).
+ * @return Number of bytes written.
+ */
+size_t kmac_absorb(const uint8_t *in, size_t in_len) {
+    // Read FIFO depth from the status register.
+    uint32_t status = abs_mmio_read32(kBase + KMAC_STATUS_REG_OFFSET);
+    uint32_t fifo_depth =
+        bitfield_field32_read(status, KMAC_STATUS_FIFO_DEPTH_FIELD);
+
+    // Calculate the remaining space in the FIFO using auto-generated KMAC
+    // parameters and take the minimum of that space and the input length.
+    size_t free_entries = (KMAC_PARAM_NUM_ENTRIES_MSG_FIFO - fifo_depth);
+    size_t max_len = free_entries * KMAC_PARAM_NUM_BYTES_MSG_FIFO_ENTRY;
+    size_t write_len = (in_len < max_len) ? in_len : max_len;
+
+    // Note: this example uses byte-writes for simplicity, but in practice it
+    // would be more efficient to use word-writes for aligned full words and
+    // byte-writes only as needed at the beginning and end of the input.
+    for (size_t i = 0; i < write_len; i++) {
+      abs_mmio_write8(kBase + KMAC_MSG_FIFO_REG_OFFSET, in[i]);
+    }
+
+    return write_len;
+}
+```
+
+The method recommended above is always safe.
+However, in specific contexts, it may be okay to skip polling `STATUS.fifo_depth`.
+Normally, KMAC will process data faster than software can write it, and back pressure on the FIFO interface, should ensure that writes from software will simply block until KMAC can process messages.
+The only reason for polling, then, is to prevent a specific deadlock scenario:
+1. Software has configured KMAC to wait forever for entropy.
+2. There is a problem with the EDN, so entropy is never coming.
+3. The FIFO is full and KMAC is waiting for entropy to process it.
+
+If either the entropy wait timer is nonzero or `kmac_en` is false (so KMAC will not be refreshing entropy), it is safe to write to the FIFO without polling `STATUS.fifo_depth`.
+However, this should be done carefully, and tests should always cover the scenario in which EDN is locked up.
+
+#### Masking
+
+The message FIFO does not generate the masked message data.
+Incoming message bitstream is not sensitive to the leakage.
+If the `EnMasking` parameter is set and [`CFG_SHADOWED.msg_mask`](registers.md#cfg_shadowed) is enabled, the message is masked upon loading into the Keccak core using the internal entropy generator.
+The secret key, however, is stored as masked form always.
+
+If the `EnMasking` parameter is not set, the masking is disabled.
+Then, the software has to provide the key in unmasked form by default.
+Any write operations to [`KEY_SHARE1_0`](registers.md#key_share1) - [`KEY_SHARE1_15`](registers.md#key_share1) are ignored.
+
+If the `EnMasking` parameter is not set and the `SwKeyMasked` parameter is set, software has to provide the key in masked form.
+Internally, the design then unmasks the key by XORing the two key shares together when loading the key into the engine.
+This is useful when software interface compatibility between the masked and unmasked configuration is desirable.
+
+If the `EnMasking` parameter is set, the `SwKeyMasked` parameter has no effect: Software always provides the key in two shares.
+
+### Keccak State Access
+
+After the Keccak round completes the KMAC/SHA3 operation, the contents of the Keccak state contain the digest value.
+The software can access the 1600 bit of the Keccak state directly through the window of the KMAC/SHA3 register.
+
+If the compile-time parameter masking feature is enabled, the upper 256B of the window is the second share of the Keccak state.
+If not, the upper address space is zero value.
+The software reads both of the Keccak state shares and XORed in the software to get the unmasked digest value if masking feature is set.
+
+The Keccak state is valid after the sponge absorbing process is completed.
+While in an idle state or in the sponge absorbing stage, the value is zero.
+This ensures that the logic does not expose the secret key XORed with the keccak_f results of the prefix to the software.
+In addition to that, the KMAC/SHA3 blocks the software access to the Keccak state when it processes the request from KeyMgr for Key Derivation Function (KDF).
+
+### Application Interface
+
+![](../doc/application-interface.svg)
+
+KMAC/SHA3 HWIP has an option to receive the secret key from the KeyMgr via sideload key interface.
+The software should set [`CFG_SHADOWED.sideload`](registers.md#cfg_shadowed) to use the KeyMgr sideloaded key for the SW-initiated KMAC operation.
+`keymgr_pkg::hw_key_t` defines the structure of the sideloaded key.
+KeyMgr provides the sideloaded key in two-share masked form regardless of the compile-time parameter `EnMasking`.
+If `EnMasking` is not defined, the KMAC merges the shared key to the unmasked form before uses the key.
+
+The IP has N number of the application interface. The apps connected to the KMAC IP may initiate the SHA3/cSHAKE/KMAC hashing operation via the application interface `kmac_pkg::app_{req|rsp}_t`.
+The type of the hashing operation is determined in the compile-time parameter `kmac_pkg::AppCfg`.
+
+| Index | App      | Algorithm | Prefix
+|:-----:|:--------:|:---------:|------------
+| 0     | KeyMgr   | KMAC      | CSR prefix
+| 1     | LC_CTRL  | cSHAKE128 | "LC_CTRL"
+| 2     | ROM_CTRL | cSHAKE256 | "ROM_CTRL"
+
+In the current version of IP, the IP has three application interfaces, which are KeyMgr, LC_CTRL, and ROM_CTRL.
+KeyMgr uses the KMAC operation with CSR prefix value.
+LC_CTRL and ROM_CTRL use the cSHAKE operation with the compile-time parameter prefixes.
+
+The app sends 64-bit data (`MsgWidth`) in a beat with the message strobe signal.
+The state machine inside the AppIntf logic starts when it receives the first valid data from any of the AppIntf.
+The AppIntf module chooses the winner based on the fixed priority.
+Then it forwards the selected App to the next stage.
+Because this logic sees the first valid data as an initiator, the Apps cannot run the hashing operation with an empty message.
+After the logic switches to accept the message bitstream from the selected App, if the hashing operation is KMAC, the logic forces the sideloaded key to be used as a secret.
+Also it ignores the command issued from the software.
+Instead it generates the commands and sends them to the KMAC core.
+
+The last beat of the App data moves the state machine to append the encoded output length if the hashing operation is KMAC.
+The output length is the digest width, which is 256 bit always.
+It means that the logic appends `0x020100` (little-endian) to the end of the message.
+The output data from this logic goes to MSG_FIFO.
+Because the MSG_FIFO handles un-aligned data inside, KeyMgr interface logic sends the encoded output length value in a separate beat.
+
+After the encoded output length is pushed to the KMAC core, the interface logic issues a Process command to run the hashing logic.
+
+After hashing operation is completed, KMAC does not raise a `kmac_done` interrupt; rather it triggers the `done` status in the App response channel.
+The result digest always comes in two shares.
+If the `EnMasking` parameter is not set, the second share is always zero.
+
+### Entropy Generator
+
+This section explains the entropy generator inside the KMAC HWIP.
+
+KMAC has an entropy generator to provide the design with pseudo-random numbers while processing the secret key block.
+The entropy is used for both remasking the DOM multipliers inside the Chi function of the Keccak core as well as for masking the message if [`CFG_SHADOWED.msg_mask`](registers.md#cfg_shadowed) is enabled.
+
+The entropy generator is constructed using a [heavily unrolled Bivium stream cipher primitive](XXXX).
+This allows the module to generate 800 bits of fresh, pseudo-random numbers required by the 800 DOM multipliers for remasking in every clock cycle.
+
+Depending on [`CFG_SHADOWED.entropy_mode`](registers.md#cfg_shadowed), the entropy generator fetches initial entropy from the [Entropy Distribution Network (EDN)][edn] module or software has to provide a seed by writing the [`ENTROPY_SEED`](registers.md#entropy_seed) register 9 times.
+The module periodically refreshes the PRNG seed with fresh entropy from EDN.
+Software can explicitly request a complete reseed of the PRNG state from EDN through [`CMD.entropy_req`](registers.md#cmd).
+
+[edn]: ../../edn/README.md
+
+### Error Report
+
+This section explains the errors KMAC HWIP raises during the hashing operations, their meanings, and the error handling process.
+
+KMAC HWIP has the error checkers in its internal datapath.
+If the checkers detect errors, whether they are triggered by the SW mis-configure, or HW malfunctions, they report the error to [`ERR_CODE`](registers.md#err_code) and raise an `kmac_error` interrupt.
+Each error code gives debugging information at the lower 24 bits of [`ERR_CODE`](registers.md#err_code).
+
+Value | Error Code | Description
+------|------------|-------------
+0x01  | KeyNotValid | In KMAC mode with the sideloaded key, the IP raises an error if the sideloaded secret key is not ready.
+0x02  | SwPushedMsgFifo | MsgFifo is updated while not being in the Message Feed state.
+0x03  | SwIssuedCmdInAppActive | SW issued a command while the application interface is being used
+0x04  | WaitTimerExpired | EDN has not responded within the wait timer limit.
+0x05  | IncorrectEntropyMode | When SW sets `entropy_ready`, the `entropy_mode` is neither SW nor EDN.
+0x06  | UnexpectedModeStrength | SHA3 mode and Keccak Strength combination is not expected.
+0x07  | IncorrectFunctionName | In KMAC mode, the PREFIX has the value other than `encoded_string("KMAC")`
+0x08  | SwCmdSequence | SW does not follow the guided sequence, `start` -> `process` -> {`run` ->} `done`
+0x09  | SwHashingWithoutEntropyReady | SW requests KMAC op without proper config of Entropy in KMAC. This error occurs if KMAC IP masking feature is enabled.
+0x80  | Sha3Control | SW may receive Sha3Control error along with `SwCmdSequence` error. Can be ignored.
+
+#### KeyNotValid (0x01)
+
+The `KeyNotValid` error is raised in the application interface module.
+When a KMAC application requests a hashing operation, the module checks if the sideloaded key is ready.
+If the key is not ready, the module reports `KeyNotValid` error and moves to dead-end state and waits the IP reset.
+
+This error does not provide any additional information.
+
+#### SwPushedMsgFifo (0x02)
+
+The `SwPushedMsgFifo` error happens when the Message FIFO receives TL-UL transactions while the application interface is busy.
+The Message FIFO drops the request.
+
+The IP reports the error with an info field.
+
+Bits    | Name        | Description
+--------|-------------|-------------
+[23:16] | reserved    | all zero
+[15:8]  | kmac_app_st | KMAC_APP FSM state.
+[7:0]   | mux_sel     | Current APP Mux selection. 0: None, 1: SW, 2: App
+
+#### SwIssuedCmdInAppActive (0x03)
+
+If the SW issues any commands while the application interface is being used, the module reports `SwIssuedCmdInAppActive` error.
+The received command does not affect the Application process.
+The request is dropped by the KMAC_APP module.
+
+The lower 3 bits of [`ERR_CODE`](registers.md#err_code) contains the received command from the SW.
+#### WaitTimerExpired (0x04)
+
+The timer values set by SW is internally used only when pending EDN request is completed.
+Therefore, dynamically changing wait timer cannot be used as a way to poke the timer out of a stalling EDN request.
+If a non-zero timer expires, the module cancels the transaction and reports the `WaitTimerExpired` error.
+
+When this error happens, the state machine in KMAC_ENTROPY module moves to Wait state.
+In that state, it keeps using the pre-generated entropy and asserting the entropy valid signal.
+It asserts the entropy valid signal to complete the current hashing operation.
+If the module does not complete, or flush the pending operation, it creates the back pressure to the message FIFO.
+Then, the SW may not be able to access the KMAC IP at all, as the crossbar is stuck.
+
+The SW may move the state machine to the reset state by issuing [`CMD.err_processed`](registers.md#cmd).
+
+#### IncorrectEntropyMode (0x05)
+
+If SW misconfigures the entropy mode and let the entropy module prepare the random data, the module reports `IncorrectEntropyMode` error.
+The state machine moves to Wait state after reporting the error.
+
+The SW may move the state machine to the reset state by issuing [`CMD.err_processed`](registers.md#cmd).
+
+#### UnexpectedModeStrength (0x06)
+
+When the SW issues `Start` command, the KMAC_ERRCHK module checks the [`CFG_SHADOWED.mode`](registers.md#cfg_shadowed) and [`CFG_SHADOWED.kstrength`](registers.md#cfg_shadowed).
+The KMAC HWIP assumes the combinations of two to be **SHA3-224**, **SHA3-256**, **SHA3-384**, **SHA3-512**, **SHAKE-128**, **SHAKE-256**, **cSHAKE-128**, and **cSHAKE-256**.
+If the combination of the `mode` and `kstrength` does not fall into above, the module reports the `UnexpectedModeStrength` error.
+
+However, the KMAC HWIP proceeds the hashing operation as other combinations does not cause any malfunctions inside the IP.
+The SW may get the incorrect digest value.
+
+#### IncorrectFunctionName (0x07)
+
+If [`CFG_SHADOWED.kmac_en`](registers.md#cfg_shadowed) is set and the SW issues the `Start` command, the KMAC_ERRCHK checks if the [`PREFIX`](registers.md#prefix) has correct function name, `encode_string("KMAC")`.
+If the value does not match to the byte form of `encode_string("KMAC")` (`0x4341_4D4B_2001`), it reports the `IncorrectFunctionName` error.
+
+As same as `UnexpectedModeStrength` error, this error does not block the hashing operation.
+The SW may get the incorrect signature value.
+
+#### SwCmdSequence (0x08)
+
+The KMAC_ERRCHK module checks the SW issued commands if it follows the guideline.
+If the SW issues the command that is not relevant to the current context, the module reports the `SwCmdSequence` error.
+The lower 3bits of the [`ERR_CODE`](registers.md#err_code) contains the received command.
+
+This error, however, does not stop the KMAC HWIP.
+The incorrect command is dropped at the following datapath, SHA3 core.
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_iTMF64hl4i2mJ6MUg28kxAqk)
+ Call ID: call_iTMF64hl4i2mJ6MUg28kxAqk
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/kmac/doc/registers.md
+================================= Tool Message =================================
+Name: read_file
+
+# Registers
+
+<!-- BEGIN CMDGEN util/regtool.py -d ./hw/ip/kmac/data/kmac.hjson -->
+## Summary
+
+| Name                                                                             | Offset   |   Length | Description                                              |
+|:---------------------------------------------------------------------------------|:---------|---------:|:---------------------------------------------------------|
+| kmac.[`INTR_STATE`](#intr_state)                                                 | 0x0      |        4 | Interrupt State Register                                 |
+| kmac.[`INTR_ENABLE`](#intr_enable)                                               | 0x4      |        4 | Interrupt Enable Register                                |
+| kmac.[`INTR_TEST`](#intr_test)                                                   | 0x8      |        4 | Interrupt Test Register                                  |
+| kmac.[`ALERT_TEST`](#alert_test)                                                 | 0xc      |        4 | Alert Test Register                                      |
+| kmac.[`CFG_REGWEN`](#cfg_regwen)                                                 | 0x10     |        4 | Controls the configurability of !!CFG_SHADOWED register. |
+| kmac.[`CFG_SHADOWED`](#cfg_shadowed)                                             | 0x14     |        4 | KMAC Configuration register.                             |
+| kmac.[`CMD`](#cmd)                                                               | 0x18     |        4 | KMAC/ SHA3 command register.                             |
+| kmac.[`STATUS`](#status)                                                         | 0x1c     |        4 | KMAC/SHA3 Status register.                               |
+| kmac.[`ENTROPY_PERIOD`](#entropy_period)                                         | 0x20     |        4 | Entropy Timer Periods.                                   |
+| kmac.[`ENTROPY_REFRESH_HASH_CNT`](#entropy_refresh_hash_cnt)                     | 0x24     |        4 | Entropy Refresh Counter                                  |
+| kmac.[`ENTROPY_REFRESH_THRESHOLD_SHADOWED`](#entropy_refresh_threshold_shadowed) | 0x28     |        4 | Entropy Refresh Threshold                                |
+| kmac.[`ENTROPY_SEED`](#entropy_seed)                                             | 0x2c     |        4 | Entropy Seed                                             |
+| kmac.[`KEY_SHARE0_0`](#key_share0)                                               | 0x30     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_1`](#key_share0)                                               | 0x34     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_2`](#key_share0)                                               | 0x38     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_3`](#key_share0)                                               | 0x3c     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_4`](#key_share0)                                               | 0x40     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_5`](#key_share0)                                               | 0x44     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_6`](#key_share0)                                               | 0x48     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_7`](#key_share0)                                               | 0x4c     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_8`](#key_share0)                                               | 0x50     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_9`](#key_share0)                                               | 0x54     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_10`](#key_share0)                                              | 0x58     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_11`](#key_share0)                                              | 0x5c     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_12`](#key_share0)                                              | 0x60     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_13`](#key_share0)                                              | 0x64     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_14`](#key_share0)                                              | 0x68     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE0_15`](#key_share0)                                              | 0x6c     |        4 | KMAC Secret Key                                          |
+| kmac.[`KEY_SHARE1_0`](#key_share1)                                               | 0x70     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_1`](#key_share1)                                               | 0x74     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_2`](#key_share1)                                               | 0x78     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_3`](#key_share1)                                               | 0x7c     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_4`](#key_share1)                                               | 0x80     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_5`](#key_share1)                                               | 0x84     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_6`](#key_share1)                                               | 0x88     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_7`](#key_share1)                                               | 0x8c     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_8`](#key_share1)                                               | 0x90     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_9`](#key_share1)                                               | 0x94     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_10`](#key_share1)                                              | 0x98     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_11`](#key_share1)                                              | 0x9c     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_12`](#key_share1)                                              | 0xa0     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_13`](#key_share1)                                              | 0xa4     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_14`](#key_share1)                                              | 0xa8     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_SHARE1_15`](#key_share1)                                              | 0xac     |        4 | KMAC Secret Key, 2nd share.                              |
+| kmac.[`KEY_LEN`](#key_len)                                                       | 0xb0     |        4 | Secret Key length in bit.                                |
+| kmac.[`PREFIX_0`](#prefix)                                                       | 0xb4     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_1`](#prefix)                                                       | 0xb8     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_2`](#prefix)                                                       | 0xbc     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_3`](#prefix)                                                       | 0xc0     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_4`](#prefix)                                                       | 0xc4     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_5`](#prefix)                                                       | 0xc8     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_6`](#prefix)                                                       | 0xcc     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_7`](#prefix)                                                       | 0xd0     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_8`](#prefix)                                                       | 0xd4     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_9`](#prefix)                                                       | 0xd8     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`PREFIX_10`](#prefix)                                                      | 0xdc     |        4 | cSHAKE Prefix register.                                  |
+| kmac.[`ERR_CODE`](#err_code)                                                     | 0xe0     |        4 | KMAC/SHA3 Error Code                                     |
+| kmac.[`STATE`](#state)                                                           | 0x400    |      512 | Keccak State (1600 bit) memory.                          |
+| kmac.[`MSG_FIFO`](#msg_fifo)                                                     | 0x800    |     2048 | Message FIFO.                                            |
+
+## INTR_STATE
+Interrupt State Register
+- Offset: `0x0`
+- Reset default: `0x0`
+- Reset mask: `0x7`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "kmac_done", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "fifo_empty", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "kmac_err", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"bits": 29}], "config": {"lanes": 1, "fontsize": 10, "vspace": 120}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                  |
+|:------:|:------:|:-------:|:--------------------------------------|
+|  31:3  |        |         | Reserved                              |
+|   2    |  rw1c  |   0x0   | [kmac_err](#intr_state--kmac_err)     |
+|   1    |   ro   |   0x0   | [fifo_empty](#intr_state--fifo_empty) |
+|   0    |  rw1c  |   0x0   | [kmac_done](#intr_state--kmac_done)   |
+
+### INTR_STATE . kmac_err
+KMAC/SHA3 error occurred. ERR_CODE register shows the details
+
+### INTR_STATE . fifo_empty
+The message FIFO is empty.
+This interrupt is raised only if the message FIFO is actually writable by software, i.e., if all of the following conditions are met:
+i) The KMAC block is not exercised by a hardware application interface.
+ii) The SHA3 block is in the Absorb state.
+iii) Software has not yet written the Process command to finish the absorption process.
+For the interrupt to be raised, the message FIFO must also have been full previously.
+Otherwise, the hardware empties the FIFO faster than software can fill it and there is no point in interrupting the software to inform it about the message FIFO being empty.
+
+### INTR_STATE . kmac_done
+KMAC/SHA3 absorbing has been completed
+
+## INTR_ENABLE
+Interrupt Enable Register
+- Offset: `0x4`
+- Reset default: `0x0`
+- Reset mask: `0x7`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "kmac_done", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "fifo_empty", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "kmac_err", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 29}], "config": {"lanes": 1, "fontsize": 10, "vspace": 120}}
+```
+
+|  Bits  |  Type  |  Reset  | Name       | Description                                                          |
+|:------:|:------:|:-------:|:-----------|:---------------------------------------------------------------------|
+|  31:3  |        |         |            | Reserved                                                             |
+|   2    |   rw   |   0x0   | kmac_err   | Enable interrupt when [`INTR_STATE.kmac_err`](#intr_state) is set.   |
+|   1    |   rw   |   0x0   | fifo_empty | Enable interrupt when [`INTR_STATE.fifo_empty`](#intr_state) is set. |
+|   0    |   rw   |   0x0   | kmac_done  | Enable interrupt when [`INTR_STATE.kmac_done`](#intr_state) is set.  |
+
+## INTR_TEST
+Interrupt Test Register
+- Offset: `0x8`
+- Reset default: `0x0`
+- Reset mask: `0x7`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "kmac_done", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "fifo_empty", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "kmac_err", "bits": 1, "attr": ["wo"], "rotate": -90}, {"bits": 29}], "config": {"lanes": 1, "fontsize": 10, "vspace": 120}}
+```
+
+|  Bits  |  Type  |  Reset  | Name       | Description                                                   |
+|:------:|:------:|:-------:|:-----------|:--------------------------------------------------------------|
+|  31:3  |        |         |            | Reserved                                                      |
+|   2    |   wo   |   0x0   | kmac_err   | Write 1 to force [`INTR_STATE.kmac_err`](#intr_state) to 1.   |
+|   1    |   wo   |   0x0   | fifo_empty | Write 1 to force [`INTR_STATE.fifo_empty`](#intr_state) to 1. |
+|   0    |   wo   |   0x0   | kmac_done  | Write 1 to force [`INTR_STATE.kmac_done`](#intr_state) to 1.  |
+
+## ALERT_TEST
+Alert Test Register
+- Offset: `0xc`
+- Reset default: `0x0`
+- Reset mask: `0x3`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "recov_operation_err", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "fatal_fault_err", "bits": 1, "attr": ["wo"], "rotate": -90}, {"bits": 30}], "config": {"lanes": 1, "fontsize": 10, "vspace": 210}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                | Description                                      |
+|:------:|:------:|:-------:|:--------------------|:-------------------------------------------------|
+|  31:2  |        |         |                     | Reserved                                         |
+|   1    |   wo   |   0x0   | fatal_fault_err     | Write 1 to trigger one alert event of this kind. |
+|   0    |   wo   |   0x0   | recov_operation_err | Write 1 to trigger one alert event of this kind. |
+
+## CFG_REGWEN
+Controls the configurability of [`CFG_SHADOWED`](#cfg_shadowed) register.
+
+This register ensures the contents of [`CFG_SHADOWED`](#cfg_shadowed) register cannot be
+changed by the software while the KMAC/SHA3 is in operation mode.
+- Offset: `0x10`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "en", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description           |
+|:------:|:------:|:-------:|:-------|:----------------------|
+|  31:1  |        |         |        | Reserved              |
+|   0    |   ro   |   0x1   | en     | Configuration enable. |
+
+## CFG_SHADOWED
+KMAC Configuration register.
+
+This register is  updated when the hashing engine is in Idle.
+If the software updates the register while the engine computes, the
+updated value will be discarded.
+- Offset: `0x14`
+- Reset default: `0x0`
+- Reset mask: `0x51b133f`
+- Register enable: [`CFG_REGWEN`](#cfg_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "kmac_en", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "kstrength", "bits": 3, "attr": ["rw"], "rotate": -90}, {"name": "mode", "bits": 2, "attr": ["rw"], "rotate": -90}, {"bits": 2}, {"name": "msg_endianness", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "state_endianness", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 2}, {"name": "sideload", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 3}, {"name": "entropy_mode", "bits": 2, "attr": ["rw"], "rotate": -90}, {"bits": 1}, {"name": "entropy_fast_process", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "msg_mask", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 3}, {"name": "entropy_ready", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 1}, {"name": "en_unsupported_modestrength", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 5}], "config": {"lanes": 1, "fontsize": 10, "vspace": 290}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                                                      |
+|:------:|:------:|:-------:|:--------------------------------------------------------------------------|
+| 31:27  |        |         | Reserved                                                                  |
+|   26   |   rw   |   0x0   | [en_unsupported_modestrength](#cfg_shadowed--en_unsupported_modestrength) |
+|   25   |        |         | Reserved                                                                  |
+|   24   |   rw   |   0x0   | [entropy_ready](#cfg_shadowed--entropy_ready)                             |
+| 23:21  |        |         | Reserved                                                                  |
+|   20   |   rw   |   0x0   | [msg_mask](#cfg_shadowed--msg_mask)                                       |
+|   19   |   rw   |   0x0   | [entropy_fast_process](#cfg_shadowed--entropy_fast_process)               |
+|   18   |        |         | Reserved                                                                  |
+| 17:16  |   rw   |   0x0   | [entropy_mode](#cfg_shadowed--entropy_mode)                               |
+| 15:13  |        |         | Reserved                                                                  |
+|   12   |   rw   |   0x0   | [sideload](#cfg_shadowed--sideload)                                       |
+| 11:10  |        |         | Reserved                                                                  |
+|   9    |   rw   |   0x0   | [state_endianness](#cfg_shadowed--state_endianness)                       |
+|   8    |   rw   |   0x0   | [msg_endianness](#cfg_shadowed--msg_endianness)                           |
+|  7:6   |        |         | Reserved                                                                  |
+|  5:4   |   rw   |   0x0   | [mode](#cfg_shadowed--mode)                                               |
+|  3:1   |   rw   |   0x0   | [kstrength](#cfg_shadowed--kstrength)                                     |
+|   0    |   rw   |   0x0   | [kmac_en](#cfg_shadowed--kmac_en)                                         |
+
+### CFG_SHADOWED . en_unsupported_modestrength
+Enable Unsupported Mode and Strength configs.
+
+SW may set this field for KMAC to move forward with unsupported
+Keccak Mode and Strength configurations, such as cSHAKE512.
+
+If not set, KMAC won't propagate the SW command (CmdStart) to the
+rest of the blocks (AppIntf, KMAC Core, SHA3).
+
+### CFG_SHADOWED . entropy_ready
+Entropy Ready status.
+
+Software sets this field to allow the entropy generator in KMAC to
+fetch the entropy and run.
+
+### CFG_SHADOWED . msg_mask
+Message Masking with PRNG.
+
+If 1, KMAC applies PRNG to the input messages to the Keccak module
+when KMAC mode is on.
+
+### CFG_SHADOWED . entropy_fast_process
+Entropy Fast process mode.
+
+If 1, entropy logic uses garbage data while not processing the KMAC
+key block. It will re-use previous entropy value and will not
+expand the entropy when it is consumed. Only it refreshes the
+entropy while processing the secret key block. This process should
+not be used if SCA resistance is required because it may cause side
+channel leakage.
+
+### CFG_SHADOWED . entropy_mode
+Entropy Mode
+
+Using this field, software can configure mode of operation of the internal pseudo-random number generator (PRNG).
+For the hardware to actually switch to an entropy mode other than the default idle_mode, software further needs to set the [`CFG_SHADOWED.entropy_ready`](#cfg_shadowed) bit.
+After that point, the hardware cannot be made to return to idle_mode unless the module is reset.
+
+| Value   | Name      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|:--------|:----------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0x0     | idle_mode | Default mode after reset. The sole purpose of this mode is to enable ROM_CTRL operation right after coming out of reset. The internal PRNG is not reseeded with fresh entropy, nor updated while the core operates. It should therefore not be used after this very initial stage. Software should setup a different mode and set !!CFG_SHADOWED.entropy_ready as early as possible. The module cannot be made to return to idle_mode once any of the other modes have been used.                                                                                                                                                                                                                                                                                       |
+| 0x1     | edn_mode  | Receive fresh entropy from EDN for reseeding the internal PRNG. This entropy mode is to be used for regular operation. Once the !!CFG_SHADOWED.entropy_ready bit is set after reset, the module requests fresh entropy from EDN for reseeding the internal PRNG. Only after that, the module can start processing commands. Depending on !!CFG_SHADOWED, the internal PRNG is then used for (re-)masking inputs (prefix, key, message) and intermediate results of the Keccak core. Depending on !!ENTROPY_PERIOD, the module will periodically reseed the internal PRNG with fresh entropy from EDN. Using !!CMD.entropy_req software can manually initiate the reseeding.                                                                                             |
+| 0x2     | sw_mode   | Receive initial entropy from software for reseeding the internal PRNG. This entropy mode is a fall-back option to be used if the entropy complex is not available. Once the !!CFG_SHADOWED.entropy_ready bit is set after reset, the module will wait for software to write each of the !!ENTROPY_SEED_0 - !!ENTROPY_SEED_4 registers exactly once and in ascending order. Only after that, the module can start processing commands. Depending on !!CFG_SHADOWED, the internal PRNG is then used for (re-)masking inputs (prefix, key, message) and intermediate results of the Keccak core. After this point, the PRNG can no longer be reseeded by software - also after switching back into this mode from edn_mode. However, it is possible to switch to edn_mode. |
+
+Other values are reserved.
+
+### CFG_SHADOWED . sideload
+Sideloaded Key.
+
+If 1, KMAC uses KeyMgr sideloaded key for SW initiated KMAC
+operation. KMAC uses the sideloaded key regardless of this
+configuration when KeyMgr initiates the KMAC operation for
+Key Derivation Function (KDF).
+
+### CFG_SHADOWED . state_endianness
+State Endianness.
+
+If 1 then each individual word in the [`STATE`](#state) output register
+is converted to big-endian byte order.
+The order of the words in relation to one another is not
+changed.
+This setting does not affect how the state is interpreted
+during computation.
+
+### CFG_SHADOWED . msg_endianness
+Message Endianness.
+
+If 1 then each individual multi-byte value, regardless of its
+alignment, written to [`MSG_FIFO`](#msg_fifo) will be added to the message
+in big-endian byte order.
+If 0, each value will be added to the message in little-endian
+byte order.
+A message written to [`MSG_FIFO`](#msg_fifo) one byte at a time will not be
+affected by this setting.
+From a hardware perspective byte swaps are performed on a TL-UL
+word granularity.
+
+### CFG_SHADOWED . mode
+Keccak hashing mode.
+
+This module supports SHA3 main hashing algorithm and the part
+of its derived functions, SHAKE and cSHAKE with limitations.
+This field is to select the mode.
+
+| Value   | Name   | Description                                              |
+|:--------|:-------|:---------------------------------------------------------|
+| 0x0     | SHA3   | SHA3 hashing mode. It appends `2'b 10` to the end of msg |
+| 0x2     | SHAKE  | SHAKE hashing mode. It appends `1111` to the end of msg  |
+| 0x3     | cSHAKE | cSHAKE hashing mode. It appends `00` to the end of msg   |
+
+Other values are reserved.
+
+### CFG_SHADOWED . kstrength
+Hashing Strength
+
+3 bit field to select the security strength of SHA3 hashing
+engine. If mode field is set to SHAKE or cSHAKE, only 128 and
+256 strength can be selected. Other value will result error
+when hashing starts.
+
+| Value   | Name   | Description                               |
+|:--------|:-------|:------------------------------------------|
+| 0x0     | L128   | 128 bit strength. Keccak rate is 1344 bit |
+| 0x1     | L224   | 224 bit strength. Keccak rate is 1152 bit |
+| 0x2     | L256   | 256 bit strength. Keccak rate is 1088 bit |
+| 0x3     | L384   | 384 bit strength. Keccak rate is 832 bit  |
+| 0x4     | L512   | 512 bit strength. Keccak rate is 576 bit  |
+
+Other values are reserved.
+
+### CFG_SHADOWED . kmac_en
+KMAC datapath enable.
+
+If this bit is 1, the incoming message is processed in KMAC
+with the secret key.
+
+## CMD
+KMAC/ SHA3 command register.
+
+This register is to control the KMAC to start accepting message,
+to process the message, and to manually run additional keccak
+rounds at the end. Only at certain stage, the CMD affects to the
+control logic. It follows the sequence of
+
+`start` --> `process` --> {`run` if needed --> } `done`
+- Offset: `0x18`
+- Reset default: `0x0`
+- Reset mask: `0x73f`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "cmd", "bits": 6, "attr": ["r0w1c"], "rotate": 0}, {"bits": 2}, {"name": "entropy_req", "bits": 1, "attr": ["r0w1c"], "rotate": -90}, {"name": "hash_cnt_clr", "bits": 1, "attr": ["r0w1c"], "rotate": -90}, {"name": "err_processed", "bits": 1, "attr": ["r0w1c"], "rotate": -90}, {"bits": 21}], "config": {"lanes": 1, "fontsize": 10, "vspace": 150}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                 |
+|:------:|:------:|:-------:|:-------------------------------------|
+| 31:11  |        |         | Reserved                             |
+|   10   | r0w1c  |    x    | [err_processed](#cmd--err_processed) |
+|   9    | r0w1c  |    x    | [hash_cnt_clr](#cmd--hash_cnt_clr)   |
+|   8    | r0w1c  |    x    | [entropy_req](#cmd--entropy_req)     |
+|  7:6   |        |         | Reserved                             |
+|  5:0   | r0w1c  |    x    | [cmd](#cmd--cmd)                     |
+
+### CMD . err_processed
+When error occurs and one of the state machine stays at
+ Error handling state, SW may process the error based on
+ ERR_CODE, then let FSM back to the reset state
+
+### CMD . hash_cnt_clr
+If writes 1, it clears the hash (KMAC) counter in the entropy module
+
+### CMD . entropy_req
+SW triggered Entropy Request
+
+If writes 1 to this field
+
+### CMD . cmd
+Issue a command to the KMAC/SHA3 IP. The command is sparse
+encoded. To prevent sw from writing multiple commands at once,
+the field is defined as enum.
+
+| Value   | Name    | Description                                                                                                                                                                                                                                                                                                                 |
+|:--------|:--------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0x1d    | start   | Writing 6'b011101 or dec 29 into this field when KMAC/SHA3 is in idle, KMAC/SHA3 begins its operation. If the mode is cSHAKE, before receiving the message, the hashing logic processes Function name string N and customization input string S first. If KMAC mode is enabled, additionally it processes secret key block. |
+| 0x2e    | process | Writing 6'b101110 or dec 46 into this field when KMAC/SHA3 began its operation and received the entire message, it computes the digest or signing.                                                                                                                                                                          |
+| 0x31    | run     | The `run` field is used in the sponge squeezing stage. It triggers the keccak round logic to run full 24 rounds. This is optional and used when software needs more digest bits than the keccak rate. It only affects when the kmac/sha3 operation is completed.                                                            |
+| 0x16    | done    | Writing 6'b010110 or dec 22 into this field when KMAC/SHA3 squeezing is completed, KMAC/SHA3 hashing engine clears internal variables and goes back to Idle state for next command.                                                                                                                                         |
+
+Other values are reserved.
+
+## STATUS
+KMAC/SHA3 Status register.
+- Offset: `0x1c`
+- Reset default: `0x4001`
+- Reset mask: `0x3df07`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "sha3_idle", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "sha3_absorb", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "sha3_squeeze", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 5}, {"name": "fifo_depth", "bits": 5, "attr": ["ro"], "rotate": -90}, {"bits": 1}, {"name": "fifo_empty", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "fifo_full", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "ALERT_FATAL_FAULT", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "ALERT_RECOV_CTRL_UPDATE_ERR", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 14}], "config": {"lanes": 1, "fontsize": 10, "vspace": 290}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                                                |
+|:------:|:------:|:-------:|:--------------------------------------------------------------------|
+| 31:18  |        |         | Reserved                                                            |
+|   17   |   ro   |   0x0   | [ALERT_RECOV_CTRL_UPDATE_ERR](#status--alert_recov_ctrl_update_err) |
+|   16   |   ro   |   0x0   | [ALERT_FATAL_FAULT](#status--alert_fatal_fault)                     |
+|   15   |   ro   |    x    | [fifo_full](#status--fifo_full)                                     |
+|   14   |   ro   |   0x1   | [fifo_empty](#status--fifo_empty)                                   |
+|   13   |        |         | Reserved                                                            |
+|  12:8  |   ro   |    x    | [fifo_depth](#status--fifo_depth)                                   |
+|  7:3   |        |         | Reserved                                                            |
+|   2    |   ro   |    x    | [sha3_squeeze](#status--sha3_squeeze)                               |
+|   1    |   ro   |    x    | [sha3_absorb](#status--sha3_absorb)                                 |
+|   0    |   ro   |   0x1   | [sha3_idle](#status--sha3_idle)                                     |
+
+### STATUS . ALERT_RECOV_CTRL_UPDATE_ERR
+An update error has not occurred (0) or has occured (1) in the shadowed Control Register.
+KMAC operation needs to be restarted by re-writing the Control Register.
+
+### STATUS . ALERT_FATAL_FAULT
+No fatal fault has occurred inside the KMAC unit (0).
+A fatal fault has occured and the KMAC unit needs to be reset (1),
+Examples for such faults include
+i) TL-UL bus integrity fault
+ii) storage errors in the shadow registers
+iii) errors in the message, round, or key counter
+iv) any internal FSM entering an invalid state
+v) an error in the redundant lfsr
+
+### STATUS . fifo_full
+Message FIFO Full indicator
+
+### STATUS . fifo_empty
+Message FIFO Empty indicator.
+
+The FIFO's `Pass` parameter is set to `1'b 1`. So, by default, if
+the SHA engine is ready, the write data to FIFO just passes
+through.
+
+In this case, `fifo_depth` remains **0**. `fifo_empty`, however,
+lowers the value to **0** for a cycle, then goes back to the empty
+state, **1**.
+
+See the "Message FIFO" section in the spec for the reason.
+
+### STATUS . fifo_depth
+Count of occupied entries in the message FIFO.
+
+### STATUS . sha3_squeeze
+If 1, SHA3 completes sponge absorbing stage.
+In this stage, SW can manually run the hashing engine.
+
+### STATUS . sha3_absorb
+If 1, SHA3 is receiving message stream and processing it
+
+### STATUS . sha3_idle
+If 1, SHA3 hashing engine is in idle state.
+
+## ENTROPY_PERIOD
+Entropy Timer Periods.
+- Offset: `0x20`
+- Reset default: `0x0`
+- Reset mask: `0xffff03ff`
+- Register enable: [`CFG_REGWEN`](#cfg_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "prescaler", "bits": 10, "attr": ["rw"], "rotate": 0}, {"bits": 6}, {"name": "wait_timer", "bits": 16, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                                      |
+|:------:|:------:|:-------:|:------------------------------------------|
+| 31:16  |   rw   |   0x0   | [wait_timer](#entropy_period--wait_timer) |
+| 15:10  |        |         | Reserved                                  |
+|  9:0   |   rw   |   0x0   | [prescaler](#entropy_period--prescaler)   |
+
+### ENTROPY_PERIOD . wait_timer
+EDN request wait timer.
+
+The entropy module in KMAC waits up to this field in the timer pulse
+after it sends request to EDN module. If the timer expires, the
+entropy module moves to an error state and notifies to the system.
+
+If there is a pending EDN request during wait timer update, then this update is delayed until the EDN request is complete.
+
+If 0, the entropy module waits the EDN response always. If EDN does
+not respond in this configuration, the software shall reset the IP.
+
+### ENTROPY_PERIOD . prescaler
+EDN Wait timer prescaler.
+
+EDN Wait timer has 16 bit value. The timer value is increased when the timer pulse is generated. Timer pulse is raises when the number of the clock cycles hit this prescaler value.
+
+The exact period of the timer pulse is unknown as the KMAC input clock may contain jitters.
+
+## ENTROPY_REFRESH_HASH_CNT
+Entropy Refresh Counter
+
+KMAC entropy can be refreshed after the given threshold KMAC operations
+run. If the KMAC hash counter [`ENTROPY_REFRESH_HASH_CNT`](#entropy_refresh_hash_cnt) hits (GTE) the
+configured threshold [`ENTROPY_REFRESH_THRESHOLD_SHADOWED`](#entropy_refresh_threshold_shadowed), the entropy
+module in the KMAC IP requests new seed to EDN and reset the KMAC
+hash counter.
+
+If the threshold is 0, the refresh by the counter does not work. And the
+counter is only reset by the CMD.hash_cnt_clr CSR bit.
+- Offset: `0x24`
+- Reset default: `0x0`
+- Reset mask: `0x3ff`
+- Register enable: [`CFG_REGWEN`](#cfg_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "hash_cnt", "bits": 10, "attr": ["ro"], "rotate": 0}, {"bits": 22}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name     | Description         |
+|:------:|:------:|:-------:|:---------|:--------------------|
+| 31:10  |        |         |          | Reserved            |
+|  9:0   |   ro   |   0x0   | hash_cnt | Hash (KMAC) counter |
+
+## ENTROPY_REFRESH_THRESHOLD_SHADOWED
+Entropy Refresh Threshold
+
+KMAC entropy can be refreshed after the given threshold KMAC operations
+run. If the KMAC hash counter [`ENTROPY_REFRESH_HASH_CNT`](#entropy_refresh_hash_cnt) hits (GTE) the
+configured threshold [`ENTROPY_REFRESH_THRESHOLD_SHADOWED`](#entropy_refresh_threshold_shadowed), the entropy
+module in the KMAC IP requests new seed to EDN and reset the KMAC
+hash counter.
+
+If the threshold is 0, the refresh by the counter does not work. And the
+counter is only reset by the CMD.hash_cnt_clr CSR bit.
+- Offset: `0x28`
+- Reset default: `0x0`
+- Reset mask: `0x3ff`
+- Register enable: [`CFG_REGWEN`](#cfg_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "threshold", "bits": 10, "attr": ["rw"], "rotate": 0}, {"bits": 22}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name      | Description    |
+|:------:|:------:|:-------:|:----------|:---------------|
+| 31:10  |        |         |           | Reserved       |
+|  9:0   |   rw   |   0x0   | threshold | Hash Threshold |
+
+## ENTROPY_SEED
+Entropy Seed
+
+Entropy seed register for the integrated entropy generator.
+
+If [`CFG_SHADOWED.entropy_mode`](#cfg_shadowed) is set to sw_mode, software first needs to set [`CFG_SHADOWED.entropy_ready.`](#cfg_shadowed)
+Then, software needs to write the [`ENTROPY_SEED`](#entropy_seed) register 9 times.
+Upon each write, the written value is loaded into the corresponding state chunk of the entropy generator.
+
+After writing the [`ENTROPY_SEED`](#entropy_seed) register 9 times, the entropy generator will start its operation.
+After this point, writing this register has no longer any effect.
+- Offset: `0x2c`
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "seed", "bits": 32, "attr": ["wo"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                                |
+|:------:|:------:|:-------:|:-------|:-------------------------------------------|
+|  31:0  |   wo   |    x    | seed   | 32-bit chunk of the entropy generator seed |
+
+## KEY_SHARE0
+KMAC Secret Key
+
+KMAC secret key can be up to 512 bit.
+Order of the secret key is:
+key[512:0] = {KEY15, KEY14, ... , KEY0};
+
+The registers are allowed to be updated when the engine is in Idle state.
+If the engine computes the hash, it discards any attempts to update the secret keys
+and report an error.
+
+Current KMAC supports up to 512 bit secret key. It is the sw
+responsibility to keep upper bits of the secret key to 0.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name          | Offset   |
+|:--------------|:---------|
+| KEY_SHARE0_0  | 0x30     |
+| KEY_SHARE0_1  | 0x34     |
+| KEY_SHARE0_2  | 0x38     |
+| KEY_SHARE0_3  | 0x3c     |
+| KEY_SHARE0_4  | 0x40     |
+| KEY_SHARE0_5  | 0x44     |
+| KEY_SHARE0_6  | 0x48     |
+| KEY_SHARE0_7  | 0x4c     |
+| KEY_SHARE0_8  | 0x50     |
+| KEY_SHARE0_9  | 0x54     |
+| KEY_SHARE0_10 | 0x58     |
+| KEY_SHARE0_11 | 0x5c     |
+| KEY_SHARE0_12 | 0x60     |
+| KEY_SHARE0_13 | 0x64     |
+| KEY_SHARE0_14 | 0x68     |
+| KEY_SHARE0_15 | 0x6c     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "key", "bits": 32, "attr": ["wo"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                              |
+|:------:|:------:|:-------:|:-------|:-----------------------------------------|
+|  31:0  |   wo   |    x    | key    | 32-bit chunk of up-to 512-bit Secret Key |
+
+## KEY_SHARE1
+KMAC Secret Key, 2nd share.
+
+KMAC secret key can be up to 512 bit.
+Order of the secret key is:
+key[512:0] = {KEY15, KEY14, ... , KEY0};
+
+The registers are allowed to be updated when the engine is in Idle state.
+If the engine computes the hash, it discards any attempts to update the secret keys
+and report an error.
+
+Current KMAC supports up to 512 bit secret key. It is the sw
+responsibility to keep upper bits of the secret key to 0.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name          | Offset   |
+|:--------------|:---------|
+| KEY_SHARE1_0  | 0x70     |
+| KEY_SHARE1_1  | 0x74     |
+| KEY_SHARE1_2  | 0x78     |
+| KEY_SHARE1_3  | 0x7c     |
+| KEY_SHARE1_4  | 0x80     |
+| KEY_SHARE1_5  | 0x84     |
+| KEY_SHARE1_6  | 0x88     |
+| KEY_SHARE1_7  | 0x8c     |
+| KEY_SHARE1_8  | 0x90     |
+| KEY_SHARE1_9  | 0x94     |
+| KEY_SHARE1_10 | 0x98     |
+| KEY_SHARE1_11 | 0x9c     |
+| KEY_SHARE1_12 | 0xa0     |
+| KEY_SHARE1_13 | 0xa4     |
+| KEY_SHARE1_14 | 0xa8     |
+| KEY_SHARE1_15 | 0xac     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "key", "bits": 32, "attr": ["wo"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                              |
+|:------:|:------:|:-------:|:-------|:-----------------------------------------|
+|  31:0  |   wo   |    x    | key    | 32-bit chunk of up-to 512-bit Secret Key |
+
+## KEY_LEN
+Secret Key length in bit.
+
+This value is used to make encoded secret key in KMAC.
+KMAC supports certain lengths of the secret key. Currently it
+supports 128b, 192b, 256b, 384b, and 512b secret keys.
+- Offset: `0xb0`
+- Reset default: `0x0`
+- Reset mask: `0x7`
+- Register enable: [`CFG_REGWEN`](#cfg_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "len", "bits": 3, "attr": ["wo"], "rotate": 0}, {"bits": 29}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                 |
+|:------:|:------:|:-------:|:---------------------|
+|  31:3  |        |         | Reserved             |
+|  2:0   |   wo   |   0x0   | [len](#key_len--len) |
+
+### KEY_LEN . len
+Key length choice
+
+| Value   | Name   | Description            |
+|:--------|:-------|:-----------------------|
+| 0x0     | Key128 | Key length is 128 bit. |
+| 0x1     | Key192 | Key length is 192 bit. |
+| 0x2     | Key256 | Key length is 256 bit. |
+| 0x3     | Key384 | Key length is 384 bit. |
+| 0x4     | Key512 | Key length is 512 bit. |
+
+Other values are reserved.
+
+## PREFIX
+cSHAKE Prefix register.
+
+Prefix including Function Name N and Customization String S.
+The SHA3 assumes this register value is encoded as:
+`encode_string(N) || encode_string(S) || 0`. It means that the
+software can freely decide the length of N or S based on the
+given Prefix register size 320bit. 320bit is determined to have
+32-bit of N and up to 256-bit of S + encode of their length.
+
+It is SW responsibility to fill the register with encoded value
+that is described at Section 2.3.2 String Encoding in NIST SP
+800-185 specification.
+
+Order of Prefix is:
+prefix[end:0] := {PREFIX(N-1), ..., PREFIX(1), PREFIX(0) }
+
+The registers are allowed to be updated when the engine is in Idle state.
+If the engine computes the hash, it discards any attempts to update the secret keys
+and report an error.
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Instances
+
+| Name      | Offset   |
+|:----------|:---------|
+| PREFIX_0  | 0xb4     |
+| PREFIX_1  | 0xb8     |
+| PREFIX_2  | 0xbc     |
+| PREFIX_3  | 0xc0     |
+| PREFIX_4  | 0xc4     |
+| PREFIX_5  | 0xc8     |
+| PREFIX_6  | 0xcc     |
+| PREFIX_7  | 0xd0     |
+| PREFIX_8  | 0xd4     |
+| PREFIX_9  | 0xd8     |
+| PREFIX_10 | 0xdc     |
+
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "prefix", "bits": 32, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                       |
+|:------:|:------:|:-------:|:-------|:----------------------------------|
+|  31:0  |   rw   |   0x0   | prefix | 32-bit chunk of Encoded NS Prefix |
+
+## ERR_CODE
+KMAC/SHA3 Error Code
+- Offset: `0xe0`
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "err_code", "bits": 32, "attr": ["ro"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                            |
+|:------:|:------:|:-------:|:--------------------------------|
+|  31:0  |   ro   |   0x0   | [err_code](#err_code--err_code) |
+
+### ERR_CODE . err_code
+If the `kmac_err` interrupt occurs, this register has information on the error cause.
+Bits 31:24 contain the error code (please refer to `err_code_e` in `hw/ip/kmac/rtl/kmac_pkg.sv`) for the encoding, and bits 23:0 contain additional debug information.
+This register does *not* get cleared when the `kmac_err` interrupt state gets cleared.
+
+## STATE
+Keccak State (1600 bit) memory.
+
+The software can get the processed digest by reading this memory
+region. Unlike MSG_FIFO, STATE memory space sees the addr[9:0].
+If Masking feature is enabled, the software reads two shares from
+this memory space.
+
+0x400 - 0x4C7: State share
+0x500 - 0x5C7: Mask share of the state, 0 if EnMasking = 0
+
+- Word Aligned Offset Range: `0x400`to`0x5fc`
+- Size (words): `128`
+- Access: `ro`
+- Byte writes are *not* supported.
+
+## MSG_FIFO
+Message FIFO.
+
+Any write operation to this window will be appended to MSG_FIFO. SW can
+simply write bytes/words to any address within this address range.
+Ordering and packing of the incoming bytes/words are handled
+internally. Therefore, the least significant 12 bits of the address
+are ignored.
+
+- Word Aligned Offset Range: `0x800`to`0xffc`
+- Size (words): `512`
+- Access: `wo`
+- Byte writes are  supported.
+
+
+<!-- END CMDGEN -->
+
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_cDTePXvsbNqLWlZnGtfALqGe)
+ Call ID: call_cDTePXvsbNqLWlZnGtfALqGe
+  Args:
+    dir_path: /home/XXXX-2/hackdate/hw/ip/kmac/rtl
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/XXXX-2/hackdate/hw/ip/kmac/rtl:
+keccak_2share.sv keccak_round.sv kmac.sv kmac_app.sv kmac_core.sv kmac_entropy.sv kmac_errchk.sv kmac_msgfifo.sv kmac_pkg.sv kmac_reduced.sv kmac_reg_pkg.sv kmac_reg_top.sv kmac_staterd.sv sha3.sv sha3_pkg.sv sha3pad.sv
+
+Directories in /home/XXXX-2/hackdate/hw/ip/kmac/rtl:
+
+================================== Ai Message ==================================
+Tool Calls:
+  run_verilator_agent (call_vQ3qGje7Frrd6tx2Jy6V7y0l)
+ Call ID: call_vQ3qGje7Frrd6tx2Jy6V7y0l
+  Args:
+    ip: kmac
+================================= Tool Message =================================
+Name: run_verilator_agent
+
+Based on my analysis of the KMAC IP and the failing tests, I can provide the following security assessment:
+
+## Security Analysis of KMAC IP
+
+After examining the test logs and source code, I've identified several potential security issues:
+
+### 1. Clock Gating Vulnerability
+
+The `kmac_idle_test` is failing with the error message: "CHECK-fail: Clock enabled state is not as expected (1)." This indicates a problem with the clock gating mechanism in the KMAC module. The test is specifically designed to verify that the KMAC clock can be properly disabled when the module is idle and re-enabled when needed.
+
+**Security Implication:** Improper clock gating can lead to side-channel vulnerabilities. If the clock remains active when it should be disabled, it could:
+- Increase power consumption unnecessarily, creating a power side-channel
+- Make the module susceptible to timing attacks
+- Allow an attacker to observe operational patterns through power analysis
+
+The test is verifying that the KMAC module properly responds to clock hints, which is a security feature designed to reduce side-channel attack surface.
+
+### 2. Key Sideloading Issues
+
+Multiple tests related to key sideloading are failing, including:
+- `kmac_kmac_key_sideload_test`
+- `kmac_sideload_functest_hardcoded`
+- `kdf_kmac_sideload_functest_hardcoded`
+
+**Security Implication:** Key sideloading is a critical security feature that allows keys to be loaded directly from a secure key manager rather than through software. Failures in this mechanism could expose cryptographic keys to potential compromise. The key material might be:
+- Improperly masked, making it vulnerable to side-channel attacks
+- Not properly isolated from software access
+- Subject to timing attacks during loading operations
+
+### 3. Potential FSM Vulnerabilities
+
+The KMAC core implements a sparse FSM encoding for security hardening (as seen in the `kmac_core.sv` file), but there might be issues with the state transitions or error handling. The code includes:
+
+```systemverilog
+// SEC_CM: FSM.SPARSE
+// SEC_CM: FSM.GLOBAL_ESC, FSM.LOCAL_ESC
+```
+
+These comments indicate security countermeasures for the FSM, but the failing tests suggest these might not be working correctly.
+
+**Security Implication:** Vulnerabilities in the FSM could allow:
+- Glitch attacks to bypass security states
+- Fault injection to manipulate the cryptographic processing
+- State confusion leading to information leakage
+
+### 4. Masking Implementation Issues
+
+The KMAC core includes optional masking for side-channel protection:
+```systemverilog
+parameter bit EnMasking = 0,
+localparam int Share = (EnMasking) ? 2 : 1 // derived parameter
+```
+
+If masking is enabled but not properly implemented, it could lead to side-channel vulnerabilities.
+
+## Conclusion
+
+The KMAC IP appears to have several potential security issues related to:
+
+1. Clock gating control that may expose the module to side-channel attacks
+2. Key sideloading functionality that could compromise key material
+3. Possible FSM vulnerabilities that might allow state manipulation
+4. Potential issues with masking implementation for side-channel protection
+
+These issues should be addressed to ensure the cryptographic operations remain secure against various attack vectors. The failing tests are specifically designed to verify security-critical functionality, and their failure indicates potential security weaknesses in the implementation.
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_FS9euS9PTiE1HhUw3lZOnwBp)
+ Call ID: call_FS9euS9PTiE1HhUw3lZOnwBp
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_reg_top.sv
+    top_module: kmac_reg_top
+    security_objective: register access control, privilege escalation, shadowed register integrity
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+Based on the assertion checker results, I've identified security concerns in the provided RTL code. Let me explain the findings:
+
+## Security Issues Found:
+
+1. **Shadowed Register Error Propagation Issues**:
+   - The assertions checking for proper propagation of shadow register errors were falsified.
+   - Specifically, both `shadow_storage_error_propagation` and `shadow_update_error_propagation` assertions failed.
+   - This indicates that errors detected in shadowed registers (like `cfg_shadowed_kmac_en_storage_err` or `cfg_shadowed_kstrength_update_err`) are not properly propagated to the error output signals within the expected time window.
+
+2. **Potential Impact**:
+   - Shadowed registers are a critical security mechanism used to detect fault injection attacks or hardware failures.
+   - If errors in these registers aren't properly propagated, it could allow an attacker to manipulate security-critical configuration without detection.
+   - This could lead to security bypass or privilege escalation, especially since these registers control security-sensitive functions like key handling and cryptographic operations.
+
+## Secure Aspects:
+
+The following security mechanisms appear to be working correctly:
+
+1. **Register Write Enable Protection**: The assertions verifying that the REGWEN signal properly protects configuration registers passed.
+
+2. **Integrity Error Propagation**: The integrity error propagation mechanism appears to be functioning correctly.
+
+3. **Write Protection on Integrity Error**: The design correctly prevents writes when integrity errors are detected.
+
+## Recommendation:
+
+The RTL should be modified to ensure that shadow register errors are properly propagated to the error output signals. Specifically:
+
+1. Review the logic in the shadowed register error collection section (around line 2000) to ensure all error signals are properly combined and propagated.
+
+2. Ensure that the timing of error propagation is consistent and meets the expected window (within 1-3 clock cycles as specified in the assertions).
+
+3. Consider adding additional monitoring or alert mechanisms to ensure that shadowed register errors cannot go undetected.
+
+These issues could potentially allow an attacker to manipulate security-critical configuration without detection, which represents a significant security vulnerability in this cryptographic module.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_4MXq22K9pFbejSCjq6rnA1EQ)
+ Call ID: call_4MXq22K9pFbejSCjq6rnA1EQ
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_reg_top.sv
+    top_module: kmac_reg_top
+    security_objective: register access control, privilege escalation, shadowed register integrity
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check was run on the provided RTL code for the top module kmac_reg_top with relevant lint tags related to register access control, privilege escalation, and shadowed register integrity.
+
+The lint tool reported one error under the tag RegisterInfo-ML. This error suggests checking the detailed report 'all_register_info.rpt' for information on all registers in the design. There were no warnings or other errors related to clock gating, asynchronous resets gating, or race conditions.
+
+Summary:
+- One error reported by RegisterInfo-ML (details in a separate report file).
+- No warnings or errors related to clock gating or asynchronous reset gating.
+- No direct indication of privilege escalation or shadowed register integrity issues from this lint run.
+
+Recommendation:
+- Review the detailed register report 'all_register_info.rpt' to understand the register-related error.
+- Manually inspect the RTL for access control mechanisms and privilege checks, as the lint did not flag explicit issues but might not cover all security aspects.
+- Consider additional security-focused lint or formal verification tools specialized for privilege escalation and shadow register integrity if available.
+
+Based on the lint output alone, no explicit security issues were detected in the RTL regarding register access control, privilege escalation, or shadowed register integrity.
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_kjLtzCdRBNZWUomTUFkcT3me)
+ Call ID: call_kjLtzCdRBNZWUomTUFkcT3me
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_app.sv
+    top_module: kmac_app
+    security_objective: application interface isolation, privilege escalation, command injection
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+Based on the assertion checker tool results, I've identified several security concerns in the provided RTL code:
+
+### Security Issues Found:
+
+1. **Key Validation Issue (assertion_key_valid_check)**:
+   - The assertion checking that invalid keys are properly handled was falsified.
+   - This indicates that when a key from the key manager is used but not valid (`keymgr_key_used && !keymgr_key_i.valid`), the design doesn't consistently transition to an error state as expected.
+   - This could potentially allow operations to proceed with invalid keys, which is a serious security vulnerability.
+
+2. **Software Command Injection (assertion_sw_cmd_during_app)**:
+   - The assertion checking that software commands during application operation are properly detected was falsified.
+   - This means that when an application is active (`app_active_o`) and software issues a command (`sw_cmd_i != CmdNone`), the error detection mechanism doesn't consistently flag this as an error.
+   - This could allow software to inject commands during application operation, potentially leading to privilege escalation.
+
+3. **Software Message Injection (assertion_sw_msg_during_app)**:
+   - The assertion checking that software message pushes during non-software operation are properly detected was falsified.
+   - When the mux is not selecting software (`mux_sel != SelSw`) but software tries to push data (`sw_valid_i`), the error detection doesn't consistently work.
+   - This could allow software to inject messages during application operation, potentially compromising the isolation between software and hardware applications.
+
+### Security Implications:
+
+These issues have significant security implications:
+
+1. **Application Interface Isolation Breach**: The falsified assertions indicate that the isolation between software and hardware applications is not robust. Software can potentially inject commands or messages during hardware application operation.
+
+2. **Privilege Escalation Risk**: The ability for software to inject commands during application operation could lead to privilege escalation, where software gains unauthorized access to hardware application functionality.
+
+3. **Command Injection Vulnerability**: The design doesn't properly prevent command injection from software during application operation, which could allow an attacker to manipulate the cryptographic operations.
+
+4. **Key Security Compromise**: The failure to properly handle invalid keys could lead to cryptographic operations proceeding with compromised keys, potentially weakening the security of the entire system.
+
+### Recommendation:
+
+The RTL code needs to be modified to address these security issues:
+
+1. Strengthen the key validation logic to ensure operations never proceed with invalid keys.
+2. Improve the error detection and handling for software command injection during application operation.
+3. Enhance the protection against software message injection when hardware applications are active.
+4. Consider adding additional isolation mechanisms between software and hardware interfaces.
+
+These findings indicate serious security vulnerabilities in the KMAC application interface that could compromise the security of the entire cryptographic system.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_1xiKmvYHzvAxL6SdxQIMThsf)
+ Call ID: call_1xiKmvYHzvAxL6SdxQIMThsf
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_app.sv
+    top_module: kmac_app
+    security_objective: application interface isolation, privilege escalation, command injection
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint checks for the RTL module kmac_app in the file /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_app.sv returned the following results:
+
+- 27 errors were found in total.
+- The errors are mainly from the following lint tags:
+  - CheckLocalParam-ML (19 errors): This indicates the use of 'parameter' instead of 'localparam' in module or interface declarations. This is more of a coding style or best practice issue rather than a direct security vulnerability.
+  - DisallowCaseZ-ML (1 error): The use of 'casez' statement is disallowed. This could potentially cause issues in synthesis or simulation but is not directly a security vulnerability.
+  - UniquePriorityMisuse-ML (7 errors): Misuse of unique or priority keywords in case constructs. This could lead to unintended behavior in the FSM or control logic, which might have security implications if it affects privilege escalation or interface isolation.
+
+No direct lint errors related to privilege escalation, application interface isolation, or command injection were reported by the lint tool.
+
+However, the presence of UniquePriorityMisuse-ML errors in the FSM and control logic could potentially lead to unintended state transitions or behavior, which might be exploited in a security context. It is recommended to review and fix these issues to ensure the FSM behaves as intended and does not allow unintended privilege escalation or command injection.
+
+Summary:
+- No explicit security issues related to application interface isolation, privilege escalation, or command injection were flagged by the lint tool.
+- Some coding and FSM control issues were found that could indirectly affect security and should be addressed.
+- Manual review of FSM and control logic is recommended to ensure security properties are maintained.
+
+If you want, I can help analyze specific parts of the code or suggest fixes for the lint errors.
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_8i8dPDmNIhKry3puGN6fxA92)
+ Call ID: call_8i8dPDmNIhKry3puGN6fxA92
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_app.sv
+    top_module: kmac_app
+    security_objective: application interface isolation, privilege escalation, command injection
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+[{"text": "Let me try a more specific query for command injection:", "type": "text"}, {"id": "toolu_01FoeR7wevd6D4UPkGFJQnc8", "input": {"security_issue": "hardware command injection"}, "name": "llm_cwe_details_retriever_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_R5tlLK3U6faDYKLALujbOi40)
+ Call ID: call_R5tlLK3U6faDYKLALujbOi40
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_app.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // KMAC Application interface
+6: 
+7: `include "prim_assert.sv"
+8: 
+9: module kmac_app
+10:   import kmac_pkg::*;
+11: #(
+12:   // App specific configs are defined in kmac_pkg
+13:   parameter  bit EnMasking = 1'b0,
+14:   localparam int Share = (EnMasking) ? 2 : 1, // derived parameter
+15:   parameter  bit SecIdleAcceptSwMsg = 1'b0
+16: ) (
+17:   input clk_i,
+18:   input rst_ni,
+19: 
+20:   // Secret Key from register
+21:   input [MaxKeyLen-1:0] reg_key_data_i [Share],
+22:   input key_len_e       reg_key_len_i,
+23: 
+24:   // Prefix from register
+25:   input [sha3_pkg::NSRegisterSize*8-1:0] reg_prefix_i,
+26: 
+27:   // mode, strength, kmac_en from register
+28:   input                             reg_kmac_en_i,
+29:   input sha3_pkg::sha3_mode_e       reg_sha3_mode_i,
+30:   input sha3_pkg::keccak_strength_e reg_keccak_strength_i,
+31: 
+32:   // Data from Software
+33:   input                sw_valid_i,
+34:   input [MsgWidth-1:0] sw_data_i,
+35:   input [MsgWidth-1:0] sw_mask_i,
+36:   output logic         sw_ready_o,
+37: 
+38:   // KeyMgr Sideload Key interface
+39:   input keymgr_pkg::hw_key_req_t keymgr_key_i,
+40: 
+41:   // Application Message in/ Digest out interface + control signals
+42:   input  app_req_t [NumAppIntf-1:0] app_i,
+43:   output app_rsp_t [NumAppIntf-1:0] app_o,
+44: 
+45:   // to KMAC Core: Secret key
+46:   output logic [MaxKeyLen-1:0] key_data_o [Share],
+47:   output key_len_e             key_len_o,
+48:   output logic                 key_valid_o,
+49: 
+50:   // to MSG_FIFO
+51:   output logic                kmac_valid_o,
+52:   output logic [MsgWidth-1:0] kmac_data_o,
+53:   output logic [MsgWidth-1:0] kmac_mask_o,
+54:   input                       kmac_ready_i,
+55: 
+56:   // KMAC Core
+57:   output logic kmac_en_o,
+58: 
+59:   // To Sha3 Core
+60:   output logic [sha3_pkg::NSRegisterSize*8-1:0] sha3_prefix_o,
+61:   output sha3_pkg::sha3_mode_e                  sha3_mode_o,
+62:   output sha3_pkg::keccak_strength_e            keccak_strength_o,
+63: 
+64:   // STATE from SHA3 Core
+65:   input                        keccak_state_valid_i,
+66:   input [sha3_pkg::StateW-1:0] keccak_state_i [Share],
+67: 
+68:   // to STATE TL-window if Application is not active, the incoming state goes to
+69:   // register if kdf_en is set, the state value goes to application and the
+70:   // output to the register is all zero.
+71:   output logic                        reg_state_valid_o,
+72:   output logic [sha3_pkg::StateW-1:0] reg_state_o [Share],
+73: 
+74:   // Configurations If key_en is set, the logic uses KeyMgr's sideloaded key as
+75:   // a secret key rather than register values. This only affects when software
+76:   // initiates. If App initiates the hash operation and uses KMAC algorithm, it
+77:   // always uses sideloaded key.
+78:   input keymgr_key_en_i,
+79: 
+80:   // Commands
+81:   // Command from software
+82:   input kmac_cmd_e sw_cmd_i,
+83: 
+84:   // from SHA3
+85:   input prim_mubi_pkg::mubi4_t absorbed_i,
+86: 
+87:   // to KMAC
+88:   output kmac_cmd_e cmd_o,
+89: 
+90:   // to SW
+91:   output prim_mubi_pkg::mubi4_t absorbed_o,
+92: 
+93:   // To status
+94:   output logic app_active_o,
+95: 
+96:   // Status
+97:   // - entropy_ready_i: Entropy configured by SW. It is used to check if App
+98:   //                    is OK to request.
+99:   input prim_mubi_pkg::mubi4_t entropy_ready_i,
+100: 
+101:   // Error input
+102:   // This error comes from KMAC/SHA3 engine.
+103:   // KeyMgr interface delivers the error signal to KeyMgr to drop the current op
+104:   // and re-initiate.
+105:   // If error happens, regardless of SW-initiated or KeyMgr-initiated, the error
+106:   // is reported to the ERR_CODE so that SW can look into.
+107:   input error_i,
+108: 
+109:   // SW sets err_processed bit in CTRL then the logic goes to Idle
+110:   input err_processed_i,
+111: 
+112:   output prim_mubi_pkg::mubi4_t clear_after_error_o,
+113: 
+114:   // error_o value is pushed to Error FIFO at KMAC/SHA3 top and reported to SW
+115:   output kmac_pkg::err_t error_o,
+116: 
+117:   // Life cycle
+118:   input  lc_ctrl_pkg::lc_tx_t lc_escalate_en_i,
+119: 
+120:   output logic sparse_fsm_error_o
+121: );
+122: 
+123:   import sha3_pkg::KeccakBitCapacity;
+124:   import sha3_pkg::L128;
+125:   import sha3_pkg::L224;
+126:   import sha3_pkg::L256;
+127:   import sha3_pkg::L384;
+128:   import sha3_pkg::L512;
+129: 
+130:   /////////////////
+131:   // Definitions //
+132:   /////////////////
+133: 
+134:   // Digest width is same to the key width `keymgr_pkg::KeyWidth`.
+135:   localparam int KeyMgrKeyW = $bits(keymgr_key_i.key[0]);
+136: 
+137:   localparam key_len_e KeyLengths [5] = '{Key128, Key192, Key256, Key384, Key512};
+138: 
+139:   localparam int SelKeySize = (AppKeyW == 128) ? 0 :
+140:                               (AppKeyW == 192) ? 1 :
+141:                               (AppKeyW == 256) ? 2 :
+142:                               (AppKeyW == 384) ? 3 :
+143:                               (AppKeyW == 512) ? 4 : 0 ;
+144:   localparam int SelDigSize = (AppDigestW == 128) ? 0 :
+145:                               (AppDigestW == 192) ? 1 :
+146:                               (AppDigestW == 256) ? 2 :
+147:                               (AppDigestW == 384) ? 3 :
+148:                               (AppDigestW == 512) ? 4 : 0 ;
+149:   localparam key_len_e SideloadedKey = KeyLengths[SelKeySize];
+150: 
+151:   // Define right_encode(outlen) value here
+152:   // Look at kmac_pkg::key_len_e for the kinds of key size
+153:   //
+154:   // These values should be exactly the same as the key length encodings
+155:   // in kmac_core.sv, with the only difference being that the byte representing
+156:   // the byte-length of the encoded value is in the MSB position due to right encoding
+157:   // instead of in the LSB position (left encoding).
+158:   localparam int OutLenW = 24;
+159:   localparam logic [OutLenW-1:0] EncodedOutLen [5]= '{
+160:     24'h 0001_80, // Key128
+161:     24'h 0001_C0, // Key192
+162:     24'h 02_0001, // Key256
+163:     24'h 02_8001, // Key384
+164:     24'h 02_0002  // Key512
+165:   };
+166: 
+167:   localparam logic [OutLenW-1:0] EncodedOutLenMask [5] = '{
+168:     24'h 00FFFF, // Key128,
+169:     24'h 00FFFF, // Key192
+170:     24'h FFFFFF, // Key256
+171:     24'h FFFFFF, // Key384
+172:     24'h FFFFFF  // Key512
+173:   };
+174: 
+175:   // Encoding generated with:
+176:   // $ ./util/design/sparse-fsm-encode.py -d 3 -m 14 -n 10 \
+177:   //     -s 2454278799 --language=sv
+178:   //
+179:   // Hamming distance histogram:
+180:   //
+181:   //  0: --
+182:   //  1: --
+183:   //  2: --
+184:   //  3: |||||||||| (14.29%)
+185:   //  4: |||||||||||||||||||| (27.47%)
+186:   //  5: ||||||||||||| (18.68%)
+187:   //  6: |||||||||||||||| (21.98%)
+188:   //  7: |||||||| (10.99%)
+189:   //  8: |||| (6.59%)
+190:   //  9: --
+191:   // 10: --
+192:   //
+193:   // Minimum Hamming distance: 3
+194:   // Maximum Hamming distance: 8
+195:   // Minimum Hamming weight: 3
+196:   // Maximum Hamming weight: 8
+197:   //
+198:   localparam int StateWidth = 10;
+199:   typedef enum logic [StateWidth-1:0] {
+200:     StIdle = 10'b1010111110,
+201: 
+202:     // Application operation.
+203:     //
+204:     // if start request comes from an App first, until the operation ends by the
+205:     // requested App, all operations are granted to the specific App. SW
+206:     // requests and other Apps requests will be ignored.
+207:     //
+208:     // App interface does not have control signals. When first data valid occurs
+209:     // from an App, this logic asserts the start command to the downstream. When
+210:     // last beat pulse comes, this logic asserts the process to downstream
+211:     // (after the transaction is accepted regardless of partial writes or not)
+212:     // When absorbed by SHA3 core, the logic sends digest to the requested App
+213:     // and right next cycle, it triggers done command to downstream.
+214: 
+215:     // In StAppCfg state, it latches the cfg from AppCfg parameter to determine
+216:     // the kmac_mode, sha3_mode, keccak strength.
+217:     StAppCfg = 10'b1010101101,
+218: 
+219:     StAppMsg = 10'b1110001011,
+220: 
+221:     // In StKeyOutLen, this module pushes encoded outlen to the MSG_FIFO.
+222:     // Assume the length is 256 bit, the data will be 48'h 02_0100
+223:     StAppOutLen  = 10'b1010011000,
+224:     StAppProcess = 10'b1110110010,
+225:     StAppWait    = 10'b1001010000,
+226: 
+227:     // SW Controlled
+228:     // If start request comes from SW first, until the operation ends, all
+229:     // requests from KeyMgr will be discarded.
+230:     StSw = 10'b0010111011,
+231: 
+232:     // Error KeyNotValid
+233:     // When KeyMgr operates, the secret key is not ready yet.
+234:     StKeyMgrErrKeyNotValid = 10'b0111011111,
+235: 
+236:     StError = 10'b1110010111,
+237:     StErrorAwaitSw = 10'b0110001100,
+238:     StErrorAwaitApp = 10'b1011100000,
+239:     StErrorWaitAbsorbed = 10'b0010100100,
+240:     StErrorServiceRejected = 10'b1101000111,
+241: 
+242:     // This state is used for terminal errors
+243:     StTerminalError = 10'b0101110110
+244:   } st_e;
+245: 
+246:   /////////////
+247:   // Signals //
+248:   /////////////
+249: 
+250:   st_e st, st_d;
+251: 
+252:   logic keymgr_key_used;
+253: 
+254:   // app_rsp_t signals
+255:   // The state machine controls mux selection, which controls the ready signal
+256:   // the other responses are controled in separate logic. So define the signals
+257:   // here and merge them to the response.
+258:   logic app_data_ready, fsm_data_ready;
+259:   logic app_digest_done, fsm_digest_done_q, fsm_digest_done_d;
+260:   logic [AppDigestW-1:0] app_digest [2];
+261: 
+262:   // One more slot for value NumAppIntf. It is the value when no app intf is
+263:   // chosen.
+264:   localparam int unsigned AppIdxW = $clog2(NumAppIntf);
+265: 
+266:   // app_id indicates, which app interface was chosen. various logic use this
+267:   // value to get the config or return the data.
+268:   logic [AppIdxW-1:0] app_id, app_id_d;
+269:   logic               clr_appid, set_appid;
+270: 
+271:   // Output length
+272:   logic [OutLenW-1:0] encoded_outlen, encoded_outlen_mask;
+273: 
+274:   // state output
+275:   // Mux selection signal
+276:   app_mux_sel_e mux_sel;
+277:   app_mux_sel_e mux_sel_buf_output;
+278:   app_mux_sel_e mux_sel_buf_err_check;
+279:   app_mux_sel_e mux_sel_buf_kmac;
+280: 
+281:   // Error checking logic
+282: 
+283:   kmac_pkg::err_t fsm_err, mux_err;
+284: 
+285:   logic service_rejected_error;
+286:   logic service_rejected_error_set, service_rejected_error_clr;
+287:   logic err_during_sw_d, err_during_sw_q;
+288: 
+289:   always_ff @(posedge clk_i or negedge rst_ni) begin
+290:     if (!rst_ni)                         service_rejected_error <= 1'b 0;
+291:     else if (service_rejected_error_set) service_rejected_error <= 1'b 1;
+292:     else if (service_rejected_error_clr) service_rejected_error <= 1'b 0;
+293:   end
+294: 
+295:   ////////////////////////////
+296:   // Application Mux/ Demux //
+297:   ////////////////////////////
+298: 
+299: 
+300:   // Processing return data.
+301:   // sends to only selected app intf.
+302:   // clear digest right after done to not leak info to other interface
+303:   always_comb begin
+304:     for (int unsigned i = 0 ; i < NumAppIntf ; i++) begin
+305:       if (i == app_id) begin
+306:         app_o[i] = '{
+307:           ready:         app_data_ready | fsm_data_ready,
+308:           done:          app_digest_done | fsm_digest_done_q,
+309:           digest_share0: app_digest[0],
+310:           digest_share1: app_digest[1],
+311:           // if fsm asserts done, should be an error case.
+312:           error:         error_i | fsm_digest_done_q | sparse_fsm_error_o
+313:                          | service_rejected_error
+314:         };
+315:       end else begin
+316:         app_o[i] = '{
+317:           ready: 1'b 0,
+318:           done:  1'b 0,
+319:           digest_share0: '0,
+320:           digest_share1: '0,
+321:           error: 1'b 0
+322:         };
+323:       end
+324:     end // for {i, NumAppIntf, i++}
+325:   end // aiways_comb
+326: 
+327:   // app_id latch
+328:   always_ff @(posedge clk_i or negedge rst_ni) begin
+329:     if (!rst_ni) app_id <= AppIdxW'(0) ; // Do not select any
+330:     else if (clr_appid) app_id <= AppIdxW'(0);
+331:     else if (set_appid) app_id <= app_id_d;
+332:   end
+333: 
+334:   // app_id selection as of now, app_id uses Priority. The assumption is that
+335:   //  the request normally does not collide. (ROM_CTRL activates very early
+336:   //  stage at the boot sequence)
+337:   //
+338:   //  If this assumption is not true, consider RR arbiter.
+339: 
+340:   // Prep for arbiter
+341:   logic [NumAppIntf-1:0] app_reqs;
+342:   logic [NumAppIntf-1:0] unused_app_gnts;
+343:   logic [$clog2(NumAppIntf)-1:0] arb_idx;
+344:   logic arb_valid;
+345:   logic arb_ready;
+346: 
+347:   always_comb begin
+348:     app_reqs = '0;
+349:     for (int unsigned i = 0 ; i < NumAppIntf ; i++) begin
+350:       app_reqs[i] = app_i[i].valid;
+351:     end
+352:   end
+353: 
+354:   prim_arbiter_fixed #(
+355:     .N (NumAppIntf),
+356:     .DW(1),
+357:     .EnDataPort(1'b 0)
+358:   ) u_appid_arb (
+359:     .clk_i,
+360:     .rst_ni,
+361: 
+362:     .req_i  (app_reqs),
+363:     .data_i ('{default:'0}),
+364:     .gnt_o  (unused_app_gnts),
+365:     .idx_o  (arb_idx),
+366: 
+367:     .valid_o (arb_valid),
+368:     .data_o  (), // not used
+369:     .ready_i (arb_ready)
+370:   );
+371: 
+372:   assign app_id_d = AppIdxW'(arb_idx);
+373:   assign arb_ready = set_appid;
+374: 
+375:   always_ff @(posedge clk_i or negedge rst_ni) begin
+376:     if (!rst_ni) fsm_digest_done_q <= 1'b 0;
+377:     else         fsm_digest_done_q <= fsm_digest_done_d;
+378:   end
+379: 
+380:   /////////
+381:   // FSM //
+382:   /////////
+383: 
+384:   // State register
+385:   `PRIM_FLOP_SPARSE_FSM(u_state_regs, st_d, st, st_e, StIdle)
+386: 
+387:   // Create a lint error to reduce the risk of accidentally enabling this feature.
+388:   `ASSERT_STATIC_LINT_ERROR(KmacSecIdleAcceptSwMsgNonDefault, SecIdleAcceptSwMsg == 0)
+389: 
+390:   // Next State & output logic
+391:   // SEC_CM: FSM.SPARSE
+392:   always_comb begin
+393:     st_d = st;
+394: 
+395:     mux_sel = SecIdleAcceptSwMsg ? SelSw : SelNone;
+396: 
+397:     // app_id control
+398:     set_appid = 1'b 0;
+399:     clr_appid = 1'b 0;
+400: 
+401:     // Commands
+402:     cmd_o = CmdNone;
+403: 
+404:     // Software output
+405:     absorbed_o = prim_mubi_pkg::MuBi4False;
+406: 
+407:     // Error
+408:     fsm_err = '{valid: 1'b 0, code: ErrNone, info: '0};
+409:     sparse_fsm_error_o = 1'b 0;
+410: 
+411:     clear_after_error_o = prim_mubi_pkg::MuBi4False;
+412: 
+413:     service_rejected_error_set = 1'b 0;
+414:     service_rejected_error_clr = 1'b 0;
+415: 
+416:     // If error happens, FSM asserts data ready but discard incoming msg
+417:     fsm_data_ready = 1'b 0;
+418:     fsm_digest_done_d = 1'b 0;
+419: 
+420:     unique case (st)
+421:       StIdle: begin
+422:         if (arb_valid) begin
+423:           st_d = StAppCfg;
+424: 
+425:           // choose app_id
+426:           set_appid = 1'b 1;
+427:         end else if (sw_cmd_i == CmdStart) begin
+428:           st_d = StSw;
+429:           // Software initiates the sequence
+430:           cmd_o = CmdStart;
+431:         end else begin
+432:           st_d = StIdle;
+433:         end
+434:       end
+435: 
+436:       StAppCfg: begin
+437:         if (AppCfg[app_id].Mode == AppKMAC &&
+438:           prim_mubi_pkg::mubi4_test_false_strict(entropy_ready_i)) begin
+439:           // Check if the entropy is not configured but it is needed in
+440:           // `AppCfg[app_id]` (KMAC mode).
+441:           //
+442:           // SW is not properly configured, report and not request Hashing
+443:           // Return the app with errors
+444:           st_d = StError;
+445: 
+446:           service_rejected_error_set = 1'b 1;
+447: 
+448:         end else begin
+449:           // As Cfg is stable now, it sends cmd
+450:           st_d = StAppMsg;
+451: 
+452:           // App initiates the data
+453:           cmd_o = CmdStart;
+454:         end
+455:       end
+456: 
+457:       StAppMsg: begin
+458:         mux_sel = SelApp;
+459:         if (app_i[app_id].valid && app_o[app_id].ready && app_i[app_id].last) begin
+460:           if (AppCfg[app_id].Mode == AppKMAC) begin
+461:             st_d = StAppOutLen;
+462:           end else begin
+463:             st_d = StAppProcess;
+464:           end
+465:         end else begin
+466:           st_d = StAppMsg;
+467:         end
+468:       end
+469: 
+470:       StAppOutLen: begin
+471:         mux_sel = SelOutLen;
+472: 
+473:         if (kmac_valid_o && kmac_ready_i) begin
+474:           st_d = StAppProcess;
+475:         end else begin
+476:           st_d = StAppOutLen;
+477:         end
+478:       end
+479: 
+480:       StAppProcess: begin
+481:         cmd_o = CmdProcess;
+482:         st_d = StAppWait;
+483:       end
+484: 
+485:       StAppWait: begin
+486:         if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i)) begin
+487:           // Send digest to KeyMgr and complete the op
+488:           st_d = StIdle;
+489:           cmd_o = CmdDone;
+490: 
+491:           clr_appid = 1'b 1;
+492:         end else begin
+493:           st_d = StAppWait;
+494:         end
+495:       end
+496: 
+497:       StSw: begin
+498:         mux_sel = SelSw;
+499: 
+500:         cmd_o = sw_cmd_i;
+501:         absorbed_o = absorbed_i;
+502: 
+503:         if (sw_cmd_i == CmdDone) begin
+504:           st_d = StIdle;
+505:         end else begin
+506:           st_d = StSw;
+507:         end
+508:       end
+509: 
+510:       StKeyMgrErrKeyNotValid: begin
+511:         st_d = StError;
+512: 
+513:         // As mux_sel is not set to SelApp, app_data_ready is still 0.
+514:         // This logic won't accept the requests from the selected App.
+515:         fsm_err.valid = 1'b 1;
+516:         fsm_err.code = ErrKeyNotValid;
+517:         fsm_err.info = 24'(app_id);
+518:       end
+519: 
+520:       StError: begin
+521:         // In this state, the state machine flush out the request
+522:         st_d = StError;
+523: 
+524:         // Absorb data on the app interface.
+525:         fsm_data_ready = ~err_during_sw_q;
+526: 
+527:         // Next step depends on two conditions:
+528:         // 1) Error being processed by SW
+529:         // 2) Last data provided from the app interface (so that the app interface is completely)
+530:         //    drained.  If the error occurred during a SW operation, the app interface is not
+531:         //    involved, so this condition gets skipped.
+532:         unique case ({err_processed_i,
+533:                       (app_i[app_id].valid && app_i[app_id].last) || err_during_sw_q})
+534:           2'b00: begin
+535:             // Error not processed by SW and not last data from app interface -> keep current state.
+536:             st_d = StError;
+537:           end
+538:           2'b01: begin
+539:             // Error not processed by SW but last data from app interface:
+540:             // 1. Send garbage digest to the app interface (in the next cycle) to complete the
+541:             // transaction.
+542:             fsm_digest_done_d = ~err_during_sw_q;
+543:             if (service_rejected_error) begin
+544:               // 2.a) Service was rejected because an app interface tried to configure KMAC while no
+545:               // entropy was available. It is assumed that SW is not loaded yet, so don't wait for
+546:               // SW to process the error. The last data from the app interface has now arrived, but
+547:               // we don't need to wait for the SHA3 core to have absorbed it because the data never
+548:               // entered the SHA3 core: the request from the app interface was terminated during the
+549:               // configuration phase.
+550:               st_d = StErrorServiceRejected;
+551:             end else begin
+552:               // 2.b) If service was not rejected, wait for SW to process the error.
+553:               st_d = StErrorAwaitSw;
+554:             end
+555:           end
+556:           2'b10: begin
+557:             // Error processed by SW but not last data from app interface -> wait for app interface.
+558:             st_d = StErrorAwaitApp;
+559:           end
+560:           2'b11: begin
+561:             // Error processed by SW and last data from app interface:
+562:             // Send garbage digest to the app interface (in the next cycle) to complete the
+563:             // transaction.
+564:             fsm_digest_done_d = ~err_during_sw_q;
+565:             // Flush the message FIFO and let the SHA3 engine compute a digest (which won't be used
+566:             // but serves to bring the SHA3 engine back to the idle state).
+567:             cmd_o = CmdProcess;
+568:             st_d = StErrorWaitAbsorbed;
+569:           end
+570:           default: st_d = StError;
+571:         endcase
+572:       end
+573: 
+574:       StErrorAwaitSw: begin
+575:         // Just wait for SW to process the error.
+576:         if (err_processed_i) begin
+577:           // Flush the message FIFO and let the SHA3 engine compute a digest (which won't be used
+578:           // but serves to bring the SHA3 engine back to the idle state).
+579:           cmd_o = CmdProcess;
+580:           st_d = StErrorWaitAbsorbed;
+581:         end
+582:       end
+583: 
+584:       StErrorAwaitApp: begin
+585:         // Keep absorbing data on the app interface until the last data.
+586:         fsm_data_ready = 1'b1;
+587:         if (app_i[app_id].valid && app_i[app_id].last) begin
+588:           // Send garbage digest to the app interface (in the next cycle) to complete the
+589:           // transaction.
+590:           fsm_digest_done_d = 1'b1;
+591:           // Flush the message FIFO and let the SHA3 engine compute a digest (which won't be used
+592:           // but serves to bring the SHA3 engine back to the idle state).
+593:           cmd_o = CmdProcess;
+594:           st_d = StErrorWaitAbsorbed;
+595:         end
+596:       end
+597: 
+598:       StErrorWaitAbsorbed: begin
+599:         if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i)) begin
+600:           // Clear internal variables, send done command, and return to idle.
+601:           clr_appid = 1'b1;
+602:           clear_after_error_o = prim_mubi_pkg::MuBi4True;
+603:           service_rejected_error_clr = 1'b1;
+604:           cmd_o = CmdDone;
+605:           st_d = StIdle;
+606:           // If error originated from SW, report 'absorbed' to SW.
+607:           if (err_during_sw_q) begin
+608:             absorbed_o = prim_mubi_pkg::MuBi4True;
+609:           end
+610:         end
+611:       end
+612: 
+613:       StErrorServiceRejected: begin
+614:         // Clear internal variables and return to idle.
+615:         clr_appid = 1'b1;
+616:         clear_after_error_o = prim_mubi_pkg::MuBi4True;
+617:         service_rejected_error_clr = 1'b1;
+618:         st_d = StIdle;
+619:       end
+620: 
+621:       StTerminalError: begin
+622:         // this state is terminal
+623:         st_d = st;
+624:         sparse_fsm_error_o = 1'b 1;
+625:         fsm_err.valid = 1'b 1;
+626:         fsm_err.code = ErrFatalError;
+627:         fsm_err.info = 24'(app_id);
+628:       end
+629: 
+630:       default: begin
+631:         st_d = StTerminalError;
+632:         sparse_fsm_error_o = 1'b 1;
+633:       end
+634:     endcase
+635: 
+636:     // SEC_CM: FSM.GLOBAL_ESC, FSM.LOCAL_ESC
+637:     // Unconditionally jump into the terminal error state
+638:     // if the life cycle controller triggers an escalation.
+639:     if (lc_ctrl_pkg::lc_tx_test_true_loose(lc_escalate_en_i)) begin
+640:       st_d = StTerminalError;
+641:     end
+642: 
+643:     // Handle errors outside the terminal error state.
+644:     if (st_d != StTerminalError) begin
+645:       // Key from keymgr is used but not valid, so abort into the invalid key error state.
+646:       if (keymgr_key_used && !keymgr_key_i.valid) begin
+647:         st_d = StKeyMgrErrKeyNotValid;
+648:       end
+649:     end
+650:   end
+651: 
+652:   // Track errors occurring in SW mode.
+653:   assign err_during_sw_d =
+654:       (mux_sel == SelSw) && (st_d inside {StError, StKeyMgrErrKeyNotValid}) ? 1'b1 : // set
+655:       (st_d == StIdle)                                                      ? 1'b0 : // clear
+656:       err_during_sw_q;                                                               // hold
+657: 
+658:   always_ff @(posedge clk_i or negedge rst_ni) begin
+659:     if (!rst_ni) begin
+660:       err_during_sw_q <= 1'b0;
+661:     end else begin
+662:       err_during_sw_q <= err_during_sw_d;
+663:     end
+664:   end
+665: 
+666:   //////////////
+667:   // Datapath //
+668:   //////////////
+669: 
+670:   // Encoded output length
+671:   assign encoded_outlen      = EncodedOutLen[SelDigSize];
+672:   assign encoded_outlen_mask = EncodedOutLenMask[SelKeySize];
+673: 
+674:   // Data mux
+675:   // This is the main part of the KeyMgr interface logic.
+676:   // The FSM selects KeyMgr interface in a cycle after it receives the first
+677:   // valid data from KeyMgr. The ready signal to the KeyMgr data interface
+678:   // represents the MSG_FIFO ready, only when it is in StKeyMgrMsg state.
+679:   // After KeyMgr sends last beat, the kmac interface (to MSG_FIFO) is switched
+680:   // to OutLen. OutLen is pre-defined values. See `EncodeOutLen` parameter above.
+681:   always_comb begin
+682:     app_data_ready = 1'b 0;
+683:     sw_ready_o = 1'b 1;
+684: 
+685:     kmac_valid_o = 1'b 0;
+686:     kmac_data_o = '0;
+687:     kmac_mask_o = '0;
+688: 
+689:     unique case (mux_sel_buf_kmac)
+690:       SelApp: begin
+691:         // app_id is valid at this time
+692:         kmac_valid_o = app_i[app_id].valid;
+693:         kmac_data_o  = app_i[app_id].data;
+694:         // Expand strb to bits. prim_packer inside MSG_FIFO accepts the bit masks
+695:         for (int i = 0 ; i < $bits(app_i[app_id].strb) ; i++) begin
+696:           kmac_mask_o[8*i+:8] = {8{app_i[app_id].strb[i]}};
+697:         end
+698:         app_data_ready = kmac_ready_i;
+699:       end
+700: 
+701:       SelOutLen: begin
+702:         // Write encoded output length value
+703:         kmac_valid_o = 1'b 1; // always write
+704:         kmac_data_o  = MsgWidth'(encoded_outlen);
+705:         kmac_mask_o  = MsgWidth'(encoded_outlen_mask);
+706:       end
+707: 
+708:       SelSw: begin
+709:         kmac_valid_o = sw_valid_i;
+710:         kmac_data_o  = sw_data_i ;
+711:         kmac_mask_o  = sw_mask_i ;
+712:         sw_ready_o   = kmac_ready_i ;
+713:       end
+714: 
+715:       default: begin // Incl. SelNone
+716:         kmac_valid_o = 1'b 0;
+717:         kmac_data_o = '0;
+718:         kmac_mask_o = '0;
+719:       end
+720: 
+721:     endcase
+722:   end
+723: 
+724:   // Error checking for Mux
+725:   always_comb begin
+726:     mux_err = '{valid: 1'b 0, code: ErrNone, info: '0};
+727: 
+728:     if (mux_sel_buf_err_check != SelSw && sw_valid_i) begin
+729:       // If SW writes message into FIFO
+730:       mux_err = '{
+731:         valid: 1'b 1,
+732:         code: ErrSwPushedMsgFifo,
+733:         info: 24'({8'h 00, 8'(st), 8'(mux_sel_buf_err_check)})
+734:       };
+735:     end else if (app_active_o && sw_cmd_i != CmdNone) begin
+736:       // If SW issues command except start
+737:       mux_err = '{
+738:         valid: 1'b 1,
+739:         code: ErrSwIssuedCmdInAppActive,
+740:         info: 24'(sw_cmd_i)
+741:       };
+742:     end
+743:   end
+744: 
+745:   logic [AppMuxWidth-1:0] mux_sel_buf_output_logic;
+746:   assign mux_sel_buf_output = app_mux_sel_e'(mux_sel_buf_output_logic);
+747: 
+748:   // SEC_CM: LOGIC.INTEGRITY
+749:   prim_sec_anchor_buf #(
+750:    .Width(AppMuxWidth)
+751:   ) u_prim_buf_state_output_sel (
+752:     .in_i(mux_sel),
+753:     .out_o(mux_sel_buf_output_logic)
+754:   );
+755: 
+756:   logic [AppMuxWidth-1:0] mux_sel_buf_err_check_logic;
+757:   assign mux_sel_buf_err_check = app_mux_sel_e'(mux_sel_buf_err_check_logic);
+758: 
+759:   // SEC_CM: LOGIC.INTEGRITY
+760:   prim_sec_anchor_buf #(
+761:    .Width(AppMuxWidth)
+762:   ) u_prim_buf_state_err_check (
+763:     .in_i(mux_sel),
+764:     .out_o(mux_sel_buf_err_check_logic)
+765:   );
+766: 
+767:   logic [AppMuxWidth-1:0] mux_sel_buf_kmac_logic;
+768:   assign mux_sel_buf_kmac = app_mux_sel_e'(mux_sel_buf_kmac_logic);
+769: 
+770:   // SEC_CM: LOGIC.INTEGRITY
+771:   prim_sec_anchor_buf #(
+772:    .Width(AppMuxWidth)
+773:   ) u_prim_buf_state_kmac_sel (
+774:     .in_i(mux_sel),
+775:     .out_o(mux_sel_buf_kmac_logic)
+776:   );
+777: 
+778:   // SEC_CM: LOGIC.INTEGRITY
+779:   logic reg_state_valid;
+780:   prim_sec_anchor_buf #(
+781:    .Width(1)
+782:   ) u_prim_buf_state_output_valid (
+783:     .in_i(reg_state_valid),
+784:     .out_o(reg_state_valid_o)
+785:   );
+786: 
+787:   // Keccak state Demux
+788:   // Keccak state --> Register output is enabled when state is in StSw
+789:   always_comb begin
+790:     reg_state_valid = 1'b 0;
+791:     reg_state_o = '{default:'0};
+792:     if ((mux_sel_buf_output == SelSw) &&
+793:          lc_ctrl_pkg::lc_tx_test_false_strict(lc_escalate_en_i)) begin
+794:       reg_state_valid = keccak_state_valid_i;
+795:       reg_state_o = keccak_state_i;
+796:       // If key is sideloaded and KMAC is SW initiated
+797:       // hide the capacity from SW by zeroing (see #17508)
+798:       if (keymgr_key_en_i) begin
+799:         for (int i = 0; i < Share; i++) begin
+800:           unique case (reg_keccak_strength_i)
+801:             L128: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L128]] = '0;
+802:             L224: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L224]] = '0;
+803:             L256: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L256]] = '0;
+804:             L384: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L384]] = '0;
+805:             L512: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L512]] = '0;
+806:             default: reg_state_o[i] = '0;
+807:           endcase
+808:         end
+809:       end
+810:     end
+811:   end
+812: 
+813:   // Keccak state --> KeyMgr
+814:   always_comb begin
+815:     app_digest_done = 1'b 0;
+816:     app_digest = '{default:'0};
+817:     if (st == StAppWait && prim_mubi_pkg::mubi4_test_true_strict(absorbed_i) &&
+818:        lc_ctrl_pkg::lc_tx_test_false_strict(lc_escalate_en_i)) begin
+819:       // SHA3 engine has calculated the hash. Return the data to KeyMgr
+820:       app_digest_done = 1'b 1;
+821: 
+822:       // digest has always 2 entries. If !EnMasking, second is tied to 0.
+823:       for (int i = 0 ; i < Share ; i++) begin
+824:         // Return the portion of state.
+825:         app_digest[i] = keccak_state_i[i][AppDigestW-1:0];
+826:       end
+827:     end
+828:   end
+829: 
+830: 
+831:   // Secret Key Mux
+832: 
+833:   // Prepare merged key if EnMasking is not set.
+834:   // Combine share keys into unpacked array for logic below to assign easily.
+835:   // SEC_CM: KEY.SIDELOAD
+836:   logic [MaxKeyLen-1:0] keymgr_key [Share];
+837:   if (EnMasking == 1) begin : g_masked_key
+838:     for (genvar i = 0; i < Share; i++) begin : gen_key_pad
+839:       assign keymgr_key[i] =  {(MaxKeyLen-KeyMgrKeyW)'(0), keymgr_key_i.key[i]};
+840:     end
+841:   end else begin : g_unmasked_key
+842:     always_comb begin
+843:       keymgr_key[0] = '0;
+844:       for (int i = 0; i < keymgr_pkg::Shares; i++) begin
+845:         keymgr_key[0][KeyMgrKeyW-1:0] ^= keymgr_key_i.key[i];
+846:       end
+847:     end
+848:   end
+849: 
+850:   // Sideloaded key manage: Keep use sideloaded key for KMAC AppIntf until the
+851:   // hashing operation is finished.
+852:   always_comb begin
+853:     keymgr_key_used = 1'b0;
+854:     key_len_o  = reg_key_len_i;
+855:     for (int i = 0 ; i < Share; i++) begin
+856:       key_data_o[i] = reg_key_data_i[i];
+857:     end
+858:     // The key is considered invalid in all cases that are not listed below (which includes idle and
+859:     // error states).
+860:     key_valid_o = 1'b0;
+861: 
+862:     unique case (st)
+863:       StAppCfg, StAppMsg, StAppOutLen, StAppProcess, StAppWait: begin
+864:         // Key from keymgr is actually used if the current HW app interface does *keyed* MAC.
+865:         keymgr_key_used = AppCfg[app_id].Mode == AppKMAC;
+866:         key_len_o = SideloadedKey;
+867:         for (int i = 0 ; i < Share; i++) begin
+868:           key_data_o[i] = keymgr_key[i];
+869:         end
+870:         // Key is valid if the current HW app interface does *keyed* MAC and the key provided by
+871:         // keymgr is valid.
+872:         key_valid_o = keymgr_key_used && keymgr_key_i.valid;
+873:       end
+874: 
+875:       StSw: begin
+876:         if (keymgr_key_en_i) begin
+877:           // Key from keymgr is actually used if *keyed* MAC is enabled.
+878:           keymgr_key_used = kmac_en_o;
+879:           key_len_o = SideloadedKey;
+880:           for (int i = 0 ; i < Share; i++) begin
+881:             key_data_o[i] = keymgr_key[i];
+882:           end
+883:         end
+884:         // Key is valid if SW does *keyed* MAC and ...
+885:         if (kmac_en_o) begin
+886:           if (!keymgr_key_en_i) begin
+887:             // ... it uses the key from kmac's CSR, or ...
+888:             key_valid_o = 1'b1;
+889:           end else begin
+890:             // ... it uses the key provided by keymgr and that one is valid.
+891:             key_valid_o = keymgr_key_i.valid;
+892:           end
+893:         end
+894:       end
+895: 
+896:       default: ;
+897:     endcase
+898:   end
+899: 
+900:   // Prefix Demux
+901:   // For SW, always prefix register.
+902:   // For App intf, check PrefixMode cfg and if 1, use Prefix cfg.
+903:   always_comb begin
+904:     sha3_prefix_o = '0;
+905: 
+906:     unique case (st)
+907:       StAppCfg, StAppMsg, StAppOutLen, StAppProcess, StAppWait: begin
+908:         // Check app intf cfg
+909:         for (int unsigned i = 0 ; i < NumAppIntf ; i++) begin
+910:           if (app_id == i) begin
+911:             if (AppCfg[i].PrefixMode == 1'b 0) begin
+912:               sha3_prefix_o = reg_prefix_i;
+913:             end else begin
+914:               sha3_prefix_o = AppCfg[i].Prefix;
+915:             end
+916:           end
+917:         end
+918:       end
+919: 
+920:       StSw: begin
+921:         sha3_prefix_o = reg_prefix_i;
+922:       end
+923: 
+924:       default: begin
+925:         sha3_prefix_o = reg_prefix_i;
+926:       end
+927:     endcase
+928:   end
+929: 
+930:   // KMAC en / SHA3 mode / Strength
+931:   //  by default, it uses reg cfg. When app intf reqs come, it uses AppCfg.
+932:   always_ff @(posedge clk_i or negedge rst_ni) begin
+933:     if (!rst_ni) begin
+934:       kmac_en_o         <= 1'b 0;
+935:       sha3_mode_o       <= sha3_pkg::Sha3;
+936:       keccak_strength_o <= sha3_pkg::L256;
+937:     end else if (clr_appid) begin
+938:       // As App completed, latch reg value
+939:       kmac_en_o         <= reg_kmac_en_i;
+940:       sha3_mode_o       <= reg_sha3_mode_i;
+941:       keccak_strength_o <= reg_keccak_strength_i;
+942:     end else if (set_appid) begin
+943:       kmac_en_o         <= AppCfg[arb_idx].Mode == AppKMAC ? 1'b 1 : 1'b 0;
+944:       sha3_mode_o       <= AppCfg[arb_idx].Mode == AppSHA3
+945:                            ? sha3_pkg::Sha3 : sha3_pkg::CShake;
+946:       keccak_strength_o <= AppCfg[arb_idx].Strength ;
+947:     end else if (st == StIdle) begin
+948:       kmac_en_o         <= reg_kmac_en_i;
+949:       sha3_mode_o       <= reg_sha3_mode_i;
+950:       keccak_strength_o <= reg_keccak_strength_i;
+951:     end
+952:   end
+953: 
+954:   // Status
+955:   assign app_active_o = (st inside {StAppCfg, StAppMsg, StAppOutLen,
+956:                                     StAppProcess, StAppWait});
+957: 
+958:   // Error Reporting ==========================================================
+959:   always_comb begin
+960:     priority casez ({fsm_err.valid, mux_err.valid})
+961:       2'b ?1: error_o = mux_err;
+962:       2'b 10: error_o = fsm_err;
+963:       default: error_o = '{valid: 1'b0, code: ErrNone, info: '0};
+964:     endcase
+965:   end
+966: 
+967:   ////////////////
+968:   // Assertions //
+969:   ////////////////
+970: 
+971:   // KeyMgr sideload key and the digest should be in the Key Length value
+972:   `ASSERT_INIT(SideloadKeySameToDigest_A, KeyMgrKeyW <= AppDigestW)
+973:   `ASSERT_INIT(AppIntfInRange_A, AppDigestW inside {128, 192, 256, 384, 512})
+974: 
+975:   // Issue(#13655): Having a coverage that sideload keylen and CSR keylen are
+976:   // different.
+977:   `COVER(AppIntfUseDifferentSizeKey_C,
+978:     (st == StAppCfg && kmac_en_o) |-> reg_key_len_i != SideloadedKey)
+979: 
+980: endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  run_similar_bug_agent (call_gwG5uFBD42bLw3iUpunTc6hk)
+ Call ID: call_gwG5uFBD42bLw3iUpunTc6hk
+  Args:
+    bug: if (mux_sel_buf_err_check != SelSw && sw_valid_i) begin
+    file_path: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_app.sv
+================================= Tool Message =================================
+Name: run_similar_bug_agent
+
+I apologize for the error. Let me manually analyze the code for similar bug patterns.
+
+I found the exact bug pattern you mentioned on line 728:
+
+```systemverilog
+if (mux_sel_buf_err_check != SelSw && sw_valid_i) begin
+```
+
+This is the same condition you highlighted. It appears to be an error checking logic that detects when software is trying to write to the message FIFO when it's not in the expected state. 
+
+The code block continues with error reporting:
+```systemverilog
+mux_err = '{
+  valid: 1'b 1,
+  code: ErrSwPushedMsgFifo,
+  info: 24'({8'h 00, 8'(st), 8'(mux_sel_buf_err_check)})
+};
+```
+
+So the buggy lines are:
+- Line 728-735: The error checking condition and error reporting logic for software pushing to the message FIFO when not in the correct state.
+
+This appears to be an intentional error detection mechanism, but the specific implementation might need careful review to ensure it correctly handles all possible state transitions and mux selections.
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_idO8zLDpyfqD5dPi0UDYWaDj)
+ Call ID: call_idO8zLDpyfqD5dPi0UDYWaDj
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_app.sv
+    top_module: kmac_app
+    security_objective: application interface isolation, privilege escalation, command injection
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+Based on the anomaly detection tool, the RTL code has the following sets of similar constructs grouped into clusters. There are no specific standalone anomalous lines flagged that would clearly indicate suspicious or unusual patterns.
+
+The clusters show typical assignments and synthesis-friendly coding styles including mux selection and encoded length derivations. These do not on their own suggest code anomalies.
+
+After reviewing the code and the detected clusters, here are security considerations regarding:
+
+- **Application Interface Isolation:**  
+  The module manages multiple application interfaces (NumAppIntf) with an arbiter and exclusive selection of the active interface (via app_id). The code ensures that only the selected app interface is granted access and the outputs to other interfaces are zeroed. This prevents data leakage between interfaces, indicating proper isolation mechanism.
+
+- **Privilege Escalation:**  
+  The state machine explicitly manages software and app initiated commands with exclusive states (e.g., StSw for SW, StAppCfg etc. for app). The lifecycle escalation input (lc_escalate_en_i) immediately forces the FSM into a terminal error state, preventing further operations during escalation. This mechanism helps protect against unauthorized privilege escalations due to lifecycle changes.
+
+- **Command Injection:**  
+  Inputs from software (sw_cmd_i, sw_valid_i, sw_data_i) and app interfaces (app_i) are carefully controlled through the FSM states. The design uses an arbiter to choose the app interface, and has error states to handle invalid conditions. Additionally, there are checks that reject software commands when the app interface is active and vice versa, reducing the risk of injecting unauthorized commands. The error handling FSM states handle invalid usage gracefully.
+
+No anomalous constructs that indicate direct security issues like unprotected inputs, unsafe state transitions or data leakage were found. The code uses buffers and registers for controlling mux selection and state variables securely.
+
+### Conclusion:
+
+- The RTL design includes proper mechanisms for application interface isolation, preventing cross-interface data leakage.
+- It has state machine based controls to avoid privilege escalation, handling lifecycle escalations securely.
+- Command injection attacks are mitigated by FSM control, proper arbitration, and error handling states that reject conflicting commands.
+- No anomalous or suspicious lines were flagged that represent a security vulnerability according to the anomaly detector output.
+
+The reviewed RTL design appears to be secure against application interface isolation breaches, privilege escalation, and command injection vulnerabilities given the current code excerpt.
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_o76GGDeK0hhsFqe8Z484lR3k)
+ Call ID: call_o76GGDeK0hhsFqe8Z484lR3k
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_core.sv
+    top_module: kmac_core
+    security_objective: FSM hardening, masking, key handling
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+Based on the assertion checking results, there are no verified security issues in the RTL. Let me explain the security features I found in the code and what my assertions were checking:
+
+### Security Features in the RTL:
+
+1. **FSM Hardening with Sparse Encoding**:
+   - The state machine uses sparse encoding with a minimum Hamming distance of 3
+   - This provides protection against fault injection attacks
+   - My `fsm_encoding_check` assertion verified that the state encoding maintains proper Hamming weight
+
+2. **Masking for Side-Channel Protection**:
+   - The module supports optional masking (controlled by `EnMasking` parameter)
+   - When enabled, it processes data in two shares to protect against side-channel attacks
+   - This is a standard countermeasure against power analysis attacks
+
+3. **Life Cycle Escalation Handling**:
+   - The design has proper handling of life cycle escalation signals
+   - When escalation is triggered, the FSM immediately transitions to a terminal error state
+   - My `lc_escalate_response` assertion verified this behavior
+
+4. **Key Protection**:
+   - The key is only exposed during the specific key processing state
+   - My `key_protection` assertion verified that key writing is only enabled in the appropriate state
+
+5. **Error Handling**:
+   - The FSM includes a terminal error state that is sticky (cannot be exited)
+   - Error indicators are properly set when in error states
+   - My `terminal_error_sticky` and `sparse_fsm_error_indicator` assertions verified this behavior
+
+6. **Redundant Counter**:
+   - The key index counter uses a hardened implementation (`prim_count`) with redundancy
+   - This protects against fault attacks on the counter
+
+All assertions passed, indicating that the security features are properly implemented. The KMAC core appears to have robust security measures for FSM hardening, masking for side-channel protection, and secure key handling.
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_TVMyQ2ZyXotzJIWTArldE8Lm)
+ Call ID: call_TVMyQ2ZyXotzJIWTArldE8Lm
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_core.sv
+    top_module: kmac_core
+    security_objective: FSM hardening, masking, key handling
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check for the kmac_core RTL module focusing on FSM hardening, masking, and key handling security has been completed. The relevant lint tags used were related to FSM usage, hard constants, and other FSM and coding style checks.
+
+The lint tool reported 5 errors, all under the tag "HardConst". These errors indicate that hard-coded constants are used in the code, specifically in the encoding of key lengths in the always_comb block around lines 317 to 321. The use of hard-coded constants is generally discouraged as it can lead to less flexible and potentially error-prone designs.
+
+No other security-related lint errors or warnings were reported, including no issues with FSM hardening or masking were flagged by the lint tool.
+
+Summary:
+- 5 errors related to hard-coded constants in key length encoding.
+- No FSM hardening or masking security issues detected by lint.
+- No key handling security issues flagged by lint.
+
+Recommendation:
+- Review the use of hard-coded constants in the encoding of key lengths and consider replacing them with parameterized or calculated values to improve code maintainability and security.
+- Although no FSM or masking issues were flagged, ensure that the FSM encoding and masking logic are reviewed manually for compliance with security best practices.
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_zs3IfYH580JPZavbbpcafg2n)
+ Call ID: call_zs3IfYH580JPZavbbpcafg2n
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_core.sv
+    top_module: kmac_core
+    security_objective: FSM hardening, masking, key handling
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+[{"id": "toolu_01Y68jJBchJfUkGMX1h9Rn1J", "input": {"security_issue": "side channel attacks in cryptographic hardware"}, "name": "llm_cwe_details_retriever_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_Y6bIRY8WzaLAFMdp4FXdClMQ)
+ Call ID: call_Y6bIRY8WzaLAFMdp4FXdClMQ
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_core.sv
+    top_module: kmac_core
+    security_objective: FSM hardening, masking, key handling
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+The anomaly detector tool has identified the following clusters of similar constructs. There are no explicit lines that stand out as anomalous or suspicious by themselves.
+
+Reviewing the code from a security perspective considering FSM hardening, masking, and key handling:
+
+1. FSM Hardening:
+   - The FSM states are sparse encoded with a minimum Hamming distance of 3 providing inherent protection against single-bit errors.
+   - There is a dedicated terminal error state, with transitions to this state triggered by lifecycle escalation signals, which is a good design practice.
+   - The code includes comments indicating security related annotations like SEC_CM marks.
+   - The FSM is designed to cleanly handle transitions and errors, which is consistent with good FSM hardening practices.
+
+2. Masking:
+   - Masking is enabled optionally via the EnMasking parameter.
+   - When masking is enabled (EnMasking=1), the design supports two shares to mask data, as seen in inputs and internal signals.
+   - Masking is applied to key encoding steps as well, ensuring that the secret key representation is protected.
+
+3. Key Handling:
+   - The secret key is handled carefully, with slicing and encoding properly implemented.
+   - There are stable assumptions and assertions for key validity and length stability.
+   - Key indices are hardened with prim_count module and any key index errors are flagged.
+   - The encoded key block concatenates key encoding and a padding, and slices it carefully to feed into the SHA3 core.
+   - The process signal is latched and controlled to prevent processing commands while writing keys, avoiding race conditions.
+
+Overall, the design follows good security practices for FSM hardening, masking, and key handling. There are no obvious security issues or anomalies detected by the tool.
+
+**Conclusion:**
+- No anomalous lines detected.
+- No security issues identified related to FSM hardening, masking, or key handling in the provided RTL code.
+================================== Ai Message ==================================
+Tool Calls:
+  run_assertions_checker_agent (call_BLchLMaurj3l5WcPJeWC3xSZ)
+ Call ID: call_BLchLMaurj3l5WcPJeWC3xSZ
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_msgfifo.sv
+    top_module: kmac_msgfifo
+    security_objective: FIFO masking, message integrity, privilege separation
+================================= Tool Message =================================
+Name: run_assertions_checker_agent
+
+Based on the assertion checker results, I've identified two security concerns in the RTL:
+
+1. **FIFO Masking Issue (assertion_mask_integrity)**: 
+   The assertion checking that `fifo_mask_i` is non-zero when masking is enabled failed. This indicates that the design allows zero masks when masking is enabled, which could lead to security vulnerabilities. When masking is enabled, a zero mask would effectively nullify the masking protection, potentially exposing sensitive data.
+
+2. **Message Processing During Flush (assertion_no_messages_during_flush)**:
+   The assertion verifying that no new messages are accepted during flush operations failed. This suggests that the design might allow new messages to be processed while a flush operation is in progress, which could lead to data corruption or security breaches. The RTL has an assumption (`MessageValid_a`) that should prevent this, but the formal verification shows this property can be violated.
+
+These issues could have significant security implications:
+
+- The masking issue could compromise the side-channel protection that masking is intended to provide, potentially exposing cryptographic operations to power analysis attacks.
+  
+- The message processing during flush issue could allow an attacker to inject messages during sensitive state transitions, potentially corrupting the cryptographic process or causing information leakage.
+
+The other assertions passed, indicating that:
+- Error reporting appears to be functioning correctly
+- The process-clear sequence is properly implemented
+- The FIFO security parameter is correctly configured when masking is enabled
+
+To address these security concerns, the RTL should be modified to:
+1. Ensure that when masking is enabled, the mask value is never zero
+2. Strengthen the implementation to prevent new messages from being accepted during flush operations, possibly by adding hardware enforcement rather than relying on assumptions
+================================== Ai Message ==================================
+Tool Calls:
+  run_linter_agent (call_mrvwMEg4FdIOR4P4u5jbvH8a)
+ Call ID: call_mrvwMEg4FdIOR4P4u5jbvH8a
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_msgfifo.sv
+    top_module: kmac_msgfifo
+    security_objective: FIFO masking, message integrity, privilege separation
+================================= Tool Message =================================
+Name: run_linter_agent
+
+The lint check results show two errors, but both are in submodules used by the top module kmac_msgfifo:
+
+1. SelfAssignment-ML error in prim_packer module (line 67 in prim_packer.sv):
+   - This indicates a suspicious self-assignment in the prim_packer module, which is used inside kmac_msgfifo.
+   - This could potentially affect the masking or integrity logic if the self-assignment causes incorrect behavior.
+
+2. STARC05-2.3.5.1 error in prim_fifo_sync module (line 72 in prim_fifo_sync.sv):
+   - This indicates a flip-flop with a fixed input value in the prim_fifo_sync module, which is instantiated as u_msgfifo in kmac_msgfifo.
+   - This could affect the FIFO behavior and possibly its security properties.
+
+No direct lint errors were reported in the kmac_msgfifo module itself related to FIFO masking, message integrity, or privilege separation.
+
+Summary:
+- The top-level kmac_msgfifo RTL does not show direct lint errors related to the queried security concerns.
+- However, the submodules prim_packer and prim_fifo_sync have lint errors that could impact security.
+- It is recommended to review and fix the issues in prim_packer and prim_fifo_sync modules to ensure FIFO masking and message integrity are correctly implemented.
+- Additionally, manual security review focusing on privilege separation and message integrity should be done as lint checks may not cover all security aspects.
+
+If you want, I can help analyze the submodules or assist with a manual security review of the kmac_msgfifo code.
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_uB9oP3v0unVa5bn2PjXYLAa6)
+ Call ID: call_uB9oP3v0unVa5bn2PjXYLAa6
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_msgfifo.sv
+    top_module: kmac_msgfifo
+    security_objective: FIFO masking, message integrity, privilege separation
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+[{"id": "toolu_01HHjFgZci3jMuoMbvVoYK9D", "input": {"security_issue": "hardware redundancy counter"}, "name": "llm_cwe_details_retriever_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_MY7M5h8kGWywwoGSsZ4UMgQv)
+ Call ID: call_MY7M5h8kGWywwoGSsZ4UMgQv
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_msgfifo.sv
+    top_module: kmac_msgfifo
+    security_objective: FIFO masking, message integrity, privilege separation
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+The anomaly detection tool identified one cluster of assignment statements which seem normal and consistent with expected FIFO and message interface signals connections. No anomalous lines were detected by the tool that stand out as irregular or suspicious in the design RTL provided.
+
+After manual review of the design, the code shows:
+- Use of EnMasking parameter to enable protection mechanisms in the packer and FIFO indicating a focus on message integrity.
+- FSM to safely flush and clear the FIFO ensuring no message bypass between process and clear signals, which is crucial for privilege separation and preventing stale messages.
+- Error signals from packer and FIFO indicating integrity errors show they have monitoring in place.
+- Assertions and assumptions on flush state and message validity indicate proper control flow and message integrity properties.
+
+Based on the anomaly clustering results and manual code inspection, no anomalous or suspect lines are identified that indicate security vulnerabilities related to FIFO masking, message integrity, or privilege separation. The design appears to implement these security aspects appropriately. 
+
+If you would like, I can provide a more detailed check of specific security properties or possible corner cases.
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_RrSDmEFSwPTvTEdRJanjhDNa)
+ Call ID: call_RrSDmEFSwPTvTEdRJanjhDNa
+  Args:
+    design_filepath: /home/XXXX-2/hackdate/hw/ip/kmac/rtl/kmac_reg_top.sv
+    top_module: kmac_reg_top
+    security_objective: register access control, privilege escalation, shadowed register integrity
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+Based on my analysis of the provided RTL code and the CWE information, I've identified several security concerns related to register access control, privilege escalation, and shadowed register integrity:
+
+## 1. Register Access Control Issues (CWE-1220)
+
+The RTL implements a register access control mechanism using the `cfg_regwen_qs` signal to gate write operations to various registers. This is evident in lines like:
+
+```verilog
+// Create REGWEN-gated WE signal
+logic cfg_shadowed_gated_we;
+assign cfg_shadowed_gated_we = cfg_shadowed_we & cfg_regwen_qs;
+```
+
+However, there are potential security concerns:
+
+1. **Insufficient Granularity**: The code uses a single `cfg_regwen_qs` signal to control write access to multiple security-sensitive registers, including key registers, configuration registers, and shadowed registers. This lacks the granularity recommended in CWE-1220, where different types of registers should have different access control mechanisms.
+
+2. **Socket-based Steering Logic**: The RTL uses a steering mechanism to route transactions:
+
+```verilog
+always_comb begin
+  reg_steer =
+      tl_i.a_address[AW-1:0] inside {[1024:1535]} ? 2'd0 :
+      tl_i.a_address[AW-1:0] inside {[2048:4095]} ? 2'd1 :
+      // Default set to register
+      2'd2;
+
+  // Override this in case of an integrity error
+  if (intg_err) begin
+    reg_steer = 2'd2;
+  end
+end
+```
+
+This steering logic could potentially be exploited if an attacker can manipulate address ranges to bypass intended access controls.
+
+## 2. Shadowed Register Integrity Issues (CWE-1283)
+
+The RTL implements shadowed registers for critical configuration settings, which is a good security practice. However, there are concerns:
+
+1. **Error Handling**: The code collects shadowed register errors:
+
+```verilog
+assign shadowed_storage_err_o = |{
+  cfg_shadowed_kmac_en_storage_err,
+  cfg_shadowed_kstrength_storage_err,
+  // ... other errors ...
+};
+```
+
+But it's not clear if these errors trigger immediate protective actions beyond setting an alert signal.
+
+2. **Shadow Register Reset**: The code implements separate reset signals for normal and shadowed registers:
+
+```verilog
+always_ff @(posedge clk_i or negedge rst_ni) begin
+  if (!rst_ni) begin
+    rst_done <= '0;
+  end else begin
+    rst_done <= 1'b1;
+  end
+end
+
+always_ff @(posedge clk_i or negedge rst_shadowed_ni) begin
+  if (!rst_shadowed_ni) begin
+    shadow_rst_done <= '0;
+  end else begin
+    shadow_rst_done <= 1'b1;
+  end
+end
+```
+
+If an attacker can manipulate one reset signal but not the other, they might create inconsistencies between shadow and main registers.
+
+## 3. Privilege Escalation Concerns (CWE-1268)
+
+The RTL has potential privilege escalation issues:
+
+1. **Key Register Access**: The key registers (key_share0_* and key_share1_*) are protected by the same `cfg_regwen_qs` signal as other less sensitive registers. If an attacker can manipulate this signal, they could potentially gain write access to cryptographic keys.
+
+2. **Command Register**: The `cmd` register allows various operations including entropy requests and error processing:
+
+```verilog
+//   F[cmd]: 5:0
+prim_subreg_ext #(
+  .DW    (6)
+) u_cmd_cmd (
+  .re     (1'b0),
+  .we     (cmd_we),
+  .wd     (cmd_cmd_wd),
+  .d      ('0),
+  .qre    (),
+  .qe     (cmd_flds_we[0]),
+  .q      (reg2hw.cmd.cmd.q),
+  .ds     (),
+  .qs     ()
+);
+```
+
+If an att
+================================== Ai Message ==================================
+
+## OpenTitan KMAC IP Security Analysis Report
+
+### 1. Security Features and Register Interface Policies
+
+#### Security Features (from `theory_of_operation.md`)
+- **Masked Keccak Core**: Supports first-order masking (two shares) for side-channel resistance. Masking can be disabled at compile time.
+- **Key Sideloading**: Supports sideloaded keys from KeyMgr, always in two-share masked form.
+- **Shadowed Registers**: Critical configuration registers are shadowed for fault injection resistance.
+- **Application Interface Isolation**: Multiple hardware application interfaces (KeyMgr, LC_CTRL, ROM_CTRL) are isolated and prioritized.
+- **Entropy Generator**: Integrated PRNG, seeded from EDN or software, for masking and remasking.
+- **Error Detection**: Internal error checkers report to `ERR_CODE` and raise interrupts.
+- **FSM Hardening**: Sparse FSM encoding and terminal error states for glitch/fault resistance.
+- **Privilege Separation**: Software and hardware-initiated operations are isolated in the FSM.
+
+#### Register Interface Policies (from `registers.md`)
+- **Shadowed Register Updates**: Only allowed when engine is idle; protected by `CFG_REGWEN`.
+- **Key Registers**: Writeable only in idle; always two shares if masking enabled.
+- **Command Sequence**: Strict sequence enforced (`start` → `process` → `run` (optional) → `done`).
+- **Access Control**: Sideloaded keys used for hardware-initiated KMAC; software can select sideload via `CFG_SHADOWED.sideload`.
+- **Error Handling**: Errors in shadowed registers, privilege violations, or command sequence violations are reported in `ERR_CODE` and can halt operation.
+
+---
+
+### 2. RTL Security Vulnerability Analysis
+
+#### A. Register Interface & Shadowed Register Integrity (`kmac_reg_top.sv`)
+- **File**: `kmac_reg_top.sv`
+- **Line(s)**: ~2000 (shadowed register error collection and propagation)
+- **Issue**: **Shadowed register errors are not always properly propagated to error outputs within the required time window.**
+- **Security Aspect**: Fault injection resistance, privilege escalation, register integrity.
+- **Tools Used**: Assertion Checker, Linter, CWE Agent
+- **Details**: Failing assertions show that errors in shadowed registers (e.g., `cfg_shadowed_kmac_en_storage_err`) may not trigger error outputs promptly, risking undetected configuration manipulation.
+
+#### B. Application Interface Isolation & Command Injection (`kmac_app.sv`)
+- **File**: `kmac_app.sv`
+- **Line(s)**: 728-735, 735-742, 646-648
+- **Issue**: 
+  - **Software can inject messages or commands during hardware application operation.**
+  - **Invalid keys from KeyMgr may not always force error state.**
+- **Security Aspect**: Application interface isolation, privilege escalation, command injection, key integrity.
+- **Tools Used**: Assertion Checker, Linter, CWE Agent, Manual Review
+- **Details**: 
+  - Failing assertions show that software can push messages or commands when hardware app is active, risking privilege escalation.
+  - Key validation logic may allow operations with invalid keys, risking cryptographic compromise.
+  - Linter flagged FSM control issues (UniquePriorityMisuse-ML) that could lead to unintended state transitions.
+
+#### C. Message FIFO Masking & Integrity (`kmac_msgfifo.sv`)
+- **File**: `kmac_msgfifo.sv`
+- **Line(s)**: Masking logic, flush logic (see assertion failures)
+- **Issue**: 
+  - **FIFO masking may allow zero masks when masking is enabled.**
+  - **New messages may be accepted during flush, risking data corruption.**
+- **Security Aspect**: Side-channel resistance, message integrity, privilege separation.
+- **Tools Used**: Assertion Checker, Linter
+- **Details**: 
+  - Masking logic does not enforce non-zero mask when enabled, weakening side-channel protection.
+  - Flush logic may allow message injection during flush, risking integrity and privilege separation.
+
+#### D. Key Handling, FSM Hardening, Masking (`kmac_core.sv`)
+- **File**: `kmac_core.sv`
+- **Line(s)**: Key encoding, FSM state encoding, masking logic
+- **Issue**: 
+  - **No critical security issues found.**
+  - **Hard-coded constants in key length encoding (lines ~317-321) flagged by linter.**
+- **Security Aspect**: FSM hardening, masking, key handling.
+- **Tools Used**: Assertion Checker, Linter, Anomaly Detector, CWE Agent
+- **Details**: 
+  - FSM is robust (sparse encoding, terminal error state).
+  - Masking and key handling are implemented securely.
+  - Hard-coded constants are a maintainability concern but not a direct security risk.
+
+#### E. Clock Gating & SCA Resistance (from Verilator Tests)
+- **File**: (System-level, not a single file)
+- **Issue**: **Clock gating failures may increase side-channel leakage.**
+- **Security Aspect**: Side-channel resistance.
+- **Tools Used**: Verilator Agent
+- **Details**: Failing tests indicate the clock may not be properly gated when idle, increasing SCA risk.
+
+---
+
+### 3. Recurring/Suspect Patterns
+
+- **Error Handling and Propagation**: Across modules, error signals and FSM transitions must be carefully reviewed to ensure all security violations (shadowed register errors, invalid key use, privilege violations) are promptly detected and handled.
+- **FSM Control**: Lint and assertion failures in FSM logic (especially in `kmac_app.sv`) suggest a need for more robust privilege separation and error state enforcement.
+- **Masking Enforcement**: Masking logic in both the core and FIFO must strictly enforce non-zero masks and correct operation during all transitions.
+
+---
+
+## Summary Table of Issues
+
+| File                   | Line(s)      | Description                                                      | Security Aspect                | Tools Used                      |
+|------------------------|--------------|------------------------------------------------------------------|--------------------------------|----------------------------------|
+| kmac_reg_top.sv        | ~2000        | Shadowed register errors not always propagated                   | Register integrity, privilege  | Assertion Checker, CWE Agent     |
+| kmac_app.sv            | 728-742,646+ | SW can inject commands/messages during HW app, invalid key use   | Interface isolation, escalation| Assertion Checker, Linter, CWE   |
+| kmac_msgfifo.sv        | Mask/flush   | FIFO masking allows zero mask, flush accepts new messages        | Masking, integrity, separation | Assertion Checker, Linter        |
+| kmac_core.sv           | ~317-321     | Hard-coded key length constants (maintainability)                | Key handling                   | Linter                          |
+| (System-level)         | N/A          | Clock gating failures (test-level)                               | Side-channel resistance        | Verilator Agent                  |
+
+---
+
+## Recommendations
+
+- **Fix shadowed register error propagation** to ensure all errors are immediately visible and halt sensitive operations.
+- **Strengthen FSM and error handling** in `kmac_app.sv` to strictly prevent SW command/message injection during HW app operation and enforce key validity.
+- **Enforce non-zero masking** in FIFO and core logic when masking is enabled.
+- **Prevent new messages during flush** in FIFO to avoid data corruption or privilege violations.
+- **Review and fix FSM control and unique/priority misuse** to avoid unintended state transitions.
+- **Address clock gating failures** to reduce side-channel leakage.
+- **Replace hard-coded constants** with parameterized values for maintainability and security.
+
+---
+
+**END**
+================================== Ai Message ==================================
+
+## OpenTitan KMAC IP Security Analysis Report
+
+### 1. Security Features and Register Interface Policies
+
+#### Security Features (from `theory_of_operation.md`)
+- **Masked Keccak Core**: Supports first-order masking (two shares) for side-channel resistance. Masking can be disabled at compile time.
+- **Key Sideloading**: Supports sideloaded keys from KeyMgr, always in two-share masked form.
+- **Shadowed Registers**: Critical configuration registers are shadowed for fault injection resistance.
+- **Application Interface Isolation**: Multiple hardware application interfaces (KeyMgr, LC_CTRL, ROM_CTRL) are isolated and prioritized.
+- **Entropy Generator**: Integrated PRNG, seeded from EDN or software, for masking and remasking.
+- **Error Detection**: Internal error checkers report to `ERR_CODE` and raise interrupts.
+- **FSM Hardening**: Sparse FSM encoding and terminal error states for glitch/fault resistance.
+- **Privilege Separation**: Software and hardware-initiated operations are isolated in the FSM.
+
+#### Register Interface Policies (from `registers.md`)
+- **Shadowed Register Updates**: Only allowed when engine is idle; protected by `CFG_REGWEN`.
+- **Key Registers**: Writeable only in idle; always two shares if masking enabled.
+- **Command Sequence**: Strict sequence enforced (`start` → `process` → `run` (optional) → `done`).
+- **Access Control**: Sideloaded keys used for hardware-initiated KMAC; software can select sideload via `CFG_SHADOWED.sideload`.
+- **Error Handling**: Errors in shadowed registers, privilege violations, or command sequence violations are reported in `ERR_CODE` and can halt operation.
+
+---
+
+### 2. RTL Security Vulnerability Analysis
+
+#### A. Register Interface & Shadowed Register Integrity (`kmac_reg_top.sv`)
+- **File**: `kmac_reg_top.sv`
+- **Line(s)**: ~2000 (shadowed register error collection and propagation)
+- **Issue**: **Shadowed register errors are not always properly propagated to error outputs within the required time window.**
+- **Security Aspect**: Fault injection resistance, privilege escalation, register integrity.
+- **Tools Used**: Assertion Checker, Linter, CWE Agent
+- **Details**: Failing assertions show that errors in shadowed registers (e.g., `cfg_shadowed_kmac_en_storage_err`) may not trigger error outputs promptly, risking undetected configuration manipulation.
+
+#### B. Application Interface Isolation & Command Injection (`kmac_app.sv`)
+- **File**: `kmac_app.sv`
+- **Line(s)**: 728-735, 735-742, 646-648
+- **Issue**: 
+  - **Software can inject messages or commands during hardware application operation.**
+  - **Invalid keys from KeyMgr may not always force error state.**
+- **Security Aspect**: Application interface isolation, privilege escalation, command injection, key integrity.
+- **Tools Used**: Assertion Checker, Linter, CWE Agent, Manual Review
+- **Details**: 
+  - Failing assertions show that software can push messages or commands when hardware app is active, risking privilege escalation.
+  - Key validation logic may allow operations with invalid keys, risking cryptographic compromise.
+  - Linter flagged FSM control issues (UniquePriorityMisuse-ML) that could lead to unintended state transitions.
+
+#### C. Message FIFO Masking & Integrity (`kmac_msgfifo.sv`)
+- **File**: `kmac_msgfifo.sv`
+- **Line(s)**: Masking logic, flush logic (see assertion failures)
+- **Issue**: 
+  - **FIFO masking may allow zero masks when masking is enabled.**
+  - **New messages may be accepted during flush, risking data corruption.**
+- **Security Aspect**: Side-channel resistance, message integrity, privilege separation.
+- **Tools Used**: Assertion Checker, Linter
+- **Details**: 
+  - Masking logic does not enforce non-zero mask when enabled, weakening side-channel protection.
+  - Flush logic may allow message injection during flush, risking integrity and privilege separation.
+
+#### D. Key Handling, FSM Hardening, Masking (`kmac_core.sv`)
+- **File**: `kmac_core.sv`
+- **Line(s)**: Key encoding, FSM state encoding, masking logic
+- **Issue**: 
+  - **No critical security issues found.**
+  - **Hard-coded constants in key length encoding (lines ~317-321) flagged by linter.**
+- **Security Aspect**: FSM hardening, masking, key handling.
+- **Tools Used**: Assertion Checker, Linter, Anomaly Detector, CWE Agent
+- **Details**: 
+  - FSM is robust (sparse encoding, terminal error state).
+  - Masking and key handling are implemented securely.
+  - Hard-coded constants are a maintainability concern but not a direct security risk.
+
+#### E. Clock Gating & SCA Resistance (from Verilator Tests)
+- **File**: (System-level, not a single file)
+- **Issue**: **Clock gating failures may increase side-channel leakage.**
+- **Security Aspect**: Side-channel resistance.
+- **Tools Used**: Verilator Agent
+- **Details**: Failing tests indicate the clock may not be properly gated when idle, increasing SCA risk.
+
+---
+
+### 3. Recurring/Suspect Patterns
+
+- **Error Handling and Propagation**: Across modules, error signals and FSM transitions must be carefully reviewed to ensure all security violations (shadowed register errors, invalid key use, privilege violations) are promptly detected and handled.
+- **FSM Control**: Lint and assertion failures in FSM logic (especially in `kmac_app.sv`) suggest a need for more robust privilege separation and error state enforcement.
+- **Masking Enforcement**: Masking logic in both the core and FIFO must strictly enforce non-zero masks and correct operation during all transitions.
+
+---
+
+## Summary Table of Issues
+
+| File                   | Line(s)      | Description                                                      | Security Aspect                | Tools Used                      |
+|------------------------|--------------|------------------------------------------------------------------|--------------------------------|----------------------------------|
+| kmac_reg_top.sv        | ~2000        | Shadowed register errors not always propagated                   | Register integrity, privilege  | Assertion Checker, CWE Agent     |
+| kmac_app.sv            | 728-742,646+ | SW can inject commands/messages during HW app, invalid key use   | Interface isolation, escalation| Assertion Checker, Linter, CWE   |
+| kmac_msgfifo.sv        | Mask/flush   | FIFO masking allows zero mask, flush accepts new messages        | Masking, integrity, separation | Assertion Checker, Linter        |
+| kmac_core.sv           | ~317-321     | Hard-coded key length constants (maintainability)                | Key handling                   | Linter                          |
+| (System-level)         | N/A          | Clock gating failures (test-level)                               | Side-channel resistance        | Verilator Agent                  |
+
+---
+
+## Recommendations
+
+- **Fix shadowed register error propagation** to ensure all errors are immediately visible and halt sensitive operations.
+- **Strengthen FSM and error handling** in `kmac_app.sv` to strictly prevent SW command/message injection during HW app operation and enforce key validity.
+- **Enforce non-zero masking** in FIFO and core logic when masking is enabled.
+- **Prevent new messages during flush** in FIFO to avoid data corruption or privilege violations.
+- **Review and fix FSM control and unique/priority misuse** to avoid unintended state transitions.
+- **Address clock gating failures** to reduce side-channel leakage.
+- **Replace hard-coded constants** with parameterized values for maintainability and security.
+
+---
+
+**END**
+================================== Ai Message ==================================
+
+[]

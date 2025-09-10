@@ -1,0 +1,14 @@
+Calculated Runtimes (in minutes):
+----------------------------------
+adc_ctrl: 8.83 minutes
+aes: 18.30 minutes
+csrng: 20.40 minutes
+ent_src: 23.07 minutes
+hmac: 8.32 minutes
+keymgr: 19.07 minutes
+kmac: 16.67 minutes
+lc_ctrl: 8.87 minutes
+otbn: 7.10 minutes
+otp_ctrl: 13.70 minutes
+prim: 5.65 minutes
+tlul: 7.50 minutes

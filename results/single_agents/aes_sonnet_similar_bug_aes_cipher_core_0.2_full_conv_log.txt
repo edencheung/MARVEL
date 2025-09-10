@@ -1,0 +1,1958 @@
+Running similar bug agent on /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv for bug: DIP_CLEAR:   data_in_prev_d = data_in;
+================================ Human Message =================================
+
+This bug was previously found in another file of this design:
+    DIP_CLEAR:   data_in_prev_d = data_in;
+    
+    Please check the RTL code in the file /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv for similar bugs.
+================================ Human Message =================================
+
+This bug was previously found in another file of this design:
+    DIP_CLEAR:   data_in_prev_d = data_in;
+    
+    Please check the RTL code in the file /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv for similar bugs.
+================================== Ai Message ==================================
+
+[{'text': "I'll help you find similar bug instances in the specified file. I'll use the similar_bug_tool to search for lines that match the given bug pattern.", 'type': 'text'}, {'id': 'toolu_01DardGnYiuFKjQLiRPpCvZt', 'input': {'bug': 'DIP_CLEAR:   data_in_prev_d = data_in;', 'ip_file': '/home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv'}, 'name': 'similar_bug_tool', 'type': 'tool_use'}]
+Tool Calls:
+  similar_bug_tool (toolu_01DardGnYiuFKjQLiRPpCvZt)
+ Call ID: toolu_01DardGnYiuFKjQLiRPpCvZt
+  Args:
+    bug: DIP_CLEAR:   data_in_prev_d = data_in;
+    ip_file: /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv
+================================= Tool Message =================================
+Name: similar_bug_tool
+
+
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 585: .data_out_clear_i     ( data_out_clear_i    ),
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 586: .data_out_clear_o     ( data_out_clear_o    ),
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 134: 
+  output logic                        data_out_clear_o,
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 461: KEY_DEC_CLEAR:  key_dec_d = key_expand_out;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 442: 
+      KEY_FULL_CLEAR:    key_full_d = key_expand_out;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 251: STATE_CLEAR: state_d = add_round_key_out;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 234: 
+  logic               [3:0][3:0][7:0] data_in_mask;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 249: STATE_INIT:  state_d = state_init_i;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 376: 
+  assign data_in_mask_o = {data_in_mask[1], data_in_mask[0], data_in_mask[3], data_in_mask[2]};
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 923: 
+          aes_prd_concat_bits(data_in_mask[i], unused_prd_msbs[i]);
+================================= Tool Message =================================
+Name: similar_bug_tool
+
+
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 585: .data_out_clear_i     ( data_out_clear_i    ),
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 586: .data_out_clear_o     ( data_out_clear_o    ),
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 134: 
+  output logic                        data_out_clear_o,
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 461: KEY_DEC_CLEAR:  key_dec_d = key_expand_out;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 442: 
+      KEY_FULL_CLEAR:    key_full_d = key_expand_out;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 251: STATE_CLEAR: state_d = add_round_key_out;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 234: 
+  logic               [3:0][3:0][7:0] data_in_mask;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 249: STATE_INIT:  state_d = state_init_i;
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 376: 
+  assign data_in_mask_o = {data_in_mask[1], data_in_mask[0], data_in_mask[3], data_in_mask[2]};
+Found similar bug in /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv at line 923: 
+          aes_prd_concat_bits(data_in_mask[i], unused_prd_msbs[i]);
+================================== Ai Message ==================================
+
+[{'text': "To better understand the context, I'll read the file to examine these lines more closely:", 'type': 'text'}, {'id': 'toolu_01ThF4DZwQ2i7r8jqZ1RtREt', 'input': {'file_path': '/home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv'}, 'name': 'read_file_with_line_numbers', 'type': 'tool_use'}]
+Tool Calls:
+  read_file_with_line_numbers (toolu_01ThF4DZwQ2i7r8jqZ1RtREt)
+ Call ID: toolu_01ThF4DZwQ2i7r8jqZ1RtREt
+  Args:
+    file_path: /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // AES cipher core implementation
+6: //
+7: // This module contains the AES cipher core including, state register, full key and decryption key
+8: // registers as well as key expand module and control unit.
+9: //
+10: //
+11: // Masking
+12: // -------
+13: //
+14: // If the parameter "Masking" is set to one, first-order masking is applied to the entire
+15: // cipher core including key expand module. For details, see Rivain et al., "Provably secure
+16: // higher-order masking of AES" available at XXXX .
+17: //
+18: //
+19: // Details on the data formats
+20: // ---------------------------
+21: //
+22: // This implementation uses 4-dimensional SystemVerilog arrays to represent the AES state:
+23: //
+24: //   logic [3:0][3:0][7:0] state_q [NumShares];
+25: //
+26: // The fourth dimension (unpacked) corresponds to the different shares. The first element holds the
+27: // (masked) data share whereas the other elements hold the masks (masked implementation only).
+28: // The three packed dimensions correspond to the 128-bit state matrix per share. This
+29: // implementation uses the same encoding as the Advanced Encryption Standard (AES) FIPS Publication
+30: // 197 available at XXXX (see Section
+31: // 3.4). An input sequence of 16 bytes (128-bit, left most byte is the first one)
+32: //
+33: //   b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
+34: //
+35: // is mapped to the state matrix as
+36: //
+37: //   [ b0  b4  b8  b12 ]
+38: //   [ b1  b5  b9  b13 ]
+39: //   [ b2  b6  b10 b14 ]
+40: //   [ b3  b7  b11 b15 ] .
+41: //
+42: // This is mapped to three packed dimensions of SystemVerilog array as follows:
+43: // - The first dimension corresponds to the rows. Thus, state_q[0] gives
+44: //   - The first row of the state matrix       [ b0   b4  b8  b12 ], or
+45: //   - A 32-bit packed SystemVerilog array 32h'{ b12, b8, b4, b0  }.
+46: //
+47: // - The second dimension corresponds to the columns. To access complete columns, the state matrix
+48: //   must be transposed first. Thus state_transposed = aes_pkg::aes_transpose(state_q) and then
+49: //   state_transposed[1] gives
+50: //   - The second column of the state matrix   [ b4  b5  b6  b7 ], or
+51: //   - A 32-bit packed SystemVerilog array 32h'{ b7, b6, b5, b4 }.
+52: //
+53: // - The third dimension corresponds to the bytes.
+54: //
+55: // Note that the CSRs are little-endian. The input sequence above is provided to 32-bit DATA_IN_0 -
+56: // DATA_IN_3 registers as
+57: //                   MSB            LSB
+58: // - DATA_IN_0 32h'{ b3 , b2 , b1 , b0  }
+59: // - DATA_IN_1 32h'{ b7 , b6 , b4 , b4  }
+60: // - DATA_IN_2 32h'{ b11, b10, b9 , b8  }
+61: // - DATA_IN_3 32h'{ b15, b14, b13, b12 } .
+62: //
+63: // The input state can thus be obtained by transposing the content of the DATA_IN_0 - DATA_IN_3
+64: // registers.
+65: //
+66: // Similarly, the implementation uses a 3-dimensional array to represent the AES keys:
+67: //
+68: //   logic     [7:0][31:0] key_full_q [NumShares]
+69: //
+70: // The third dimension (unpacked) corresponds to the different shares. The first element holds the
+71: // (masked) key share whereas the other elements hold the masks (masked implementation only).
+72: // The two packed dimensions correspond to the 256-bit key per share. This implementation uses
+73: // the same encoding as the Advanced Encryption Standard (AES) FIPS Publication
+74: // 197 available at XXXX .
+75: //
+76: // The first packed dimension corresponds to the 8 key words. The second packed dimension
+77: // corresponds to the 32 bits per key word. A key sequence of 32 bytes (256-bit, left most byte is
+78: // the first one)
+79: //
+80: //   b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 ... ... b28 b29 b30 b31
+81: //
+82: // is mapped to the key words and registers (little-endian) as
+83: //                      MSB            LSB
+84: // - KEY_SHARE0_0 32h'{ b3 , b2 , b1 , b0  }
+85: // - KEY_SHARE0_1 32h'{ b7 , b6 , b4 , b4  }
+86: // - KEY_SHARE0_2 32h'{ b11, b10, b9 , b8  }
+87: // - KEY_SHARE0_3 32h'{ b15, b14, b13, b12 }
+88: // - KEY_SHARE0_4 32h'{  .    .    .    .  }
+89: // - KEY_SHARE0_5 32h'{  .    .    .    .  }
+90: // - KEY_SHARE0_6 32h'{  .    .    .    .  }
+91: // - KEY_SHARE0_7 32h'{ b31, b30, b29, b28 } .
+92: 
+93: `include "prim_assert.sv"
+94: 
+95: module aes_cipher_core import aes_pkg::*;
+96: #(
+97:   parameter bit          AES192Enable         = 1,
+98:   parameter bit          CiphOpFwdOnly        = 0,
+99:   parameter bit          SecMasking           = 1,
+100:   parameter sbox_impl_e  SecSBoxImpl          = SBoxImplDom,
+101:   parameter bit          SecAllowForcingMasks = 0,
+102:   parameter bit          SecSkipPRNGReseeding = 0,
+103:   parameter int unsigned EntropyWidth         = edn_pkg::ENDPOINT_BUS_WIDTH,
+104: 
+105:   localparam int         NumShares            = SecMasking ? 2 : 1, // derived parameter
+106: 
+107:   parameter masking_lfsr_seed_t RndCnstMaskingLfsrSeed = RndCnstMaskingLfsrSeedDefault,
+108:   parameter masking_lfsr_perm_t RndCnstMaskingLfsrPerm = RndCnstMaskingLfsrPermDefault
+109: ) (
+110:   input  logic                        clk_i,
+111:   input  logic                        rst_ni,
+112: 
+113:   // Input handshake signals
+114:   input  sp2v_e                       in_valid_i,
+115:   output sp2v_e                       in_ready_o,
+116: 
+117:   // Output handshake signals
+118:   output sp2v_e                       out_valid_o,
+119:   input  sp2v_e                       out_ready_i,
+120: 
+121:   // Control and sync signals
+122:   input  logic                        cfg_valid_i, // Used for gating assertions only.
+123:   input  ciph_op_e                    op_i,
+124:   input  key_len_e                    key_len_i,
+125:   input  sp2v_e                       crypt_i,
+126:   output sp2v_e                       crypt_o,
+127:   input  sp2v_e                       dec_key_gen_i,
+128:   output sp2v_e                       dec_key_gen_o,
+129:   input  logic                        prng_reseed_i,
+130:   output logic                        prng_reseed_o,
+131:   input  logic                        key_clear_i,
+132:   output logic                        key_clear_o,
+133:   input  logic                        data_out_clear_i, // Re-use the cipher core muxes.
+134:   output logic                        data_out_clear_o,
+135:   input  logic                        alert_fatal_i,
+136:   output logic                        alert_o,
+137: 
+138:   // Pseudo-random data for register clearing
+139:   input  logic        [3:0][3:0][7:0] prd_clearing_state_i [NumShares],
+140:   input  logic            [7:0][31:0] prd_clearing_key_i [NumShares],
+141: 
+142:   // Masking PRNG
+143:   input  logic                        force_masks_i, // Useful for SCA only.
+144:   output logic        [3:0][3:0][7:0] data_in_mask_o,
+145:   output logic                        entropy_req_o,
+146:   input  logic                        entropy_ack_i,
+147:   input  logic     [EntropyWidth-1:0] entropy_i,
+148: 
+149:   // I/O data & initial key
+150:   input  logic        [3:0][3:0][7:0] state_init_i [NumShares],
+151:   input  logic            [7:0][31:0] key_init_i [NumShares],
+152:   output logic        [3:0][3:0][7:0] state_o [NumShares]
+153: );
+154: 
+155:   // Signals
+156:   logic               [3:0][3:0][7:0] state_d [NumShares];
+157:   logic               [3:0][3:0][7:0] state_q [NumShares];
+158:   sp2v_e                              state_we_ctrl;
+159:   sp2v_e                              state_we;
+160:   logic           [StateSelWidth-1:0] state_sel_raw;
+161:   state_sel_e                         state_sel_ctrl;
+162:   state_sel_e                         state_sel;
+163:   logic                               state_sel_err;
+164: 
+165:   sp2v_e                              sub_bytes_en;
+166:   sp2v_e                              sub_bytes_out_req;
+167:   sp2v_e                              sub_bytes_out_ack;
+168:   logic                               sub_bytes_err;
+169:   logic               [3:0][3:0][7:0] sub_bytes_out;
+170:   logic               [3:0][3:0][7:0] sb_in_mask;
+171:   logic               [3:0][3:0][7:0] sb_out_mask;
+172:   logic               [3:0][3:0][7:0] shift_rows_in [NumShares];
+173:   logic               [3:0][3:0][7:0] shift_rows_out [NumShares];
+174:   logic               [3:0][3:0][7:0] mix_columns_out [NumShares];
+175:   logic               [3:0][3:0][7:0] add_round_key_in [NumShares];
+176:   logic               [3:0][3:0][7:0] add_round_key_out [NumShares];
+177:   logic           [AddRKSelWidth-1:0] add_rk_sel_raw;
+178:   add_rk_sel_e                        add_rk_sel_ctrl;
+179:   add_rk_sel_e                        add_rk_sel;
+180:   logic                               add_rk_sel_err;
+181: 
+182:   logic                   [7:0][31:0] key_full_d [NumShares];
+183:   logic                   [7:0][31:0] key_full_q [NumShares];
+184:   sp2v_e                              key_full_we_ctrl;
+185:   sp2v_e                              key_full_we;
+186:   logic         [KeyFullSelWidth-1:0] key_full_sel_raw;
+187:   key_full_sel_e                      key_full_sel_ctrl;
+188:   key_full_sel_e                      key_full_sel;
+189:   logic                               key_full_sel_err;
+190:   logic                   [7:0][31:0] key_dec_d [NumShares];
+191:   logic                   [7:0][31:0] key_dec_q [NumShares];
+192:   sp2v_e                              key_dec_we_ctrl;
+193:   sp2v_e                              key_dec_we;
+194:   logic          [KeyDecSelWidth-1:0] key_dec_sel_raw;
+195:   key_dec_sel_e                       key_dec_sel_ctrl;
+196:   key_dec_sel_e                       key_dec_sel;
+197:   logic                               key_dec_sel_err;
+198:   logic                   [7:0][31:0] key_expand_out [NumShares];
+199:   ciph_op_e                           key_expand_op;
+200:   sp2v_e                              key_expand_en;
+201:   logic                               key_expand_prd_we;
+202:   sp2v_e                              key_expand_out_req;
+203:   sp2v_e                              key_expand_out_ack;
+204:   logic                               key_expand_err;
+205:   logic                               key_expand_clear;
+206:   logic                         [3:0] key_expand_round;
+207:   logic        [KeyWordsSelWidth-1:0] key_words_sel_raw;
+208:   key_words_sel_e                     key_words_sel_ctrl;
+209:   key_words_sel_e                     key_words_sel;
+210:   logic                               key_words_sel_err;
+211:   logic                   [3:0][31:0] key_words [NumShares];
+212:   logic               [3:0][3:0][7:0] key_bytes [NumShares];
+213:   logic               [3:0][3:0][7:0] key_mix_columns_out [NumShares];
+214:   logic               [3:0][3:0][7:0] round_key [NumShares];
+215:   logic        [RoundKeySelWidth-1:0] round_key_sel_raw;
+216:   round_key_sel_e                     round_key_sel_ctrl;
+217:   round_key_sel_e                     round_key_sel;
+218:   logic                               round_key_sel_err;
+219: 
+220:   logic                               cfg_valid;
+221:   logic                               mux_sel_err;
+222:   logic                               sp_enc_err_d, sp_enc_err_q;
+223:   logic                               op_err;
+224: 
+225:   // Pseudo-random data for masking purposes
+226:   logic         [WidthPRDMasking-1:0] prd_masking;
+227:   logic  [3:0][3:0][WidthPRDSBox-1:0] prd_sub_bytes_d;
+228:   logic  [3:0][3:0][WidthPRDSBox-1:0] prd_sub_bytes_q;
+229:   logic             [WidthPRDKey-1:0] prd_key_expand;
+230:   logic                               prd_masking_upd;
+231:   logic                               prd_masking_rsd_req;
+232:   logic                               prd_masking_rsd_ack;
+233: 
+234:   logic               [3:0][3:0][7:0] data_in_mask;
+235: 
+236:   // op_i is one-hot encoded. Check the provided value and trigger an alert upon detecing invalid
+237:   // encodings.
+238:   assign op_err    = ~(op_i == CIPH_FWD || op_i == CIPH_INV);
+239:   assign cfg_valid = cfg_valid_i & ~op_err;
+240: 
+241:   //////////
+242:   // Data //
+243:   //////////
+244: 
+245:   // SEC_CM: DATA_REG.SEC_WIPE
+246:   // State registers
+247:   always_comb begin : state_mux
+248:     unique case (state_sel)
+249:       STATE_INIT:  state_d = state_init_i;
+250:       STATE_ROUND: state_d = add_round_key_out;
+251:       STATE_CLEAR: state_d = add_round_key_out;
+252:       default:     state_d = prd_clearing_state_i;
+253:     endcase
+254:   end
+255: 
+256:   always_ff @(posedge clk_i or negedge rst_ni) begin : state_reg
+257:     if (!rst_ni) begin
+258:       state_q <= '{default: '0};
+259:     end else if (state_we == SP2V_HIGH) begin
+260:       state_q <= state_d;
+261:     end
+262:   end
+263: 
+264:   // Masking
+265:   if (!SecMasking) begin : gen_no_masks
+266:     // The masks are ignored anyway, they can be 0.
+267:     assign sb_in_mask  = '0;
+268:     assign prd_masking = '0;
+269: 
+270:     // Tie-off unused signals.
+271:     logic unused_entropy_ack;
+272:     logic [EntropyWidth-1:0] unused_entropy;
+273:     assign unused_entropy_ack = entropy_ack_i;
+274:     assign unused_entropy     = entropy_i;
+275:     assign entropy_req_o      = 1'b0;
+276: 
+277:     logic unused_force_masks;
+278:     logic unused_prd_masking_upd;
+279:     logic unused_prd_masking_rsd_req;
+280:     assign unused_force_masks         = force_masks_i;
+281:     assign unused_prd_masking_upd     = prd_masking_upd;
+282:     assign unused_prd_masking_rsd_req = prd_masking_rsd_req;
+283:     assign prd_masking_rsd_ack        = 1'b0;
+284: 
+285:     logic [3:0][3:0][7:0] unused_sb_out_mask;
+286:     assign unused_sb_out_mask = sb_out_mask;
+287: 
+288:   end else begin : gen_masks
+289:     // The input mask is the mask share of the state.
+290:     assign sb_in_mask  = state_q[1];
+291: 
+292:     // The masking PRNG generates:
+293:     // - the pseudo-random data (PRD) required by SubBytes,
+294:     // - the PRD required by the key expand module (has 4 S-Boxes internally).
+295:     aes_prng_masking #(
+296:       .Width                ( WidthPRDMasking        ),
+297:       .EntropyWidth         ( EntropyWidth           ),
+298:       .SecAllowForcingMasks ( SecAllowForcingMasks   ),
+299:       .SecSkipPRNGReseeding ( SecSkipPRNGReseeding   ),
+300:       .RndCnstLfsrSeed      ( RndCnstMaskingLfsrSeed ),
+301:       .RndCnstLfsrPerm      ( RndCnstMaskingLfsrPerm )
+302:     ) u_aes_prng_masking (
+303:       .clk_i         ( clk_i               ),
+304:       .rst_ni        ( rst_ni              ),
+305:       .force_masks_i ( force_masks_i       ),
+306:       .data_update_i ( prd_masking_upd     ),
+307:       .data_o        ( prd_masking         ),
+308:       .reseed_req_i  ( prd_masking_rsd_req ),
+309:       .reseed_ack_o  ( prd_masking_rsd_ack ),
+310:       .entropy_req_o ( entropy_req_o       ),
+311:       .entropy_ack_i ( entropy_ack_i       ),
+312:       .entropy_i     ( entropy_i           )
+313:     );
+314:   end
+315: 
+316:   // Extract randomness for key expand module and SubBytes.
+317:   //
+318:   // The masking PRNG output has the following shape:
+319:   // prd_masking = { prd_key_expand, prd_sub_bytes_d }
+320:   assign prd_key_expand  = prd_masking[WidthPRDMasking-1 -: WidthPRDKey];
+321:   assign prd_sub_bytes_d = prd_masking[WidthPRDData-1 -: WidthPRDData];
+322: 
+323:   // PRD buffering
+324:   if (!SecMasking) begin : gen_no_prd_buffer
+325:     // The masks are ignored anyway.
+326:     assign prd_sub_bytes_q = prd_sub_bytes_d;
+327: 
+328:   end else begin : gen_prd_buffer
+329:     // PRD buffer stage to:
+330:     // 1. Make sure the S-Boxes get always presented new data/mask inputs together with fresh PRD
+331:     //    for remasking.
+332:     // 2. Prevent glitches originating from inside the masking PRNG from propagating into the
+333:     //    masked S-Boxes.
+334:     always_ff @(posedge clk_i or negedge rst_ni) begin : prd_sub_bytes_reg
+335:       if (!rst_ni) begin
+336:         prd_sub_bytes_q <= '0;
+337:       end else if (state_we == SP2V_HIGH) begin
+338:         prd_sub_bytes_q <= prd_sub_bytes_d;
+339:       end
+340:     end
+341:   end
+342: 
+343:   // Convert the 3-dimensional prd_sub_bytes_q array to a 1-dimensional packed array for the
+344:   // aes_prd_get_lsbs() function used below.
+345:   logic [WidthPRDData-1:0] prd_sub_bytes;
+346:   assign prd_sub_bytes = prd_sub_bytes_q;
+347: 
+348:   // Extract randomness for masking the input data.
+349:   //
+350:   // The masking PRNG is used for generating both the PRD for the S-Boxes/SubBytes operation as
+351:   // well as for the input data masks. When using any of the masked Canright S-Box implementations,
+352:   // it is important that the SubBytes input masks (generated by the PRNG in Round X-1) and the
+353:   // SubBytes output masks (generated by the PRNG in Round X) are independent. This can be achieved
+354:   // by using e.g. an unrolled Bivium stream cipher primitive inside the PRNG. Since the input data
+355:   // masks become the SubBytes input masks in the first round, we select the same 8 bit lanes for
+356:   // the input data masks which are also used to form the SubBytes output mask for the masked
+357:   // Canright S-Box implementations, i.e., the 8 LSBs of the per S-Box PRD. In particular, we have:
+358:   //
+359:   // prd_masking = { prd_key_expand, ... , sb_prd[4], sb_out_mask[4], sb_prd[0], sb_out_mask[0] }
+360:   //
+361:   // Where sb_out_mask[x] contains the SubBytes output mask for byte x (when using a masked
+362:   // Canright S-Box implementation) and sb_prd[x] contains additional PRD consumed by SubBytes for
+363:   // byte x.
+364:   //
+365:   // When using a masked S-Box implementation other than Canright, we still select the 8 LSBs of
+366:   // the per-S-Box PRD to form the input data mask of the corresponding byte. We do this to
+367:   // distribute the input data masks over all output bits the masking PRNG. We do the extraction on
+368:   // a row basis.
+369:   localparam int unsigned WidthPRDRow = 4*WidthPRDSBox;
+370:   for (genvar i = 0; i < 4; i++) begin : gen_in_mask
+371:     assign data_in_mask[i] = aes_prd_get_lsbs(prd_sub_bytes[i * WidthPRDRow +: WidthPRDRow]);
+372:   end
+373: 
+374:   // Rotate the data input masks by 64 bits to ensure the data input masks are independent
+375:   // from the PRD fed to the S-Boxes/SubBytes operation.
+376:   assign data_in_mask_o = {data_in_mask[1], data_in_mask[0], data_in_mask[3], data_in_mask[2]};
+377: 
+378:   // Cipher data path
+379:   aes_sub_bytes #(
+380:     .SecSBoxImpl ( SecSBoxImpl )
+381:   ) u_aes_sub_bytes (
+382:     .clk_i     ( clk_i             ),
+383:     .rst_ni    ( rst_ni            ),
+384:     .en_i      ( sub_bytes_en      ),
+385:     .out_req_o ( sub_bytes_out_req ),
+386:     .out_ack_i ( sub_bytes_out_ack ),
+387:     .op_i      ( op_i              ),
+388:     .data_i    ( state_q[0]        ),
+389:     .mask_i    ( sb_in_mask        ),
+390:     .prd_i     ( prd_sub_bytes_q   ),
+391:     .data_o    ( sub_bytes_out     ),
+392:     .mask_o    ( sb_out_mask       ),
+393:     .err_o     ( sub_bytes_err     )
+394:   );
+395: 
+396:   for (genvar s = 0; s < NumShares; s++) begin : gen_shares_shift_mix
+397:     if (s == 0) begin : gen_shift_in_data
+398:       // The (masked) data share
+399:       assign shift_rows_in[s] = sub_bytes_out;
+400:     end else begin : gen_shift_in_mask
+401:       // The mask share
+402:       assign shift_rows_in[s] = sb_out_mask;
+403:     end
+404: 
+405:     aes_shift_rows u_aes_shift_rows (
+406:       .op_i   ( op_i              ),
+407:       .data_i ( shift_rows_in[s]  ),
+408:       .data_o ( shift_rows_out[s] )
+409:     );
+410: 
+411:     aes_mix_columns u_aes_mix_columns (
+412:       .op_i   ( op_i               ),
+413:       .data_i ( shift_rows_out[s]  ),
+414:       .data_o ( mix_columns_out[s] )
+415:     );
+416:   end
+417: 
+418:   always_comb begin : add_round_key_in_mux
+419:     unique case (add_rk_sel)
+420:       ADD_RK_INIT:  add_round_key_in = state_q;
+421:       ADD_RK_ROUND: add_round_key_in = mix_columns_out;
+422:       ADD_RK_FINAL: add_round_key_in = shift_rows_out;
+423:       default:      add_round_key_in = state_q;
+424:     endcase
+425:   end
+426: 
+427:   for (genvar s = 0; s < NumShares; s++) begin : gen_shares_add_round_key
+428:     assign add_round_key_out[s] = add_round_key_in[s] ^ round_key[s];
+429:   end
+430: 
+431:   /////////
+432:   // Key //
+433:   /////////
+434: 
+435:   // SEC_CM: KEY.SEC_WIPE
+436:   // Full Key registers
+437:   always_comb begin : key_full_mux
+438:     unique case (key_full_sel)
+439:       KEY_FULL_ENC_INIT: key_full_d = key_init_i;
+440:       KEY_FULL_DEC_INIT: key_full_d = !CiphOpFwdOnly ? key_dec_q : prd_clearing_key_i;
+441:       KEY_FULL_ROUND:    key_full_d = key_expand_out;
+442:       KEY_FULL_CLEAR:    key_full_d = key_expand_out;
+443:       default:           key_full_d = prd_clearing_key_i;
+444:     endcase
+445:   end
+446: 
+447:   always_ff @(posedge clk_i or negedge rst_ni) begin : key_full_reg
+448:     if (!rst_ni) begin
+449:       key_full_q <= '{default: '0};
+450:     end else if (key_full_we == SP2V_HIGH) begin
+451:       key_full_q <= key_full_d;
+452:     end
+453:   end
+454: 
+455:   if (!CiphOpFwdOnly) begin : gen_key_dec
+456:     // SEC_CM: KEY.SEC_WIPE
+457:     // Decryption Key registers
+458:     always_comb begin : key_dec_mux
+459:       unique case (key_dec_sel)
+460:         KEY_DEC_EXPAND: key_dec_d = key_expand_out;
+461:         KEY_DEC_CLEAR:  key_dec_d = key_expand_out;
+462:         default:        key_dec_d = prd_clearing_key_i;
+463:       endcase
+464:     end
+465: 
+466:     always_ff @(posedge clk_i or negedge rst_ni) begin : key_dec_reg
+467:       if (!rst_ni) begin
+468:         key_dec_q <= '{default: '0};
+469:       end else if (key_dec_we == SP2V_HIGH) begin
+470:         key_dec_q <= key_dec_d;
+471:       end
+472:     end
+473:   end else begin : gen_no_key_dec
+474:     // No Decryption Key registers
+475:     assign key_dec_q = '{default: '0};
+476:     assign key_dec_d = key_dec_q;
+477: 
+478:     // Tie-off unused signals.
+479:     logic unused_key_dec;
+480:     always_comb begin
+481:       unused_key_dec = ^{key_dec_sel, key_dec_we};
+482:       for (int s = 0; s < NumShares; s++) begin
+483:         unused_key_dec ^= ^{key_dec_d[s]};
+484:       end
+485:     end
+486:   end
+487: 
+488:   // Make sure that whenever the data/mask inputs of the S-Boxes update, the internally buffered
+489:   // PRD is updated in sync.
+490:   assign key_expand_prd_we = (key_full_we == SP2V_HIGH) ? 1'b1 : 1'b0;
+491: 
+492:   // Key expand data path
+493:   aes_key_expand #(
+494:     .AES192Enable ( AES192Enable ),
+495:     .SecMasking   ( SecMasking   ),
+496:     .SecSBoxImpl  ( SecSBoxImpl  )
+497:   ) u_aes_key_expand (
+498:     .clk_i       ( clk_i              ),
+499:     .rst_ni      ( rst_ni             ),
+500:     .cfg_valid_i ( cfg_valid          ),
+501:     .op_i        ( key_expand_op      ),
+502:     .en_i        ( key_expand_en      ),
+503:     .prd_we_i    ( key_expand_prd_we  ),
+504:     .out_req_o   ( key_expand_out_req ),
+505:     .out_ack_i   ( key_expand_out_ack ),
+506:     .clear_i     ( key_expand_clear   ),
+507:     .round_i     ( key_expand_round   ),
+508:     .key_len_i   ( key_len_i          ),
+509:     .key_i       ( key_full_q         ),
+510:     .key_o       ( key_expand_out     ),
+511:     .prd_i       ( prd_key_expand     ),
+512:     .err_o       ( key_expand_err     )
+513:   );
+514: 
+515:   for (genvar s = 0; s < NumShares; s++) begin : gen_shares_round_key
+516:     always_comb begin : key_words_mux
+517:       unique case (key_words_sel)
+518:         KEY_WORDS_0123: key_words[s] = key_full_q[s][3:0];
+519:         KEY_WORDS_2345: key_words[s] = AES192Enable ? key_full_q[s][5:2] : '0;
+520:         KEY_WORDS_4567: key_words[s] = key_full_q[s][7:4];
+521:         KEY_WORDS_ZERO: key_words[s] = '0;
+522:         default:        key_words[s] = '0;
+523:       endcase
+524:     end
+525: 
+526:     // Convert words to bytes (every key word contains one column).
+527:     assign key_bytes[s] = aes_transpose(key_words[s]);
+528: 
+529:     aes_mix_columns u_aes_key_mix_columns (
+530:       .op_i   ( CIPH_INV               ),
+531:       .data_i ( key_bytes[s]           ),
+532:       .data_o ( key_mix_columns_out[s] )
+533:     );
+534:   end
+535: 
+536:   always_comb begin : round_key_mux
+537:     unique case (round_key_sel)
+538:       ROUND_KEY_DIRECT: round_key = key_bytes;
+539:       ROUND_KEY_MIXED:  round_key = !CiphOpFwdOnly ? key_mix_columns_out : key_bytes;
+540:       default:          round_key = key_bytes;
+541:     endcase
+542:   end
+543: 
+544:   if (CiphOpFwdOnly) begin : gen_unused_key_mix_columns_out
+545:     // Tie-off unused signals.
+546:     logic unused_key_mix_columns_out;
+547:     always_comb begin
+548:       unused_key_mix_columns_out = 1'b0;
+549:       for (int s = 0; s < NumShares; s++) begin
+550:         unused_key_mix_columns_out ^= ^{key_mix_columns_out[s]};
+551:       end
+552:     end
+553:   end
+554: 
+555:   /////////////
+556:   // Control //
+557:   /////////////
+558: 
+559:   // Control
+560:   aes_cipher_control #(
+561:     .CiphOpFwdOnly ( CiphOpFwdOnly ),
+562:     .SecMasking    ( SecMasking    ),
+563:     .SecSBoxImpl   ( SecSBoxImpl   )
+564:   ) u_aes_cipher_control (
+565:     .clk_i                ( clk_i               ),
+566:     .rst_ni               ( rst_ni              ),
+567: 
+568:     .in_valid_i           ( in_valid_i          ),
+569:     .in_ready_o           ( in_ready_o          ),
+570: 
+571:     .out_valid_o          ( out_valid_o         ),
+572:     .out_ready_i          ( out_ready_i         ),
+573: 
+574:     .cfg_valid_i          ( cfg_valid           ),
+575:     .op_i                 ( op_i                ),
+576:     .key_len_i            ( key_len_i           ),
+577:     .crypt_i              ( crypt_i             ),
+578:     .crypt_o              ( crypt_o             ),
+579:     .dec_key_gen_i        ( dec_key_gen_i       ),
+580:     .dec_key_gen_o        ( dec_key_gen_o       ),
+581:     .prng_reseed_i        ( prng_reseed_i       ),
+582:     .prng_reseed_o        ( prng_reseed_o       ),
+583:     .key_clear_i          ( key_clear_i         ),
+584:     .key_clear_o          ( key_clear_o         ),
+585:     .data_out_clear_i     ( data_out_clear_i    ),
+586:     .data_out_clear_o     ( data_out_clear_o    ),
+587:     .mux_sel_err_i        ( mux_sel_err         ),
+588:     .sp_enc_err_i         ( sp_enc_err_q        ),
+589:     .op_err_i             ( op_err              ),
+590:     .alert_fatal_i        ( alert_fatal_i       ),
+591:     .alert_o              ( alert_o             ),
+592: 
+593:     .prng_update_o        ( prd_masking_upd     ),
+594:     .prng_reseed_req_o    ( prd_masking_rsd_req ),
+595:     .prng_reseed_ack_i    ( prd_masking_rsd_ack ),
+596: 
+597:     .state_sel_o          ( state_sel_ctrl      ),
+598:     .state_we_o           ( state_we_ctrl       ),
+599:     .sub_bytes_en_o       ( sub_bytes_en        ),
+600:     .sub_bytes_out_req_i  ( sub_bytes_out_req   ),
+601:     .sub_bytes_out_ack_o  ( sub_bytes_out_ack   ),
+602:     .add_rk_sel_o         ( add_rk_sel_ctrl     ),
+603: 
+604:     .key_expand_op_o      ( key_expand_op       ),
+605:     .key_full_sel_o       ( key_full_sel_ctrl   ),
+606:     .key_full_we_o        ( key_full_we_ctrl    ),
+607:     .key_dec_sel_o        ( key_dec_sel_ctrl    ),
+608:     .key_dec_we_o         ( key_dec_we_ctrl     ),
+609:     .key_expand_en_o      ( key_expand_en       ),
+610:     .key_expand_out_req_i ( key_expand_out_req  ),
+611:     .key_expand_out_ack_o ( key_expand_out_ack  ),
+612:     .key_expand_clear_o   ( key_expand_clear    ),
+613:     .key_expand_round_o   ( key_expand_round    ),
+614:     .key_words_sel_o      ( key_words_sel_ctrl  ),
+615:     .round_key_sel_o      ( round_key_sel_ctrl  )
+616:   );
+617: 
+618:   ///////////////
+619:   // Selectors //
+620:   ///////////////
+621: 
+622:   // We use sparse encodings for these mux selector signals and must ensure that:
+623:   // 1. The synthesis tool doesn't optimize away the sparse encoding.
+624:   // 2. The selector signal is always valid. More precisely, an alert or SVA is triggered if a
+625:   //    selector signal takes on an invalid value.
+626:   // 3. The alert signal remains asserted until reset even if the selector signal becomes valid
+627:   //    again. This is achieved by driving the control FSM into the terminal error state whenever
+628:   //    any mux selector signal becomes invalid.
+629:   //
+630:   // If any mux selector signal becomes invalid, the cipher core further immediately de-asserts
+631:   // the out_valid_o signal to prevent any data from being released.
+632: 
+633:   aes_sel_buf_chk #(
+634:     .Num      ( StateSelNum   ),
+635:     .Width    ( StateSelWidth ),
+636:     .EnSecBuf ( 1'b1          )
+637:   ) u_aes_state_sel_buf_chk (
+638:     .clk_i  ( clk_i          ),
+639:     .rst_ni ( rst_ni         ),
+640:     .sel_i  ( state_sel_ctrl ),
+641:     .sel_o  ( state_sel_raw  ),
+642:     .err_o  ( state_sel_err  )
+643:   );
+644:   assign state_sel = state_sel_e'(state_sel_raw);
+645: 
+646:   aes_sel_buf_chk #(
+647:     .Num      ( AddRKSelNum   ),
+648:     .Width    ( AddRKSelWidth ),
+649:     .EnSecBuf ( 1'b1          )
+650:   ) u_aes_add_rk_sel_buf_chk (
+651:     .clk_i  ( clk_i           ),
+652:     .rst_ni ( rst_ni          ),
+653:     .sel_i  ( add_rk_sel_ctrl ),
+654:     .sel_o  ( add_rk_sel_raw  ),
+655:     .err_o  ( add_rk_sel_err  )
+656:   );
+657:   assign add_rk_sel = add_rk_sel_e'(add_rk_sel_raw);
+658: 
+659:   aes_sel_buf_chk #(
+660:     .Num      ( KeyFullSelNum   ),
+661:     .Width    ( KeyFullSelWidth ),
+662:     .EnSecBuf ( 1'b1            )
+663:   ) u_aes_key_full_sel_buf_chk (
+664:     .clk_i  ( clk_i             ),
+665:     .rst_ni ( rst_ni            ),
+666:     .sel_i  ( key_full_sel_ctrl ),
+667:     .sel_o  ( key_full_sel_raw  ),
+668:     .err_o  ( key_full_sel_err  )
+669:   );
+670:   assign key_full_sel = key_full_sel_e'(key_full_sel_raw);
+671: 
+672:   aes_sel_buf_chk #(
+673:     .Num      ( KeyDecSelNum   ),
+674:     .Width    ( KeyDecSelWidth ),
+675:     .EnSecBuf ( 1'b1           )
+676:   ) u_aes_key_dec_sel_buf_chk (
+677:     .clk_i  ( clk_i            ),
+678:     .rst_ni ( rst_ni           ),
+679:     .sel_i  ( key_dec_sel_ctrl ),
+680:     .sel_o  ( key_dec_sel_raw  ),
+681:     .err_o  ( key_dec_sel_err  )
+682:   );
+683:   assign key_dec_sel = key_dec_sel_e'(key_dec_sel_raw);
+684: 
+685:   aes_sel_buf_chk #(
+686:     .Num      ( KeyWordsSelNum   ),
+687:     .Width    ( KeyWordsSelWidth ),
+688:     .EnSecBuf ( 1'b1             )
+689:   ) u_aes_key_words_sel_buf_chk (
+690:     .clk_i  ( clk_i              ),
+691:     .rst_ni ( rst_ni             ),
+692:     .sel_i  ( key_words_sel_ctrl ),
+693:     .sel_o  ( key_words_sel_raw  ),
+694:     .err_o  ( key_words_sel_err  )
+695:   );
+696:   assign key_words_sel = key_words_sel_e'(key_words_sel_raw);
+697: 
+698:   aes_sel_buf_chk #(
+699:     .Num      ( RoundKeySelNum   ),
+700:     .Width    ( RoundKeySelWidth ),
+701:     .EnSecBuf ( 1'b1             )
+702:   ) u_aes_round_key_sel_buf_chk (
+703:     .clk_i  ( clk_i              ),
+704:     .rst_ni ( rst_ni             ),
+705:     .sel_i  ( round_key_sel_ctrl ),
+706:     .sel_o  ( round_key_sel_raw  ),
+707:     .err_o  ( round_key_sel_err  )
+708:   );
+709:   assign round_key_sel = round_key_sel_e'(round_key_sel_raw);
+710: 
+711:   // Signal invalid mux selector signals to control FSM which will lock up and trigger an alert.
+712:   assign mux_sel_err = state_sel_err | add_rk_sel_err | key_full_sel_err |
+713:       key_dec_sel_err | key_words_sel_err | round_key_sel_err;
+714: 
+715:   //////////////////////////////
+716:   // Sparsely Encoded Signals //
+717:   //////////////////////////////
+718: 
+719:   // We use sparse encodings for various critical signals and must ensure that:
+720:   // 1. The synthesis tool doesn't optimize away the sparse encoding.
+721:   // 2. The sparsely encoded signal is always valid. More precisely, an alert or SVA is triggered
+722:   //    if a sparse signal takes on an invalid value.
+723:   // 3. The alert signal remains asserted until reset even if the sparse signal becomes valid again
+724:   //    This is achieved by driving the control FSM into the terminal error state whenever any
+725:   //    sparsely encoded signal becomes invalid.
+726:   //
+727:   // If any sparsely encoded signal becomes invalid, the cipher core further immediately de-asserts
+728:   // the out_valid_o signal to prevent any data from being released.
+729: 
+730:   // We use vectors of sparsely encoded signals to reduce code duplication.
+731:   localparam int unsigned NumSp2VSig = 3;
+732:   sp2v_e [NumSp2VSig-1:0]                sp2v_sig;
+733:   sp2v_e [NumSp2VSig-1:0]                sp2v_sig_chk;
+734:   logic  [NumSp2VSig-1:0][Sp2VWidth-1:0] sp2v_sig_chk_raw;
+735:   logic  [NumSp2VSig-1:0]                sp2v_sig_err;
+736: 
+737:   assign sp2v_sig[0] = state_we_ctrl;
+738:   assign sp2v_sig[1] = key_full_we_ctrl;
+739:   assign sp2v_sig[2] = key_dec_we_ctrl;
+740: 
+741:   // All signals inside sp2v_sig are eventually converted to single-rail signals.
+742:   localparam bit [NumSp2VSig-1:0] Sp2VEnSecBuf = {NumSp2VSig{1'b1}};
+743: 
+744:   // Individually check sparsely encoded signals.
+745:   for (genvar i = 0; i < NumSp2VSig; i++) begin : gen_sel_buf_chk
+746:     aes_sel_buf_chk #(
+747:       .Num      ( Sp2VNum         ),
+748:       .Width    ( Sp2VWidth       ),
+749:       .EnSecBuf ( Sp2VEnSecBuf[i] )
+750:     ) u_aes_sp2v_sig_buf_chk_i (
+751:       .clk_i  ( clk_i               ),
+752:       .rst_ni ( rst_ni              ),
+753:       .sel_i  ( sp2v_sig[i]         ),
+754:       .sel_o  ( sp2v_sig_chk_raw[i] ),
+755:       .err_o  ( sp2v_sig_err[i]     )
+756:     );
+757:     assign sp2v_sig_chk[i] = sp2v_e'(sp2v_sig_chk_raw[i]);
+758:   end
+759: 
+760:   assign state_we    = sp2v_sig_chk[0];
+761:   assign key_full_we = sp2v_sig_chk[1];
+762:   assign key_dec_we  = sp2v_sig_chk[2];
+763: 
+764:   // Collect encoding errors.
+765:   // We instantiate the checker modules as close as possible to where the sparsely encoded signals
+766:   // are used. Here, we collect also encoding errors detected in other places of the cipher core.
+767:   assign sp_enc_err_d = |sp2v_sig_err | sub_bytes_err | key_expand_err;
+768: 
+769:   // We need to register the collected error signal to avoid circular loops in the cipher core
+770:   // controller related to out_valid_o and detecting errors in state_we_o and sub_bytes_out_ack.
+771:   always_ff @(posedge clk_i or negedge rst_ni) begin : reg_sp_enc_err
+772:     if (!rst_ni) begin
+773:       sp_enc_err_q <= 1'b0;
+774:     end else if (sp_enc_err_d) begin
+775:       sp_enc_err_q <= 1'b1;
+776:     end
+777:   end
+778: 
+779:   /////////////
+780:   // Outputs //
+781:   /////////////
+782: 
+783:   // The output of the last round is not stored into the state register but forwarded directly.
+784:   assign state_o = add_round_key_out;
+785: 
+786:   ////////////////
+787:   // Assertions //
+788:   ////////////////
+789: 
+790: // Typically assertions already contain this macro, which ensures that assertions are only compiled
+791: // in simulation and FPV. However, we wrap the entire assertion section with INC_ASSERT so that the
+792: // helper logic below is not synthesized either, since that could cause issues in DC.
+793: `ifdef INC_ASSERT
+794:   //VCS coverage off
+795:   // pragma coverage off
+796: 
+797:   // Create a lint error to reduce the risk of accidentally disabling the masking.
+798:   `ASSERT_STATIC_LINT_ERROR(AesSecMaskingNonDefault, SecMasking == 1)
+799: 
+800:   // Cipher core masking requires a masked SBox and vice versa.
+801:   `ASSERT_INIT(AesMaskedCoreAndSBox,
+802:       (SecMasking &&
+803:       (SecSBoxImpl == SBoxImplCanrightMasked ||
+804:        SecSBoxImpl == SBoxImplCanrightMaskedNoreuse ||
+805:        SecSBoxImpl == SBoxImplDom)) ||
+806:       (!SecMasking &&
+807:       (SecSBoxImpl == SBoxImplLut ||
+808:        SecSBoxImpl == SBoxImplCanright)))
+809: 
+810:   // Signals used for assertions only.
+811:   logic prd_clearing_equals_output, unused_prd_clearing_equals_output;
+812:   assign prd_clearing_equals_output = (prd_clearing_state_i == add_round_key_out);
+813:   assign unused_prd_clearing_equals_output = prd_clearing_equals_output;
+814: 
+815:   // Ensure that the state register gets cleared with pseudo-random data at the end of the last
+816:   // round. The following two scenarios are unlikely but not illegal:
+817:   // 1. The newly loaded initial state matches the previous output (the round counter is only
+818:   //    cleared upon loading the new initial state).
+819:   // 2. The previous pseudo-random data is equal to the previous output.
+820:   // Otherwise, we must see an alert e.g. because the state multiplexer got glitched.
+821:   `ASSERT(AesSecCmDataRegKeySca, (state_we == SP2V_HIGH) &&
+822:       ((key_len_i == AES_128 && u_aes_cipher_control.rnd_ctr == 4'd10) ||
+823:        (key_len_i == AES_192 && u_aes_cipher_control.rnd_ctr == 4'd12) ||
+824:        (key_len_i == AES_256 && u_aes_cipher_control.rnd_ctr == 4'd14)) |=>
+825:       (state_q != $past(add_round_key_out)) ||
+826:       (state_q == $past(state_init_i)) ||
+827:       $past(prd_clearing_equals_output) || alert_o)
+828: 
+829:   if (SecMasking) begin : gen_sec_cm_key_masking_svas
+830:       // The number of clock cycles a regular AES round takes - only used for assertions.
+831:       localparam int unsigned NumCyclesPerRound = (SecSBoxImpl == SBoxImplDom) ? 5 : 1;
+832:       logic unused_param;
+833:       assign unused_param = (NumCyclesPerRound == 1);
+834:       // Ensure that SubBytes gets fresh PRD input for every evaluation unless mask forcing is
+835:       // enabled. We effectively check that the PRNG has been updated at least once within the
+836:       // last NumCyclesPerRound cycles. This also holds for the very first round, as the PRNG
+837:       // is always updated in the last cycle of the IDLE state and/or the first cycle of the
+838:       // INIT state.
+839:       `ASSERT(AesSecCmKeyMaskingPrdSubBytes,
+840:           sub_bytes_en == SP2V_HIGH && ($past(sub_bytes_en) == SP2V_LOW ||
+841:               ($past(sub_bytes_out_req) == SP2V_HIGH &&
+842:                $past(sub_bytes_out_ack) == SP2V_HIGH)) |=>
+843:           $past(prd_sub_bytes_q) != $past(prd_sub_bytes_q, NumCyclesPerRound + 1) ||
+844:           SecAllowForcingMasks && force_masks_i)
+845: 
+846:       // Ensure that the PRNG has been updated between masking the input and starting the first
+847:       // SubBytes evaluation/KeyExpand operation unless mask forcing is enabled. For AES-256,
+848:       // we just spend 1 cycle in the INIT state and KeyExpand isn't evaluating its S-Boxes,
+849:       // i.e., no fresh randomness is required. For the other key lengths, KeyExpand evaluates
+850:       // its S-Boxes which takes NumCyclesPerRound cycles. When computing the start key for
+851:       // decryption, the input isn't loaded and the PRNG is thus not advanced.
+852:       `ASSERT(AesSecCmKeyMaskingInitialPrngUpdateSubBytes,
+853:           sub_bytes_en == SP2V_HIGH && $past(sub_bytes_en) == SP2V_LOW |=>
+854:           (key_len_i == AES_256 &&
+855:               $past(prd_masking) != $past(prd_masking, 3)) ||
+856:           ((key_len_i == AES_128 || key_len_i == AES_192) &&
+857:               $past(prd_masking) != $past(prd_masking, NumCyclesPerRound + 2)) ||
+858:           (SecAllowForcingMasks && force_masks_i))
+859:       `ASSERT(AesSecCmKeyMaskingInitialPrngUpdateKeyExpand,
+860:           key_expand_en == SP2V_HIGH && $past(key_expand_en) == SP2V_LOW |=>
+861:           (key_len_i == AES_256 &&
+862:               $past(prd_masking) != $past(prd_masking, 3)) ||
+863:           ((key_len_i == AES_128 || key_len_i == AES_192) &&
+864:               $past(prd_masking) != $past(prd_masking, 2)) ||
+865:           (SecAllowForcingMasks && force_masks_i) || dec_key_gen_o == SP2V_HIGH)
+866: 
+867:       // Ensure none of the state shares keeps being constant during encryption/decryption
+868:       // unless mask forcing is enabled. Even though unlikely it's not impossible that one
+869:       // share remains constant throughout one round. The SVAs thus only fire if a share
+870:       // remains constant across two rounds.
+871:       for (genvar s = 0; s < NumShares; s++) begin : gen_sec_cm_key_masking_share_svas
+872:         `ASSERT(AesSecCmKeyMaskingStateShare, state_we == SP2V_HIGH &&
+873:             (crypt_i == SP2V_HIGH || crypt_o == SP2V_HIGH) |=>
+874:             state_q[s] != $past(state_q[s], NumCyclesPerRound) ||
+875:             $past(state_q[s], NumCyclesPerRound) != $past(state_q[s], 2*NumCyclesPerRound) ||
+876:             (SecAllowForcingMasks && force_masks_i) || dec_key_gen_o == SP2V_HIGH)
+877:         `ASSERT(AesSecCmKeyMaskingOutputShare,
+878:             (out_valid_o == SP2V_HIGH && $past(out_valid_o) == SP2V_LOW) &&
+879:             (crypt_o == SP2V_HIGH) |=>
+880:             $past(state_o[s]) != $past(state_q[s], NumCyclesPerRound) ||
+881:             $past(state_q[s], NumCyclesPerRound) != $past(state_q[s], 2*NumCyclesPerRound) ||
+882:             (SecAllowForcingMasks && force_masks_i) || dec_key_gen_o == SP2V_HIGH)
+883:       end
+884:   end
+885: 
+886:   // Make sure the output of the masking PRNG is properly extracted without creating overlaps
+887:   // in the data input masks, or between the PRD fed to the key expand module and SubBytes.
+888:   if (WidthPRDSBox > 8) begin : gen_prd_extract_assert
+889:     // For one row of the state matrix, extract the WidthPRDSBox-8 MSBs of the per-S-Box PRD from
+890:     // the PRNG output.
+891:     function automatic logic [3:0][(WidthPRDSBox-8)-1:0] aes_prd_get_msbs(
+892:       logic [(4*WidthPRDSBox)-1:0] in
+893:     );
+894:       logic [3:0][(WidthPRDSBox-8)-1:0] prd_msbs;
+895:       for (int i = 0; i < 4; i++) begin
+896:         prd_msbs[i] = in[(i*WidthPRDSBox) + 8 +: (WidthPRDSBox-8)];
+897:       end
+898:       return prd_msbs;
+899:     endfunction
+900: 
+901:     // For one row of the state matrix, undo the extraction of LSBs and MSBs of the per-S-Box PRD
+902:     // from the PRNG output. This can be used to verify proper extraction (no overlap of output
+903:     // masks and PRD for masked Canright S-Box implementations, no unused PRNG output).
+904:     function automatic logic [4*WidthPRDSBox-1:0] aes_prd_concat_bits(
+905:       logic [3:0]                 [7:0] prd_lsbs,
+906:       logic [3:0][(WidthPRDSBox-8)-1:0] prd_msbs
+907:     );
+908:       logic [(4*WidthPRDSBox)-1:0] prd;
+909:       for (int i = 0; i < 4; i++) begin
+910:         prd[(i*WidthPRDSBox) +: WidthPRDSBox] = {prd_msbs[i], prd_lsbs[i]};
+911:       end
+912:       return prd;
+913:     endfunction
+914: 
+915:     // Check for correct extraction of masking PRNG output without overlaps.
+916:     logic            [WidthPRDMasking-1:0] unused_prd_masking;
+917:     logic [3:0][3:0][(WidthPRDSBox-8)-1:0] unused_prd_msbs;
+918:     for (genvar i = 0; i < 4; i++) begin : gen_unused_prd_msbs
+919:       assign unused_prd_msbs[i] = aes_prd_get_msbs(prd_masking[i * WidthPRDRow +: WidthPRDRow]);
+920:     end
+921:     for (genvar i = 0; i < 4; i++) begin : gen_unused_prd_masking
+922:       assign unused_prd_masking[i * WidthPRDRow +: WidthPRDRow] =
+923:           aes_prd_concat_bits(data_in_mask[i], unused_prd_msbs[i]);
+924:     end
+925:     assign unused_prd_masking[WidthPRDMasking-1 -: WidthPRDKey] = prd_key_expand;
+926:     `ASSERT(AesMskgPrdExtraction, prd_masking == unused_prd_masking)
+927:   end
+928:   //VCS coverage on
+929:   // pragma coverage on
+930: `endif
+931: 
+932: endmodule
+
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // AES cipher core implementation
+6: //
+7: // This module contains the AES cipher core including, state register, full key and decryption key
+8: // registers as well as key expand module and control unit.
+9: //
+10: //
+11: // Masking
+12: // -------
+13: //
+14: // If the parameter "Masking" is set to one, first-order masking is applied to the entire
+15: // cipher core including key expand module. For details, see Rivain et al., "Provably secure
+16: // higher-order masking of AES" available at XXXX .
+17: //
+18: //
+19: // Details on the data formats
+20: // ---------------------------
+21: //
+22: // This implementation uses 4-dimensional SystemVerilog arrays to represent the AES state:
+23: //
+24: //   logic [3:0][3:0][7:0] state_q [NumShares];
+25: //
+26: // The fourth dimension (unpacked) corresponds to the different shares. The first element holds the
+27: // (masked) data share whereas the other elements hold the masks (masked implementation only).
+28: // The three packed dimensions correspond to the 128-bit state matrix per share. This
+29: // implementation uses the same encoding as the Advanced Encryption Standard (AES) FIPS Publication
+30: // 197 available at XXXX (see Section
+31: // 3.4). An input sequence of 16 bytes (128-bit, left most byte is the first one)
+32: //
+33: //   b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
+34: //
+35: // is mapped to the state matrix as
+36: //
+37: //   [ b0  b4  b8  b12 ]
+38: //   [ b1  b5  b9  b13 ]
+39: //   [ b2  b6  b10 b14 ]
+40: //   [ b3  b7  b11 b15 ] .
+41: //
+42: // This is mapped to three packed dimensions of SystemVerilog array as follows:
+43: // - The first dimension corresponds to the rows. Thus, state_q[0] gives
+44: //   - The first row of the state matrix       [ b0   b4  b8  b12 ], or
+45: //   - A 32-bit packed SystemVerilog array 32h'{ b12, b8, b4, b0  }.
+46: //
+47: // - The second dimension corresponds to the columns. To access complete columns, the state matrix
+48: //   must be transposed first. Thus state_transposed = aes_pkg::aes_transpose(state_q) and then
+49: //   state_transposed[1] gives
+50: //   - The second column of the state matrix   [ b4  b5  b6  b7 ], or
+51: //   - A 32-bit packed SystemVerilog array 32h'{ b7, b6, b5, b4 }.
+52: //
+53: // - The third dimension corresponds to the bytes.
+54: //
+55: // Note that the CSRs are little-endian. The input sequence above is provided to 32-bit DATA_IN_0 -
+56: // DATA_IN_3 registers as
+57: //                   MSB            LSB
+58: // - DATA_IN_0 32h'{ b3 , b2 , b1 , b0  }
+59: // - DATA_IN_1 32h'{ b7 , b6 , b4 , b4  }
+60: // - DATA_IN_2 32h'{ b11, b10, b9 , b8  }
+61: // - DATA_IN_3 32h'{ b15, b14, b13, b12 } .
+62: //
+63: // The input state can thus be obtained by transposing the content of the DATA_IN_0 - DATA_IN_3
+64: // registers.
+65: //
+66: // Similarly, the implementation uses a 3-dimensional array to represent the AES keys:
+67: //
+68: //   logic     [7:0][31:0] key_full_q [NumShares]
+69: //
+70: // The third dimension (unpacked) corresponds to the different shares. The first element holds the
+71: // (masked) key share whereas the other elements hold the masks (masked implementation only).
+72: // The two packed dimensions correspond to the 256-bit key per share. This implementation uses
+73: // the same encoding as the Advanced Encryption Standard (AES) FIPS Publication
+74: // 197 available at XXXX .
+75: //
+76: // The first packed dimension corresponds to the 8 key words. The second packed dimension
+77: // corresponds to the 32 bits per key word. A key sequence of 32 bytes (256-bit, left most byte is
+78: // the first one)
+79: //
+80: //   b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 ... ... b28 b29 b30 b31
+81: //
+82: // is mapped to the key words and registers (little-endian) as
+83: //                      MSB            LSB
+84: // - KEY_SHARE0_0 32h'{ b3 , b2 , b1 , b0  }
+85: // - KEY_SHARE0_1 32h'{ b7 , b6 , b4 , b4  }
+86: // - KEY_SHARE0_2 32h'{ b11, b10, b9 , b8  }
+87: // - KEY_SHARE0_3 32h'{ b15, b14, b13, b12 }
+88: // - KEY_SHARE0_4 32h'{  .    .    .    .  }
+89: // - KEY_SHARE0_5 32h'{  .    .    .    .  }
+90: // - KEY_SHARE0_6 32h'{  .    .    .    .  }
+91: // - KEY_SHARE0_7 32h'{ b31, b30, b29, b28 } .
+92: 
+93: `include "prim_assert.sv"
+94: 
+95: module aes_cipher_core import aes_pkg::*;
+96: #(
+97:   parameter bit          AES192Enable         = 1,
+98:   parameter bit          CiphOpFwdOnly        = 0,
+99:   parameter bit          SecMasking           = 1,
+100:   parameter sbox_impl_e  SecSBoxImpl          = SBoxImplDom,
+101:   parameter bit          SecAllowForcingMasks = 0,
+102:   parameter bit          SecSkipPRNGReseeding = 0,
+103:   parameter int unsigned EntropyWidth         = edn_pkg::ENDPOINT_BUS_WIDTH,
+104: 
+105:   localparam int         NumShares            = SecMasking ? 2 : 1, // derived parameter
+106: 
+107:   parameter masking_lfsr_seed_t RndCnstMaskingLfsrSeed = RndCnstMaskingLfsrSeedDefault,
+108:   parameter masking_lfsr_perm_t RndCnstMaskingLfsrPerm = RndCnstMaskingLfsrPermDefault
+109: ) (
+110:   input  logic                        clk_i,
+111:   input  logic                        rst_ni,
+112: 
+113:   // Input handshake signals
+114:   input  sp2v_e                       in_valid_i,
+115:   output sp2v_e                       in_ready_o,
+116: 
+117:   // Output handshake signals
+118:   output sp2v_e                       out_valid_o,
+119:   input  sp2v_e                       out_ready_i,
+120: 
+121:   // Control and sync signals
+122:   input  logic                        cfg_valid_i, // Used for gating assertions only.
+123:   input  ciph_op_e                    op_i,
+124:   input  key_len_e                    key_len_i,
+125:   input  sp2v_e                       crypt_i,
+126:   output sp2v_e                       crypt_o,
+127:   input  sp2v_e                       dec_key_gen_i,
+128:   output sp2v_e                       dec_key_gen_o,
+129:   input  logic                        prng_reseed_i,
+130:   output logic                        prng_reseed_o,
+131:   input  logic                        key_clear_i,
+132:   output logic                        key_clear_o,
+133:   input  logic                        data_out_clear_i, // Re-use the cipher core muxes.
+134:   output logic                        data_out_clear_o,
+135:   input  logic                        alert_fatal_i,
+136:   output logic                        alert_o,
+137: 
+138:   // Pseudo-random data for register clearing
+139:   input  logic        [3:0][3:0][7:0] prd_clearing_state_i [NumShares],
+140:   input  logic            [7:0][31:0] prd_clearing_key_i [NumShares],
+141: 
+142:   // Masking PRNG
+143:   input  logic                        force_masks_i, // Useful for SCA only.
+144:   output logic        [3:0][3:0][7:0] data_in_mask_o,
+145:   output logic                        entropy_req_o,
+146:   input  logic                        entropy_ack_i,
+147:   input  logic     [EntropyWidth-1:0] entropy_i,
+148: 
+149:   // I/O data & initial key
+150:   input  logic        [3:0][3:0][7:0] state_init_i [NumShares],
+151:   input  logic            [7:0][31:0] key_init_i [NumShares],
+152:   output logic        [3:0][3:0][7:0] state_o [NumShares]
+153: );
+154: 
+155:   // Signals
+156:   logic               [3:0][3:0][7:0] state_d [NumShares];
+157:   logic               [3:0][3:0][7:0] state_q [NumShares];
+158:   sp2v_e                              state_we_ctrl;
+159:   sp2v_e                              state_we;
+160:   logic           [StateSelWidth-1:0] state_sel_raw;
+161:   state_sel_e                         state_sel_ctrl;
+162:   state_sel_e                         state_sel;
+163:   logic                               state_sel_err;
+164: 
+165:   sp2v_e                              sub_bytes_en;
+166:   sp2v_e                              sub_bytes_out_req;
+167:   sp2v_e                              sub_bytes_out_ack;
+168:   logic                               sub_bytes_err;
+169:   logic               [3:0][3:0][7:0] sub_bytes_out;
+170:   logic               [3:0][3:0][7:0] sb_in_mask;
+171:   logic               [3:0][3:0][7:0] sb_out_mask;
+172:   logic               [3:0][3:0][7:0] shift_rows_in [NumShares];
+173:   logic               [3:0][3:0][7:0] shift_rows_out [NumShares];
+174:   logic               [3:0][3:0][7:0] mix_columns_out [NumShares];
+175:   logic               [3:0][3:0][7:0] add_round_key_in [NumShares];
+176:   logic               [3:0][3:0][7:0] add_round_key_out [NumShares];
+177:   logic           [AddRKSelWidth-1:0] add_rk_sel_raw;
+178:   add_rk_sel_e                        add_rk_sel_ctrl;
+179:   add_rk_sel_e                        add_rk_sel;
+180:   logic                               add_rk_sel_err;
+181: 
+182:   logic                   [7:0][31:0] key_full_d [NumShares];
+183:   logic                   [7:0][31:0] key_full_q [NumShares];
+184:   sp2v_e                              key_full_we_ctrl;
+185:   sp2v_e                              key_full_we;
+186:   logic         [KeyFullSelWidth-1:0] key_full_sel_raw;
+187:   key_full_sel_e                      key_full_sel_ctrl;
+188:   key_full_sel_e                      key_full_sel;
+189:   logic                               key_full_sel_err;
+190:   logic                   [7:0][31:0] key_dec_d [NumShares];
+191:   logic                   [7:0][31:0] key_dec_q [NumShares];
+192:   sp2v_e                              key_dec_we_ctrl;
+193:   sp2v_e                              key_dec_we;
+194:   logic          [KeyDecSelWidth-1:0] key_dec_sel_raw;
+195:   key_dec_sel_e                       key_dec_sel_ctrl;
+196:   key_dec_sel_e                       key_dec_sel;
+197:   logic                               key_dec_sel_err;
+198:   logic                   [7:0][31:0] key_expand_out [NumShares];
+199:   ciph_op_e                           key_expand_op;
+200:   sp2v_e                              key_expand_en;
+201:   logic                               key_expand_prd_we;
+202:   sp2v_e                              key_expand_out_req;
+203:   sp2v_e                              key_expand_out_ack;
+204:   logic                               key_expand_err;
+205:   logic                               key_expand_clear;
+206:   logic                         [3:0] key_expand_round;
+207:   logic        [KeyWordsSelWidth-1:0] key_words_sel_raw;
+208:   key_words_sel_e                     key_words_sel_ctrl;
+209:   key_words_sel_e                     key_words_sel;
+210:   logic                               key_words_sel_err;
+211:   logic                   [3:0][31:0] key_words [NumShares];
+212:   logic               [3:0][3:0][7:0] key_bytes [NumShares];
+213:   logic               [3:0][3:0][7:0] key_mix_columns_out [NumShares];
+214:   logic               [3:0][3:0][7:0] round_key [NumShares];
+215:   logic        [RoundKeySelWidth-1:0] round_key_sel_raw;
+216:   round_key_sel_e                     round_key_sel_ctrl;
+217:   round_key_sel_e                     round_key_sel;
+218:   logic                               round_key_sel_err;
+219: 
+220:   logic                               cfg_valid;
+221:   logic                               mux_sel_err;
+222:   logic                               sp_enc_err_d, sp_enc_err_q;
+223:   logic                               op_err;
+224: 
+225:   // Pseudo-random data for masking purposes
+226:   logic         [WidthPRDMasking-1:0] prd_masking;
+227:   logic  [3:0][3:0][WidthPRDSBox-1:0] prd_sub_bytes_d;
+228:   logic  [3:0][3:0][WidthPRDSBox-1:0] prd_sub_bytes_q;
+229:   logic             [WidthPRDKey-1:0] prd_key_expand;
+230:   logic                               prd_masking_upd;
+231:   logic                               prd_masking_rsd_req;
+232:   logic                               prd_masking_rsd_ack;
+233: 
+234:   logic               [3:0][3:0][7:0] data_in_mask;
+235: 
+236:   // op_i is one-hot encoded. Check the provided value and trigger an alert upon detecing invalid
+237:   // encodings.
+238:   assign op_err    = ~(op_i == CIPH_FWD || op_i == CIPH_INV);
+239:   assign cfg_valid = cfg_valid_i & ~op_err;
+240: 
+241:   //////////
+242:   // Data //
+243:   //////////
+244: 
+245:   // SEC_CM: DATA_REG.SEC_WIPE
+246:   // State registers
+247:   always_comb begin : state_mux
+248:     unique case (state_sel)
+249:       STATE_INIT:  state_d = state_init_i;
+250:       STATE_ROUND: state_d = add_round_key_out;
+251:       STATE_CLEAR: state_d = add_round_key_out;
+252:       default:     state_d = prd_clearing_state_i;
+253:     endcase
+254:   end
+255: 
+256:   always_ff @(posedge clk_i or negedge rst_ni) begin : state_reg
+257:     if (!rst_ni) begin
+258:       state_q <= '{default: '0};
+259:     end else if (state_we == SP2V_HIGH) begin
+260:       state_q <= state_d;
+261:     end
+262:   end
+263: 
+264:   // Masking
+265:   if (!SecMasking) begin : gen_no_masks
+266:     // The masks are ignored anyway, they can be 0.
+267:     assign sb_in_mask  = '0;
+268:     assign prd_masking = '0;
+269: 
+270:     // Tie-off unused signals.
+271:     logic unused_entropy_ack;
+272:     logic [EntropyWidth-1:0] unused_entropy;
+273:     assign unused_entropy_ack = entropy_ack_i;
+274:     assign unused_entropy     = entropy_i;
+275:     assign entropy_req_o      = 1'b0;
+276: 
+277:     logic unused_force_masks;
+278:     logic unused_prd_masking_upd;
+279:     logic unused_prd_masking_rsd_req;
+280:     assign unused_force_masks         = force_masks_i;
+281:     assign unused_prd_masking_upd     = prd_masking_upd;
+282:     assign unused_prd_masking_rsd_req = prd_masking_rsd_req;
+283:     assign prd_masking_rsd_ack        = 1'b0;
+284: 
+285:     logic [3:0][3:0][7:0] unused_sb_out_mask;
+286:     assign unused_sb_out_mask = sb_out_mask;
+287: 
+288:   end else begin : gen_masks
+289:     // The input mask is the mask share of the state.
+290:     assign sb_in_mask  = state_q[1];
+291: 
+292:     // The masking PRNG generates:
+293:     // - the pseudo-random data (PRD) required by SubBytes,
+294:     // - the PRD required by the key expand module (has 4 S-Boxes internally).
+295:     aes_prng_masking #(
+296:       .Width                ( WidthPRDMasking        ),
+297:       .EntropyWidth         ( EntropyWidth           ),
+298:       .SecAllowForcingMasks ( SecAllowForcingMasks   ),
+299:       .SecSkipPRNGReseeding ( SecSkipPRNGReseeding   ),
+300:       .RndCnstLfsrSeed      ( RndCnstMaskingLfsrSeed ),
+301:       .RndCnstLfsrPerm      ( RndCnstMaskingLfsrPerm )
+302:     ) u_aes_prng_masking (
+303:       .clk_i         ( clk_i               ),
+304:       .rst_ni        ( rst_ni              ),
+305:       .force_masks_i ( force_masks_i       ),
+306:       .data_update_i ( prd_masking_upd     ),
+307:       .data_o        ( prd_masking         ),
+308:       .reseed_req_i  ( prd_masking_rsd_req ),
+309:       .reseed_ack_o  ( prd_masking_rsd_ack ),
+310:       .entropy_req_o ( entropy_req_o       ),
+311:       .entropy_ack_i ( entropy_ack_i       ),
+312:       .entropy_i     ( entropy_i           )
+313:     );
+314:   end
+315: 
+316:   // Extract randomness for key expand module and SubBytes.
+317:   //
+318:   // The masking PRNG output has the following shape:
+319:   // prd_masking = { prd_key_expand, prd_sub_bytes_d }
+320:   assign prd_key_expand  = prd_masking[WidthPRDMasking-1 -: WidthPRDKey];
+321:   assign prd_sub_bytes_d = prd_masking[WidthPRDData-1 -: WidthPRDData];
+322: 
+323:   // PRD buffering
+324:   if (!SecMasking) begin : gen_no_prd_buffer
+325:     // The masks are ignored anyway.
+326:     assign prd_sub_bytes_q = prd_sub_bytes_d;
+327: 
+328:   end else begin : gen_prd_buffer
+329:     // PRD buffer stage to:
+330:     // 1. Make sure the S-Boxes get always presented new data/mask inputs together with fresh PRD
+331:     //    for remasking.
+332:     // 2. Prevent glitches originating from inside the masking PRNG from propagating into the
+333:     //    masked S-Boxes.
+334:     always_ff @(posedge clk_i or negedge rst_ni) begin : prd_sub_bytes_reg
+335:       if (!rst_ni) begin
+336:         prd_sub_bytes_q <= '0;
+337:       end else if (state_we == SP2V_HIGH) begin
+338:         prd_sub_bytes_q <= prd_sub_bytes_d;
+339:       end
+340:     end
+341:   end
+342: 
+343:   // Convert the 3-dimensional prd_sub_bytes_q array to a 1-dimensional packed array for the
+344:   // aes_prd_get_lsbs() function used below.
+345:   logic [WidthPRDData-1:0] prd_sub_bytes;
+346:   assign prd_sub_bytes = prd_sub_bytes_q;
+347: 
+348:   // Extract randomness for masking the input data.
+349:   //
+350:   // The masking PRNG is used for generating both the PRD for the S-Boxes/SubBytes operation as
+351:   // well as for the input data masks. When using any of the masked Canright S-Box implementations,
+352:   // it is important that the SubBytes input masks (generated by the PRNG in Round X-1) and the
+353:   // SubBytes output masks (generated by the PRNG in Round X) are independent. This can be achieved
+354:   // by using e.g. an unrolled Bivium stream cipher primitive inside the PRNG. Since the input data
+355:   // masks become the SubBytes input masks in the first round, we select the same 8 bit lanes for
+356:   // the input data masks which are also used to form the SubBytes output mask for the masked
+357:   // Canright S-Box implementations, i.e., the 8 LSBs of the per S-Box PRD. In particular, we have:
+358:   //
+359:   // prd_masking = { prd_key_expand, ... , sb_prd[4], sb_out_mask[4], sb_prd[0], sb_out_mask[0] }
+360:   //
+361:   // Where sb_out_mask[x] contains the SubBytes output mask for byte x (when using a masked
+362:   // Canright S-Box implementation) and sb_prd[x] contains additional PRD consumed by SubBytes for
+363:   // byte x.
+364:   //
+365:   // When using a masked S-Box implementation other than Canright, we still select the 8 LSBs of
+366:   // the per-S-Box PRD to form the input data mask of the corresponding byte. We do this to
+367:   // distribute the input data masks over all output bits the masking PRNG. We do the extraction on
+368:   // a row basis.
+369:   localparam int unsigned WidthPRDRow = 4*WidthPRDSBox;
+370:   for (genvar i = 0; i < 4; i++) begin : gen_in_mask
+371:     assign data_in_mask[i] = aes_prd_get_lsbs(prd_sub_bytes[i * WidthPRDRow +: WidthPRDRow]);
+372:   end
+373: 
+374:   // Rotate the data input masks by 64 bits to ensure the data input masks are independent
+375:   // from the PRD fed to the S-Boxes/SubBytes operation.
+376:   assign data_in_mask_o = {data_in_mask[1], data_in_mask[0], data_in_mask[3], data_in_mask[2]};
+377: 
+378:   // Cipher data path
+379:   aes_sub_bytes #(
+380:     .SecSBoxImpl ( SecSBoxImpl )
+381:   ) u_aes_sub_bytes (
+382:     .clk_i     ( clk_i             ),
+383:     .rst_ni    ( rst_ni            ),
+384:     .en_i      ( sub_bytes_en      ),
+385:     .out_req_o ( sub_bytes_out_req ),
+386:     .out_ack_i ( sub_bytes_out_ack ),
+387:     .op_i      ( op_i              ),
+388:     .data_i    ( state_q[0]        ),
+389:     .mask_i    ( sb_in_mask        ),
+390:     .prd_i     ( prd_sub_bytes_q   ),
+391:     .data_o    ( sub_bytes_out     ),
+392:     .mask_o    ( sb_out_mask       ),
+393:     .err_o     ( sub_bytes_err     )
+394:   );
+395: 
+396:   for (genvar s = 0; s < NumShares; s++) begin : gen_shares_shift_mix
+397:     if (s == 0) begin : gen_shift_in_data
+398:       // The (masked) data share
+399:       assign shift_rows_in[s] = sub_bytes_out;
+400:     end else begin : gen_shift_in_mask
+401:       // The mask share
+402:       assign shift_rows_in[s] = sb_out_mask;
+403:     end
+404: 
+405:     aes_shift_rows u_aes_shift_rows (
+406:       .op_i   ( op_i              ),
+407:       .data_i ( shift_rows_in[s]  ),
+408:       .data_o ( shift_rows_out[s] )
+409:     );
+410: 
+411:     aes_mix_columns u_aes_mix_columns (
+412:       .op_i   ( op_i               ),
+413:       .data_i ( shift_rows_out[s]  ),
+414:       .data_o ( mix_columns_out[s] )
+415:     );
+416:   end
+417: 
+418:   always_comb begin : add_round_key_in_mux
+419:     unique case (add_rk_sel)
+420:       ADD_RK_INIT:  add_round_key_in = state_q;
+421:       ADD_RK_ROUND: add_round_key_in = mix_columns_out;
+422:       ADD_RK_FINAL: add_round_key_in = shift_rows_out;
+423:       default:      add_round_key_in = state_q;
+424:     endcase
+425:   end
+426: 
+427:   for (genvar s = 0; s < NumShares; s++) begin : gen_shares_add_round_key
+428:     assign add_round_key_out[s] = add_round_key_in[s] ^ round_key[s];
+429:   end
+430: 
+431:   /////////
+432:   // Key //
+433:   /////////
+434: 
+435:   // SEC_CM: KEY.SEC_WIPE
+436:   // Full Key registers
+437:   always_comb begin : key_full_mux
+438:     unique case (key_full_sel)
+439:       KEY_FULL_ENC_INIT: key_full_d = key_init_i;
+440:       KEY_FULL_DEC_INIT: key_full_d = !CiphOpFwdOnly ? key_dec_q : prd_clearing_key_i;
+441:       KEY_FULL_ROUND:    key_full_d = key_expand_out;
+442:       KEY_FULL_CLEAR:    key_full_d = key_expand_out;
+443:       default:           key_full_d = prd_clearing_key_i;
+444:     endcase
+445:   end
+446: 
+447:   always_ff @(posedge clk_i or negedge rst_ni) begin : key_full_reg
+448:     if (!rst_ni) begin
+449:       key_full_q <= '{default: '0};
+450:     end else if (key_full_we == SP2V_HIGH) begin
+451:       key_full_q <= key_full_d;
+452:     end
+453:   end
+454: 
+455:   if (!CiphOpFwdOnly) begin : gen_key_dec
+456:     // SEC_CM: KEY.SEC_WIPE
+457:     // Decryption Key registers
+458:     always_comb begin : key_dec_mux
+459:       unique case (key_dec_sel)
+460:         KEY_DEC_EXPAND: key_dec_d = key_expand_out;
+461:         KEY_DEC_CLEAR:  key_dec_d = key_expand_out;
+462:         default:        key_dec_d = prd_clearing_key_i;
+463:       endcase
+464:     end
+465: 
+466:     always_ff @(posedge clk_i or negedge rst_ni) begin : key_dec_reg
+467:       if (!rst_ni) begin
+468:         key_dec_q <= '{default: '0};
+469:       end else if (key_dec_we == SP2V_HIGH) begin
+470:         key_dec_q <= key_dec_d;
+471:       end
+472:     end
+473:   end else begin : gen_no_key_dec
+474:     // No Decryption Key registers
+475:     assign key_dec_q = '{default: '0};
+476:     assign key_dec_d = key_dec_q;
+477: 
+478:     // Tie-off unused signals.
+479:     logic unused_key_dec;
+480:     always_comb begin
+481:       unused_key_dec = ^{key_dec_sel, key_dec_we};
+482:       for (int s = 0; s < NumShares; s++) begin
+483:         unused_key_dec ^= ^{key_dec_d[s]};
+484:       end
+485:     end
+486:   end
+487: 
+488:   // Make sure that whenever the data/mask inputs of the S-Boxes update, the internally buffered
+489:   // PRD is updated in sync.
+490:   assign key_expand_prd_we = (key_full_we == SP2V_HIGH) ? 1'b1 : 1'b0;
+491: 
+492:   // Key expand data path
+493:   aes_key_expand #(
+494:     .AES192Enable ( AES192Enable ),
+495:     .SecMasking   ( SecMasking   ),
+496:     .SecSBoxImpl  ( SecSBoxImpl  )
+497:   ) u_aes_key_expand (
+498:     .clk_i       ( clk_i              ),
+499:     .rst_ni      ( rst_ni             ),
+500:     .cfg_valid_i ( cfg_valid          ),
+501:     .op_i        ( key_expand_op      ),
+502:     .en_i        ( key_expand_en      ),
+503:     .prd_we_i    ( key_expand_prd_we  ),
+504:     .out_req_o   ( key_expand_out_req ),
+505:     .out_ack_i   ( key_expand_out_ack ),
+506:     .clear_i     ( key_expand_clear   ),
+507:     .round_i     ( key_expand_round   ),
+508:     .key_len_i   ( key_len_i          ),
+509:     .key_i       ( key_full_q         ),
+510:     .key_o       ( key_expand_out     ),
+511:     .prd_i       ( prd_key_expand     ),
+512:     .err_o       ( key_expand_err     )
+513:   );
+514: 
+515:   for (genvar s = 0; s < NumShares; s++) begin : gen_shares_round_key
+516:     always_comb begin : key_words_mux
+517:       unique case (key_words_sel)
+518:         KEY_WORDS_0123: key_words[s] = key_full_q[s][3:0];
+519:         KEY_WORDS_2345: key_words[s] = AES192Enable ? key_full_q[s][5:2] : '0;
+520:         KEY_WORDS_4567: key_words[s] = key_full_q[s][7:4];
+521:         KEY_WORDS_ZERO: key_words[s] = '0;
+522:         default:        key_words[s] = '0;
+523:       endcase
+524:     end
+525: 
+526:     // Convert words to bytes (every key word contains one column).
+527:     assign key_bytes[s] = aes_transpose(key_words[s]);
+528: 
+529:     aes_mix_columns u_aes_key_mix_columns (
+530:       .op_i   ( CIPH_INV               ),
+531:       .data_i ( key_bytes[s]           ),
+532:       .data_o ( key_mix_columns_out[s] )
+533:     );
+534:   end
+535: 
+536:   always_comb begin : round_key_mux
+537:     unique case (round_key_sel)
+538:       ROUND_KEY_DIRECT: round_key = key_bytes;
+539:       ROUND_KEY_MIXED:  round_key = !CiphOpFwdOnly ? key_mix_columns_out : key_bytes;
+540:       default:          round_key = key_bytes;
+541:     endcase
+542:   end
+543: 
+544:   if (CiphOpFwdOnly) begin : gen_unused_key_mix_columns_out
+545:     // Tie-off unused signals.
+546:     logic unused_key_mix_columns_out;
+547:     always_comb begin
+548:       unused_key_mix_columns_out = 1'b0;
+549:       for (int s = 0; s < NumShares; s++) begin
+550:         unused_key_mix_columns_out ^= ^{key_mix_columns_out[s]};
+551:       end
+552:     end
+553:   end
+554: 
+555:   /////////////
+556:   // Control //
+557:   /////////////
+558: 
+559:   // Control
+560:   aes_cipher_control #(
+561:     .CiphOpFwdOnly ( CiphOpFwdOnly ),
+562:     .SecMasking    ( SecMasking    ),
+563:     .SecSBoxImpl   ( SecSBoxImpl   )
+564:   ) u_aes_cipher_control (
+565:     .clk_i                ( clk_i               ),
+566:     .rst_ni               ( rst_ni              ),
+567: 
+568:     .in_valid_i           ( in_valid_i          ),
+569:     .in_ready_o           ( in_ready_o          ),
+570: 
+571:     .out_valid_o          ( out_valid_o         ),
+572:     .out_ready_i          ( out_ready_i         ),
+573: 
+574:     .cfg_valid_i          ( cfg_valid           ),
+575:     .op_i                 ( op_i                ),
+576:     .key_len_i            ( key_len_i           ),
+577:     .crypt_i              ( crypt_i             ),
+578:     .crypt_o              ( crypt_o             ),
+579:     .dec_key_gen_i        ( dec_key_gen_i       ),
+580:     .dec_key_gen_o        ( dec_key_gen_o       ),
+581:     .prng_reseed_i        ( prng_reseed_i       ),
+582:     .prng_reseed_o        ( prng_reseed_o       ),
+583:     .key_clear_i          ( key_clear_i         ),
+584:     .key_clear_o          ( key_clear_o         ),
+585:     .data_out_clear_i     ( data_out_clear_i    ),
+586:     .data_out_clear_o     ( data_out_clear_o    ),
+587:     .mux_sel_err_i        ( mux_sel_err         ),
+588:     .sp_enc_err_i         ( sp_enc_err_q        ),
+589:     .op_err_i             ( op_err              ),
+590:     .alert_fatal_i        ( alert_fatal_i       ),
+591:     .alert_o              ( alert_o             ),
+592: 
+593:     .prng_update_o        ( prd_masking_upd     ),
+594:     .prng_reseed_req_o    ( prd_masking_rsd_req ),
+595:     .prng_reseed_ack_i    ( prd_masking_rsd_ack ),
+596: 
+597:     .state_sel_o          ( state_sel_ctrl      ),
+598:     .state_we_o           ( state_we_ctrl       ),
+599:     .sub_bytes_en_o       ( sub_bytes_en        ),
+600:     .sub_bytes_out_req_i  ( sub_bytes_out_req   ),
+601:     .sub_bytes_out_ack_o  ( sub_bytes_out_ack   ),
+602:     .add_rk_sel_o         ( add_rk_sel_ctrl     ),
+603: 
+604:     .key_expand_op_o      ( key_expand_op       ),
+605:     .key_full_sel_o       ( key_full_sel_ctrl   ),
+606:     .key_full_we_o        ( key_full_we_ctrl    ),
+607:     .key_dec_sel_o        ( key_dec_sel_ctrl    ),
+608:     .key_dec_we_o         ( key_dec_we_ctrl     ),
+609:     .key_expand_en_o      ( key_expand_en       ),
+610:     .key_expand_out_req_i ( key_expand_out_req  ),
+611:     .key_expand_out_ack_o ( key_expand_out_ack  ),
+612:     .key_expand_clear_o   ( key_expand_clear    ),
+613:     .key_expand_round_o   ( key_expand_round    ),
+614:     .key_words_sel_o      ( key_words_sel_ctrl  ),
+615:     .round_key_sel_o      ( round_key_sel_ctrl  )
+616:   );
+617: 
+618:   ///////////////
+619:   // Selectors //
+620:   ///////////////
+621: 
+622:   // We use sparse encodings for these mux selector signals and must ensure that:
+623:   // 1. The synthesis tool doesn't optimize away the sparse encoding.
+624:   // 2. The selector signal is always valid. More precisely, an alert or SVA is triggered if a
+625:   //    selector signal takes on an invalid value.
+626:   // 3. The alert signal remains asserted until reset even if the selector signal becomes valid
+627:   //    again. This is achieved by driving the control FSM into the terminal error state whenever
+628:   //    any mux selector signal becomes invalid.
+629:   //
+630:   // If any mux selector signal becomes invalid, the cipher core further immediately de-asserts
+631:   // the out_valid_o signal to prevent any data from being released.
+632: 
+633:   aes_sel_buf_chk #(
+634:     .Num      ( StateSelNum   ),
+635:     .Width    ( StateSelWidth ),
+636:     .EnSecBuf ( 1'b1          )
+637:   ) u_aes_state_sel_buf_chk (
+638:     .clk_i  ( clk_i          ),
+639:     .rst_ni ( rst_ni         ),
+640:     .sel_i  ( state_sel_ctrl ),
+641:     .sel_o  ( state_sel_raw  ),
+642:     .err_o  ( state_sel_err  )
+643:   );
+644:   assign state_sel = state_sel_e'(state_sel_raw);
+645: 
+646:   aes_sel_buf_chk #(
+647:     .Num      ( AddRKSelNum   ),
+648:     .Width    ( AddRKSelWidth ),
+649:     .EnSecBuf ( 1'b1          )
+650:   ) u_aes_add_rk_sel_buf_chk (
+651:     .clk_i  ( clk_i           ),
+652:     .rst_ni ( rst_ni          ),
+653:     .sel_i  ( add_rk_sel_ctrl ),
+654:     .sel_o  ( add_rk_sel_raw  ),
+655:     .err_o  ( add_rk_sel_err  )
+656:   );
+657:   assign add_rk_sel = add_rk_sel_e'(add_rk_sel_raw);
+658: 
+659:   aes_sel_buf_chk #(
+660:     .Num      ( KeyFullSelNum   ),
+661:     .Width    ( KeyFullSelWidth ),
+662:     .EnSecBuf ( 1'b1            )
+663:   ) u_aes_key_full_sel_buf_chk (
+664:     .clk_i  ( clk_i             ),
+665:     .rst_ni ( rst_ni            ),
+666:     .sel_i  ( key_full_sel_ctrl ),
+667:     .sel_o  ( key_full_sel_raw  ),
+668:     .err_o  ( key_full_sel_err  )
+669:   );
+670:   assign key_full_sel = key_full_sel_e'(key_full_sel_raw);
+671: 
+672:   aes_sel_buf_chk #(
+673:     .Num      ( KeyDecSelNum   ),
+674:     .Width    ( KeyDecSelWidth ),
+675:     .EnSecBuf ( 1'b1           )
+676:   ) u_aes_key_dec_sel_buf_chk (
+677:     .clk_i  ( clk_i            ),
+678:     .rst_ni ( rst_ni           ),
+679:     .sel_i  ( key_dec_sel_ctrl ),
+680:     .sel_o  ( key_dec_sel_raw  ),
+681:     .err_o  ( key_dec_sel_err  )
+682:   );
+683:   assign key_dec_sel = key_dec_sel_e'(key_dec_sel_raw);
+684: 
+685:   aes_sel_buf_chk #(
+686:     .Num      ( KeyWordsSelNum   ),
+687:     .Width    ( KeyWordsSelWidth ),
+688:     .EnSecBuf ( 1'b1             )
+689:   ) u_aes_key_words_sel_buf_chk (
+690:     .clk_i  ( clk_i              ),
+691:     .rst_ni ( rst_ni             ),
+692:     .sel_i  ( key_words_sel_ctrl ),
+693:     .sel_o  ( key_words_sel_raw  ),
+694:     .err_o  ( key_words_sel_err  )
+695:   );
+696:   assign key_words_sel = key_words_sel_e'(key_words_sel_raw);
+697: 
+698:   aes_sel_buf_chk #(
+699:     .Num      ( RoundKeySelNum   ),
+700:     .Width    ( RoundKeySelWidth ),
+701:     .EnSecBuf ( 1'b1             )
+702:   ) u_aes_round_key_sel_buf_chk (
+703:     .clk_i  ( clk_i              ),
+704:     .rst_ni ( rst_ni             ),
+705:     .sel_i  ( round_key_sel_ctrl ),
+706:     .sel_o  ( round_key_sel_raw  ),
+707:     .err_o  ( round_key_sel_err  )
+708:   );
+709:   assign round_key_sel = round_key_sel_e'(round_key_sel_raw);
+710: 
+711:   // Signal invalid mux selector signals to control FSM which will lock up and trigger an alert.
+712:   assign mux_sel_err = state_sel_err | add_rk_sel_err | key_full_sel_err |
+713:       key_dec_sel_err | key_words_sel_err | round_key_sel_err;
+714: 
+715:   //////////////////////////////
+716:   // Sparsely Encoded Signals //
+717:   //////////////////////////////
+718: 
+719:   // We use sparse encodings for various critical signals and must ensure that:
+720:   // 1. The synthesis tool doesn't optimize away the sparse encoding.
+721:   // 2. The sparsely encoded signal is always valid. More precisely, an alert or SVA is triggered
+722:   //    if a sparse signal takes on an invalid value.
+723:   // 3. The alert signal remains asserted until reset even if the sparse signal becomes valid again
+724:   //    This is achieved by driving the control FSM into the terminal error state whenever any
+725:   //    sparsely encoded signal becomes invalid.
+726:   //
+727:   // If any sparsely encoded signal becomes invalid, the cipher core further immediately de-asserts
+728:   // the out_valid_o signal to prevent any data from being released.
+729: 
+730:   // We use vectors of sparsely encoded signals to reduce code duplication.
+731:   localparam int unsigned NumSp2VSig = 3;
+732:   sp2v_e [NumSp2VSig-1:0]                sp2v_sig;
+733:   sp2v_e [NumSp2VSig-1:0]                sp2v_sig_chk;
+734:   logic  [NumSp2VSig-1:0][Sp2VWidth-1:0] sp2v_sig_chk_raw;
+735:   logic  [NumSp2VSig-1:0]                sp2v_sig_err;
+736: 
+737:   assign sp2v_sig[0] = state_we_ctrl;
+738:   assign sp2v_sig[1] = key_full_we_ctrl;
+739:   assign sp2v_sig[2] = key_dec_we_ctrl;
+740: 
+741:   // All signals inside sp2v_sig are eventually converted to single-rail signals.
+742:   localparam bit [NumSp2VSig-1:0] Sp2VEnSecBuf = {NumSp2VSig{1'b1}};
+743: 
+744:   // Individually check sparsely encoded signals.
+745:   for (genvar i = 0; i < NumSp2VSig; i++) begin : gen_sel_buf_chk
+746:     aes_sel_buf_chk #(
+747:       .Num      ( Sp2VNum         ),
+748:       .Width    ( Sp2VWidth       ),
+749:       .EnSecBuf ( Sp2VEnSecBuf[i] )
+750:     ) u_aes_sp2v_sig_buf_chk_i (
+751:       .clk_i  ( clk_i               ),
+752:       .rst_ni ( rst_ni              ),
+753:       .sel_i  ( sp2v_sig[i]         ),
+754:       .sel_o  ( sp2v_sig_chk_raw[i] ),
+755:       .err_o  ( sp2v_sig_err[i]     )
+756:     );
+757:     assign sp2v_sig_chk[i] = sp2v_e'(sp2v_sig_chk_raw[i]);
+758:   end
+759: 
+760:   assign state_we    = sp2v_sig_chk[0];
+761:   assign key_full_we = sp2v_sig_chk[1];
+762:   assign key_dec_we  = sp2v_sig_chk[2];
+763: 
+764:   // Collect encoding errors.
+765:   // We instantiate the checker modules as close as possible to where the sparsely encoded signals
+766:   // are used. Here, we collect also encoding errors detected in other places of the cipher core.
+767:   assign sp_enc_err_d = |sp2v_sig_err | sub_bytes_err | key_expand_err;
+768: 
+769:   // We need to register the collected error signal to avoid circular loops in the cipher core
+770:   // controller related to out_valid_o and detecting errors in state_we_o and sub_bytes_out_ack.
+771:   always_ff @(posedge clk_i or negedge rst_ni) begin : reg_sp_enc_err
+772:     if (!rst_ni) begin
+773:       sp_enc_err_q <= 1'b0;
+774:     end else if (sp_enc_err_d) begin
+775:       sp_enc_err_q <= 1'b1;
+776:     end
+777:   end
+778: 
+779:   /////////////
+780:   // Outputs //
+781:   /////////////
+782: 
+783:   // The output of the last round is not stored into the state register but forwarded directly.
+784:   assign state_o = add_round_key_out;
+785: 
+786:   ////////////////
+787:   // Assertions //
+788:   ////////////////
+789: 
+790: // Typically assertions already contain this macro, which ensures that assertions are only compiled
+791: // in simulation and FPV. However, we wrap the entire assertion section with INC_ASSERT so that the
+792: // helper logic below is not synthesized either, since that could cause issues in DC.
+793: `ifdef INC_ASSERT
+794:   //VCS coverage off
+795:   // pragma coverage off
+796: 
+797:   // Create a lint error to reduce the risk of accidentally disabling the masking.
+798:   `ASSERT_STATIC_LINT_ERROR(AesSecMaskingNonDefault, SecMasking == 1)
+799: 
+800:   // Cipher core masking requires a masked SBox and vice versa.
+801:   `ASSERT_INIT(AesMaskedCoreAndSBox,
+802:       (SecMasking &&
+803:       (SecSBoxImpl == SBoxImplCanrightMasked ||
+804:        SecSBoxImpl == SBoxImplCanrightMaskedNoreuse ||
+805:        SecSBoxImpl == SBoxImplDom)) ||
+806:       (!SecMasking &&
+807:       (SecSBoxImpl == SBoxImplLut ||
+808:        SecSBoxImpl == SBoxImplCanright)))
+809: 
+810:   // Signals used for assertions only.
+811:   logic prd_clearing_equals_output, unused_prd_clearing_equals_output;
+812:   assign prd_clearing_equals_output = (prd_clearing_state_i == add_round_key_out);
+813:   assign unused_prd_clearing_equals_output = prd_clearing_equals_output;
+814: 
+815:   // Ensure that the state register gets cleared with pseudo-random data at the end of the last
+816:   // round. The following two scenarios are unlikely but not illegal:
+817:   // 1. The newly loaded initial state matches the previous output (the round counter is only
+818:   //    cleared upon loading the new initial state).
+819:   // 2. The previous pseudo-random data is equal to the previous output.
+820:   // Otherwise, we must see an alert e.g. because the state multiplexer got glitched.
+821:   `ASSERT(AesSecCmDataRegKeySca, (state_we == SP2V_HIGH) &&
+822:       ((key_len_i == AES_128 && u_aes_cipher_control.rnd_ctr == 4'd10) ||
+823:        (key_len_i == AES_192 && u_aes_cipher_control.rnd_ctr == 4'd12) ||
+824:        (key_len_i == AES_256 && u_aes_cipher_control.rnd_ctr == 4'd14)) |=>
+825:       (state_q != $past(add_round_key_out)) ||
+826:       (state_q == $past(state_init_i)) ||
+827:       $past(prd_clearing_equals_output) || alert_o)
+828: 
+829:   if (SecMasking) begin : gen_sec_cm_key_masking_svas
+830:       // The number of clock cycles a regular AES round takes - only used for assertions.
+831:       localparam int unsigned NumCyclesPerRound = (SecSBoxImpl == SBoxImplDom) ? 5 : 1;
+832:       logic unused_param;
+833:       assign unused_param = (NumCyclesPerRound == 1);
+834:       // Ensure that SubBytes gets fresh PRD input for every evaluation unless mask forcing is
+835:       // enabled. We effectively check that the PRNG has been updated at least once within the
+836:       // last NumCyclesPerRound cycles. This also holds for the very first round, as the PRNG
+837:       // is always updated in the last cycle of the IDLE state and/or the first cycle of the
+838:       // INIT state.
+839:       `ASSERT(AesSecCmKeyMaskingPrdSubBytes,
+840:           sub_bytes_en == SP2V_HIGH && ($past(sub_bytes_en) == SP2V_LOW ||
+841:               ($past(sub_bytes_out_req) == SP2V_HIGH &&
+842:                $past(sub_bytes_out_ack) == SP2V_HIGH)) |=>
+843:           $past(prd_sub_bytes_q) != $past(prd_sub_bytes_q, NumCyclesPerRound + 1) ||
+844:           SecAllowForcingMasks && force_masks_i)
+845: 
+846:       // Ensure that the PRNG has been updated between masking the input and starting the first
+847:       // SubBytes evaluation/KeyExpand operation unless mask forcing is enabled. For AES-256,
+848:       // we just spend 1 cycle in the INIT state and KeyExpand isn't evaluating its S-Boxes,
+849:       // i.e., no fresh randomness is required. For the other key lengths, KeyExpand evaluates
+850:       // its S-Boxes which takes NumCyclesPerRound cycles. When computing the start key for
+851:       // decryption, the input isn't loaded and the PRNG is thus not advanced.
+852:       `ASSERT(AesSecCmKeyMaskingInitialPrngUpdateSubBytes,
+853:           sub_bytes_en == SP2V_HIGH && $past(sub_bytes_en) == SP2V_LOW |=>
+854:           (key_len_i == AES_256 &&
+855:               $past(prd_masking) != $past(prd_masking, 3)) ||
+856:           ((key_len_i == AES_128 || key_len_i == AES_192) &&
+857:               $past(prd_masking) != $past(prd_masking, NumCyclesPerRound + 2)) ||
+858:           (SecAllowForcingMasks && force_masks_i))
+859:       `ASSERT(AesSecCmKeyMaskingInitialPrngUpdateKeyExpand,
+860:           key_expand_en == SP2V_HIGH && $past(key_expand_en) == SP2V_LOW |=>
+861:           (key_len_i == AES_256 &&
+862:               $past(prd_masking) != $past(prd_masking, 3)) ||
+863:           ((key_len_i == AES_128 || key_len_i == AES_192) &&
+864:               $past(prd_masking) != $past(prd_masking, 2)) ||
+865:           (SecAllowForcingMasks && force_masks_i) || dec_key_gen_o == SP2V_HIGH)
+866: 
+867:       // Ensure none of the state shares keeps being constant during encryption/decryption
+868:       // unless mask forcing is enabled. Even though unlikely it's not impossible that one
+869:       // share remains constant throughout one round. The SVAs thus only fire if a share
+870:       // remains constant across two rounds.
+871:       for (genvar s = 0; s < NumShares; s++) begin : gen_sec_cm_key_masking_share_svas
+872:         `ASSERT(AesSecCmKeyMaskingStateShare, state_we == SP2V_HIGH &&
+873:             (crypt_i == SP2V_HIGH || crypt_o == SP2V_HIGH) |=>
+874:             state_q[s] != $past(state_q[s], NumCyclesPerRound) ||
+875:             $past(state_q[s], NumCyclesPerRound) != $past(state_q[s], 2*NumCyclesPerRound) ||
+876:             (SecAllowForcingMasks && force_masks_i) || dec_key_gen_o == SP2V_HIGH)
+877:         `ASSERT(AesSecCmKeyMaskingOutputShare,
+878:             (out_valid_o == SP2V_HIGH && $past(out_valid_o) == SP2V_LOW) &&
+879:             (crypt_o == SP2V_HIGH) |=>
+880:             $past(state_o[s]) != $past(state_q[s], NumCyclesPerRound) ||
+881:             $past(state_q[s], NumCyclesPerRound) != $past(state_q[s], 2*NumCyclesPerRound) ||
+882:             (SecAllowForcingMasks && force_masks_i) || dec_key_gen_o == SP2V_HIGH)
+883:       end
+884:   end
+885: 
+886:   // Make sure the output of the masking PRNG is properly extracted without creating overlaps
+887:   // in the data input masks, or between the PRD fed to the key expand module and SubBytes.
+888:   if (WidthPRDSBox > 8) begin : gen_prd_extract_assert
+889:     // For one row of the state matrix, extract the WidthPRDSBox-8 MSBs of the per-S-Box PRD from
+890:     // the PRNG output.
+891:     function automatic logic [3:0][(WidthPRDSBox-8)-1:0] aes_prd_get_msbs(
+892:       logic [(4*WidthPRDSBox)-1:0] in
+893:     );
+894:       logic [3:0][(WidthPRDSBox-8)-1:0] prd_msbs;
+895:       for (int i = 0; i < 4; i++) begin
+896:         prd_msbs[i] = in[(i*WidthPRDSBox) + 8 +: (WidthPRDSBox-8)];
+897:       end
+898:       return prd_msbs;
+899:     endfunction
+900: 
+901:     // For one row of the state matrix, undo the extraction of LSBs and MSBs of the per-S-Box PRD
+902:     // from the PRNG output. This can be used to verify proper extraction (no overlap of output
+903:     // masks and PRD for masked Canright S-Box implementations, no unused PRNG output).
+904:     function automatic logic [4*WidthPRDSBox-1:0] aes_prd_concat_bits(
+905:       logic [3:0]                 [7:0] prd_lsbs,
+906:       logic [3:0][(WidthPRDSBox-8)-1:0] prd_msbs
+907:     );
+908:       logic [(4*WidthPRDSBox)-1:0] prd;
+909:       for (int i = 0; i < 4; i++) begin
+910:         prd[(i*WidthPRDSBox) +: WidthPRDSBox] = {prd_msbs[i], prd_lsbs[i]};
+911:       end
+912:       return prd;
+913:     endfunction
+914: 
+915:     // Check for correct extraction of masking PRNG output without overlaps.
+916:     logic            [WidthPRDMasking-1:0] unused_prd_masking;
+917:     logic [3:0][3:0][(WidthPRDSBox-8)-1:0] unused_prd_msbs;
+918:     for (genvar i = 0; i < 4; i++) begin : gen_unused_prd_msbs
+919:       assign unused_prd_msbs[i] = aes_prd_get_msbs(prd_masking[i * WidthPRDRow +: WidthPRDRow]);
+920:     end
+921:     for (genvar i = 0; i < 4; i++) begin : gen_unused_prd_masking
+922:       assign unused_prd_masking[i * WidthPRDRow +: WidthPRDRow] =
+923:           aes_prd_concat_bits(data_in_mask[i], unused_prd_msbs[i]);
+924:     end
+925:     assign unused_prd_masking[WidthPRDMasking-1 -: WidthPRDKey] = prd_key_expand;
+926:     `ASSERT(AesMskgPrdExtraction, prd_masking == unused_prd_masking)
+927:   end
+928:   //VCS coverage on
+929:   // pragma coverage on
+930: `endif
+931: 
+932: endmodule
+
+================================== Ai Message ==================================
+
+After carefully analyzing the results, I found a few lines that might be similar to the original bug, but they are not exact matches:
+
+1. Line 461: `KEY_DEC_CLEAR:  key_dec_d = key_expand_out;`
+   - This is in a key decryption context, which is different from the original bug.
+
+2. Line 442: `KEY_FULL_CLEAR:    key_full_d = key_expand_out;`
+   - This is in a full key context, which is different from the original bug.
+
+3. Line 251: `STATE_CLEAR: state_d = add_round_key_out;`
+   - This is in a state context, which is different from the original bug.
+
+None of these lines are exact matches to the original bug `DIP_CLEAR:   data_in_prev_d = data_in;`. 
+
+The lines found are similar in structure (using a clear/reset state and assigning a value), but they are in different contexts (key, state) and do not involve `data_in_prev_d`.
+
+Therefore, I cannot confidently identify any buggy lines that are direct matches to the original bug in this file.
