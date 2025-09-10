@@ -50,6 +50,22 @@ import argparse
 
 from settings import *
 
+from utils.logging import log_full_conv_message, log_main_conv_message, log_action_message
+from utils.budget import is_budget_exceeded
+from utils.file_tools import read_file_with_line_numbers, list_dir, read_file
+
+from agents.lint_agent import run_linter_agent
+from agents.verilator_agent import run_verilator_agent
+from agents.assertion_agent import run_assertions_checker_agent
+from agents.similar_bug_agent import run_similar_bug_agent
+from agents.cwe_agent import run_llm_cwe_checker_agent
+from agents.anomaly_agent import run_anomaly_detector_agent
+from agents.review_agent import build_review_graph
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class MessagesState(MessagesState):
     # Add any keys needed beyond messages, which is pre-built 
     pass
@@ -61,17 +77,6 @@ if IP == "all":
 else:
     IP_STRING = f"{IP} IP of the"
     FOCUS_STRING = f"Focus on the {IP} IP and make sure to analyze it thoroughly."
-
-from utils.logging import log_full_conv_message, log_main_conv_message, log_action_message
-from utils.budget import is_budget_exceeded
-from utils.file_tools import read_file_with_line_numbers, list_dir, read_file
-
-from agents.lint_agent import run_linter_agent
-from agents.verilator_agent import run_verilator_agent
-from agents.assertion_agent import run_assertions_checker_agent
-from agents.similar_bug_agent import run_similar_bug_agent
-from agents.cwe_agent import run_llm_cwe_checker_agent
-from agents.anomaly_agent import run_anomaly_detector_agent
 
 ###############
 # Linter test #

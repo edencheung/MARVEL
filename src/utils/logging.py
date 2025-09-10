@@ -1,19 +1,19 @@
 from settings import *
 import traceback
 
-full_conv_log = open(f'{IP}_{MODEL}_{AGENT}_{TOP_MODULE}_{TEMP}_full_conv_log.txt','w')
+full_conv_log = open(f'results/logs/{IP}_{MODEL}_{AGENT}_{TOP_MODULE}_{TEMP}_full_conv_log.txt','w')
 def log_full_conv_message(message: str):
     """Log a message to the full conversation log."""
     full_conv_log.write(message+'\n')
     full_conv_log.flush()
 
-main_conv_log = open(f'{IP}_{MODEL}_{AGENT}_{TOP_MODULE}_{TEMP}_main_conv_log.txt','w')
+main_conv_log = open(f'results/logs/{IP}_{MODEL}_{AGENT}_{TOP_MODULE}_{TEMP}_main_conv_log.txt','w')
 def log_main_conv_message(message: str):
     """Log a message to the main conversation log."""
     main_conv_log.write(message+'\n')
     main_conv_log.flush()
 
-actions_log = open(f'{IP}_{MODEL}_{AGENT}_{TOP_MODULE}_{TEMP}_actions_log.txt','w')
+actions_log = open(f'results/logs/{IP}_{MODEL}_{AGENT}_{TOP_MODULE}_{TEMP}_actions_log.txt','w')
 def log_action_message(message: str):
     """Log a message to the actions log."""
     actions_log.write(message+'\n')
