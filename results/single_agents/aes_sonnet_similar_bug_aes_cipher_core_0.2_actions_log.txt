@@ -1,3 +1,0 @@
-Running similar bug agent on /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv for bug: DIP_CLEAR:   data_in_prev_d = data_in;
-Running similar bug tool on /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv for bug: DIP_CLEAR:   data_in_prev_d = data_in;
-Reading file with line numbers: /home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_cipher_core.sv

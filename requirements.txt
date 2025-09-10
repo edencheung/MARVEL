@@ -1,0 +1,17 @@
+langchain-core
+langchain-openai
+langchain-anthropic
+langchain-deepseek
+langgraph
+langchain
+langchain-text-splitters
+openai
+anthropic
+pandas
+scikit-learn
+numpy
+pyyaml
+paramiko
+ipython
+pydantic
+typing-extensions

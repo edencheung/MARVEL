@@ -1,2 +1,0 @@
-Running verilator agent on aes
-Running verilator tests for aes

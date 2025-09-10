@@ -1,2 +1,0 @@
-Running llm cwe checker agent on /home/XXXX-2/hackdate/hw/ip/otbn/rtl/otbn_controller.sv for otbn_controller with security objective: data wiping/clearing
-Running llm cwe details retriever tool on data wiping clearing memory secure erase
