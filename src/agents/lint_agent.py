@@ -149,7 +149,7 @@ def lint_checker_tool(design_filepath: str, top_module: str, lint_tags: List[str
         
         # form tcl script for vc_static
 
-        tcl_template_file = 'vcst_template.tcl' 
+        tcl_template_file = 'scripts/vcst_template.tcl' 
         tcl_template_content = open(tcl_template_file,'r').read()
 
         lint_checks = '\n'.join([ 'configure_lint_tag -enable -tag \"' + tag + '\" -severity Error' for tag in lint_tags ])

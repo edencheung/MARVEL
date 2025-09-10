@@ -2,3 +2,4 @@ venv/
 .env
 results/
 **/__pycache__/
+.bin/

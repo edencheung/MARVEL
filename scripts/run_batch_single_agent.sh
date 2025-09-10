@@ -21,7 +21,7 @@ run_analysis() {
     start_ts=$(date "+%Y-%m-%d %H:%M:%S")
     echo "[$start_ts] Starting analysis for IP=$ip | agent=$agent | model=$model | file=$file | top module=$top_module" >> "$log_file"
 
-    python security_agents.py \
+    python3 src/main.py \
         --ip "$ip" \
         --agent "$agent" \
         --model "$model" \
@@ -37,16 +37,16 @@ run_analysis() {
 }
 
 # Verilator runs -> only require IP
-# run_analysis "aes" "verilator" "sonnet" "" "" "" ""
-# run_analysis "hmac" "verilator" "deepseek" "" "" "" ""
-# run_analysis "adc_ctrl" "verilator" "deepseek" "" "" "" ""
-# run_analysis "csrng" "verilator" "deepseek" "" "" "" ""
-# run_analysis "keymgr" "verilator" "deepseek" "" "" "" ""
-# run_analysis "lc_ctrl" "verilator" "deepseek" "" "" "" ""
-# run_analysis "otbn" "verilator" "deepseek" "" "" "" ""
-# run_analysis "prim" "verilator" "deepseek" "" "" "" ""
-# run_analysis "otp_ctrl" "verilator" "deepseek" "" "" "" ""
-# run_analysis "spi_tmp" "verilator" "deepseek" "" "" "" ""
+run_analysis "aes" "verilator" "openai" "" "" "" ""
+run_analysis "hmac" "verilator" "openai" "" "" "" ""
+run_analysis "adc_ctrl" "verilator" "openai" "" "" "" ""
+run_analysis "csrng" "verilator" "openai" "" "" "" ""
+run_analysis "keymgr" "verilator" "openai" "" "" "" ""
+run_analysis "lc_ctrl" "verilator" "openai" "" "" "" ""
+run_analysis "otbn" "verilator" "openai" "" "" "" ""
+run_analysis "prim" "verilator" "openai" "" "" "" ""
+run_analysis "otp_ctrl" "verilator" "openai" "" "" "" ""
+run_analysis "spi_tmp" "verilator" "openai" "" "" "" ""
 
 # assertion runs -> require IP, top module and file
 # run_analysis "aes" "assertion" "deepseek" "/home/XXXX-2/hackdate/hw/ip/aes/rtl/aes_core.sv" "aes_core" "data wiping/clearing" ""

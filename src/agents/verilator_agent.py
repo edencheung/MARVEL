@@ -56,28 +56,21 @@ from utils.logging import log_action_message, log_full_conv_message
 
 # Run bazel query and get list of tests
 def get_verilator_tests(ip: str) -> str:
-    pwd = os.environ["PWD_SRV_NYU"]
-    host = "XXXX-1"
-    username = "XXXX-2"
-
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host, username=username, password=pwd)
-    # get the list of tests
+    # Run the bazel query command locally to get the list of tests
     cmd = f"{SOC_BASE_DIR}/bazelisk.sh query 'tests(//sw/...) except attr(tags, cw310, tests(//...))  except attr(tags, cw340, tests(//...)) except attr(tags, dv, tests(//...))'"
-    cmd = f"cd {SOC_BASE_DIR} && "+cmd
-    r_stdin, r_stdout, r_stderr = ssh.exec_command(cmd)
-
-    exit_status = r_stdout.channel.recv_exit_status()
-
-    if(exit_status != 0):
-        print("Error running command")
-        print(cmd)
+    full_cmd = f"cd {SOC_BASE_DIR} && {cmd}"
+    try:
+        result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True, executable="/bin/bash")
+        if result.returncode != 0:
+            print("Error running command")
+            print(full_cmd)
+            return []
+        tests = result.stdout.split('\n')
+        tests = [test for test in tests if test != '' and ip in test and "rom_ext" not in test]
+        return tests
+    except Exception as e:
+        print(f"Exception running bazel query: {e}")
         return []
-    tests = r_stdout.read().decode().split('\n')
-    tests = [test for test in tests if test != '' and ip in test and "rom_ext" not in test]
-    ssh.close()
-    return tests
 
 @tool
 def run_verilator_tests(ip: str) -> str:
@@ -87,26 +80,18 @@ def run_verilator_tests(ip: str) -> str:
     log_action_message(f"Running verilator tests for {ip}")
     # get the list of tests
     tests = get_verilator_tests(ip)
-    #print(tests)
-    pwd = os.environ["PWD_SRV_NYU"]
-    host = "XXXX-1"
-    username = "XXXX-2"
-
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host, username=username, password=pwd)
-    if(len(tests) == 0):
+    if len(tests) == 0:
         return "No verilator tests found for this IP."
-    # run the tests
+    # run the tests locally
     cmd = f"{SOC_BASE_DIR}/bazelisk.sh test --test_timeout=320 "
     cmd += " ".join(tests)
-    cmd = f"""bash -c "cd {SOC_BASE_DIR} && {cmd} 2>&1" """
-    #print(cmd)
-    r_stdin, r_stdout, r_stderr = ssh.exec_command(cmd)
-
-    exit_status = r_stdout.channel.recv_exit_status()
-
-    return r_stdout.read().decode().split("INFO:")[-1]
+    full_cmd = f"cd {SOC_BASE_DIR} && {cmd} 2>&1"
+    try:
+        result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True, executable="/bin/bash")
+        output = result.stdout
+        return output.split("INFO:")[-1]
+    except Exception as e:
+        return f"Error running verilator tests: {str(e)}"
 
 
 def build_verilator_graph():
