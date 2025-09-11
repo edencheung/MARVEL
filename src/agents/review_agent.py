@@ -52,6 +52,7 @@ from agents.cwe_agent import llm_cwe_details_retriever_tool
 from settings import *
 from utils.file_tools import list_dir, read_file, read_file_with_line_numbers
 from utils.logging import log_full_conv_message, log_main_conv_message
+from utils.rate_limit_handler import safe_openai_call
 
 def build_review_graph():
     ''' Agent for review the final report and polish the summary of the security analysis '''
@@ -73,7 +74,7 @@ def build_review_graph():
     "Ensure the final report includes a clear explanation of each bug, the relevant buggy code, the precise location of the issue, and the tools used to identify it."))
 
     def review_agent(state: MessagesState):
-        return {"messages": [review.invoke([sys_msg_review_agent] + state["messages"])]}
+        return {"messages": [safe_openai_call(review.invoke, [sys_msg_review_agent] + state["messages"])]}
 
     def review_tools_condition(state) -> Literal["review_tools", "END"]:
         

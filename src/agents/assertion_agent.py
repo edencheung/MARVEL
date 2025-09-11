@@ -52,6 +52,7 @@ from settings import *
 from agents.lint_agent import gen_opentitan_filelist
 from utils.budget import update_budget
 from utils.logging import error_string, log_action_message, log_full_conv_message
+from utils.rate_limit_handler import safe_openai_call
 
 @tool
 def assertion_checker_tool(design_filepath: str, top_module: str, assertions: dict, clock_signal: str,\
@@ -165,7 +166,7 @@ def build_assertion_graph():
     # Nodes of graph
     sys_msg_assertion_checker_agent = SystemMessage(content="You are a helpful assistant tasked with testing RTL code for security issues using assertions.")
     def assertion_checker_agent(state: MessagesState):
-        return {"messages": [llm_assertion_checker.invoke([sys_msg_assertion_checker_agent] + state["messages"])]}
+        return {"messages": [safe_openai_call(llm_assertion_checker.invoke, [sys_msg_assertion_checker_agent] + state["messages"])]}
 
     def assertion_tools_condition(state) -> Literal["assertion_checker_tools", "END"]:
         prev_message = state["messages"][-2]

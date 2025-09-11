@@ -50,6 +50,7 @@ import argparse
 
 from utils.budget import update_budget
 from utils.logging import log_action_message
+from utils.rate_limit_handler import safe_openai_call
 
 @tool
 def read_file_with_line_numbers(file_path: str) -> str:

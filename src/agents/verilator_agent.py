@@ -49,9 +49,10 @@ import numpy as np
 import argparse
 
 from settings import *
-from utils.file_tools import list_dir_from_host, read_file_from_host
+from utils.file_tools import list_dir, read_file
 from utils.budget import update_budget
 from utils.logging import log_action_message, log_full_conv_message
+from utils.rate_limit_handler import exponential_backoff_retry, safe_openai_call
 
 
 # Run bazel query and get list of tests
@@ -83,7 +84,7 @@ def run_verilator_tests(ip: str) -> str:
     if len(tests) == 0:
         return "No verilator tests found for this IP."
     # run the tests locally
-    cmd = f"{SOC_BASE_DIR}/bazelisk.sh test --test_timeout=320 "
+    cmd = f"{SOC_BASE_DIR}/bazelisk.sh test --test_timeout=320"
     cmd += " ".join(tests)
     full_cmd = f"cd {SOC_BASE_DIR} && {cmd} 2>&1"
     try:
@@ -102,7 +103,7 @@ def build_verilator_graph():
     else:
         llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
 
-    verilator_tools = [run_verilator_tests, list_dir_from_host, read_file_from_host]
+    verilator_tools = [run_verilator_tests, list_dir, read_file]
 
     llm_verilator_checker = llm.bind_tools(verilator_tools, parallel_tool_calls=False)
 
@@ -111,7 +112,7 @@ def build_verilator_graph():
                                                You have access to a tool to run the verilator tests of a specific IP.
                                                Given the output of the verilator tests, look into the logs of failed ones and determine if there are security issues in the RTL.""")
     def verilator_agent(state: MessagesState):
-        return {"messages": [llm_verilator_checker.invoke([sys_msg_verilator_agent] + state["messages"])]}
+        return {"messages": [safe_openai_call(llm_verilator_checker.invoke, [sys_msg_verilator_agent] + state["messages"])]}
 
     def verilator_tools_condition(state) -> Literal["verilator_tools", "END"]:
         prev_message = state["messages"][-2]

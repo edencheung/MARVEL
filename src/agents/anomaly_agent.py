@@ -49,7 +49,9 @@ import numpy as np
 import argparse
 
 from utils.logging import log_full_conv_message
+from utils.rate_limit_handler import exponential_backoff_retry, safe_openai_call
 
+@exponential_backoff_retry(max_retries=5, base_delay=1.0)
 def get_embedding(input: str, model="text-embedding-3-small"):
     ''' get embedding vector of input string using specified OpenAI embedding model '''
     processed_input = str(input)
@@ -129,7 +131,7 @@ def build_llm_anomaly_detector_graph():
     # Nodes of graph
     sys_msg_llm_anomaly_detector_agent = SystemMessage(content="You are a helpful assistant tasked with testing RTL code for security issues using anomaly detection. The anomaly detection tool clusters similar line of code in the design. From the clusters, identify anomalies and determine if they are security issues.")
     def llm_anomaly_detector_agent(state: MessagesState):
-        return {"messages": [llm_anomaly_detector.invoke([sys_msg_llm_anomaly_detector_agent] + state["messages"])]}
+        return {"messages": [safe_openai_call(llm_anomaly_detector.invoke, [sys_msg_llm_anomaly_detector_agent] + state["messages"])]}
 
     def llm_anomaly_detector_condition(state) -> Literal["llm_anomaly_detection_tools", "END"]:
         

@@ -52,6 +52,7 @@ from settings import *
 from utils.file_tools import read_file_with_line_numbers
 from utils.budget import update_budget
 from utils.logging import log_action_message, log_full_conv_message
+from utils.rate_limit_handler import safe_openai_call
 
 @tool
 def similar_bug_tool(bug:str, ip_file: str) -> str:
@@ -120,7 +121,7 @@ def build_similar_bug_graph():
 
     def similar_bug_agent(state: MessagesState):
         log_full_conv_message(state["messages"][-1].pretty_repr())
-        return {"messages": [llm_similar_bug.invoke([sys_msg_similar_bug_agent] + state["messages"])]}
+        return {"messages": [safe_openai_call(llm_similar_bug.invoke, [sys_msg_similar_bug_agent] + state["messages"])]}
 
     def similar_bug_tools_condition(state) -> Literal["similar_bug_tools", "END"]:
         prev_message = state["messages"][-2]

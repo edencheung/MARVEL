@@ -18,6 +18,7 @@ from settings import *
 from utils.logging import log_full_conv_message, log_main_conv_message, log_action_message
 from utils.budget import is_budget_exceeded
 from utils.file_tools import read_file_with_line_numbers, list_dir, read_file
+from utils.rate_limit_handler import safe_openai_call
 
 from agents.lint_agent import run_linter_agent
 from agents.verilator_agent import run_verilator_agent
@@ -147,7 +148,7 @@ if AGENT == "agentic":
     When your analysis is complete, end your response with "END".
     """)
     def security_agent(state: MessagesState):
-        return {"messages": [llm_security.invoke([sys_msg] + state["messages"])]}
+        return {"messages": [safe_openai_call(llm_security.invoke, [sys_msg] + state["messages"])]}
 
     def final_report_node(state: MessagesState):
         final_instruction = HumanMessage(
@@ -156,7 +157,7 @@ if AGENT == "agentic":
                 "highlighting any findings or observations made during the previous steps."
             )
         )
-        summary_message = llm_security.invoke( state["messages"] + [final_instruction])
+        summary_message = safe_openai_call(llm_security.invoke, state["messages"] + [final_instruction])
         log_full_conv_message(final_instruction.pretty_repr())
         log_full_conv_message(summary_message.pretty_repr())
         log_main_conv_message(final_instruction.pretty_repr())
