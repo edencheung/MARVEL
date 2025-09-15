@@ -48,8 +48,8 @@ from openai import OpenAI
 import numpy as np
 import argparse
 
-from utils.logging import log_full_conv_message
-from utils.rate_limit_handler import exponential_backoff_retry, safe_openai_call
+from utils.logging import log_full_conv_message, log_action_message
+from utils.rate_limit_handler import exponential_backoff_retry, safe_llm_call
 
 @exponential_backoff_retry(max_retries=5, base_delay=1.0)
 def get_embedding(input: str, model="text-embedding-3-small"):
@@ -85,6 +85,7 @@ def extractAssigns(text):
 def anomaly_detector_tool(design_filepath: str):
 
     """Use this tool to identify anomalous code in RTL through forming clusters."""
+
     similar_constructs_details = "Here are clusters of similar verilog constructs in the RTL file:\n\n"
     try:
         with open(design_filepath, "r") as to_analyze:
@@ -117,7 +118,7 @@ def anomaly_detector_tool(design_filepath: str):
 
 def build_llm_anomaly_detector_graph():
     ''' Agent for LLM guided anomaly detection '''
-    llm = ChatOpenAI(model="gpt-4.1-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     # if MODEL == "openai":
     #     llm = ChatOpenAI(model="gpt-4.1-mini")
     # elif MODEL == "sonnet":
@@ -131,7 +132,7 @@ def build_llm_anomaly_detector_graph():
     # Nodes of graph
     sys_msg_llm_anomaly_detector_agent = SystemMessage(content="You are a helpful assistant tasked with testing RTL code for security issues using anomaly detection. The anomaly detection tool clusters similar line of code in the design. From the clusters, identify anomalies and determine if they are security issues.")
     def llm_anomaly_detector_agent(state: MessagesState):
-        return {"messages": [safe_openai_call(llm_anomaly_detector.invoke, [sys_msg_llm_anomaly_detector_agent] + state["messages"])]}
+        return {"messages": [safe_llm_call(llm_anomaly_detector.invoke, [sys_msg_llm_anomaly_detector_agent] + state["messages"])]}
 
     def llm_anomaly_detector_condition(state) -> Literal["llm_anomaly_detection_tools", "END"]:
         
@@ -181,7 +182,9 @@ def run_anomaly_detector_agent(
     The anomaly agent identifies repeated patterns in the RTL code and clusters them. 
     Then identifies outliers in the cluster as possible anomalies."""
 
-    print(f"Running anomaly detector agent on {design_filepath} for {top_module} with security objective: {security_objective}")
+    log_action_message(f"Running anomaly detector tool on {design_filepath}")
+
+    # print(f"Running anomaly detector agent on {design_filepath} for {top_module} with security objective: {security_objective}")
     # check if file exists
     if not os.path.exists(design_filepath):
         return "File does not exist."
@@ -206,6 +209,6 @@ def run_anomaly_detector_agent(
     # Create the message for the agent
     message = [HumanMessage(content=instruction)]
     # Run the agent
-    result = llm_anomaly_detector_graph.invoke({"messages": message})
+    result = llm_anomaly_detector_graph.invoke({"messages": message}, {"recursion_limit": 200})
     
     return result['messages'][-1].content

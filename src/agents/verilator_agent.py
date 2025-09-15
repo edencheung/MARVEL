@@ -52,15 +52,16 @@ from settings import *
 from utils.file_tools import list_dir, read_file
 from utils.budget import update_budget
 from utils.logging import log_action_message, log_full_conv_message
-from utils.rate_limit_handler import exponential_backoff_retry, safe_openai_call
+from utils.rate_limit_handler import exponential_backoff_retry, safe_llm_call
 
 
 # Run bazel query and get list of tests
 def get_verilator_tests(ip: str) -> str:
     # Run the bazel query command locally to get the list of tests
-    cmd = f"{SOC_BASE_DIR}/bazelisk.sh query 'tests(//sw/...) except attr(tags, cw310, tests(//...))  except attr(tags, cw340, tests(//...)) except attr(tags, dv, tests(//...))'"
+    cmd = f"{SOC_BASE_DIR}/bazelisk.sh query 'attr(tags,verilator,tests(//sw/...))'"
     full_cmd = f"cd {SOC_BASE_DIR} && {cmd}"
     try:
+        print (f"Running command: {full_cmd}")
         result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True, executable="/bin/bash")
         if result.returncode != 0:
             print("Error running command")
@@ -68,6 +69,8 @@ def get_verilator_tests(ip: str) -> str:
             return []
         tests = result.stdout.split('\n')
         tests = [test for test in tests if test != '' and ip in test and "rom_ext" not in test]
+        print(f"Found {len(tests)} verilator tests for {ip}")
+        print("\n".join(tests))
         return tests
     except Exception as e:
         print(f"Exception running bazel query: {e}")
@@ -76,7 +79,8 @@ def get_verilator_tests(ip: str) -> str:
 @tool
 def run_verilator_tests(ip: str) -> str:
     """Use this tool to execute verilator tests for the given ip.
-       Returns a list of executed tests and their status."""
+       Returns a list of executed tests and their status.
+       Note: some tests will TIMEOUT, and this is due to machine constraints. Just ignore these tests."""
     #log things
     log_action_message(f"Running verilator tests for {ip}")
     # get the list of tests
@@ -84,24 +88,30 @@ def run_verilator_tests(ip: str) -> str:
     if len(tests) == 0:
         return "No verilator tests found for this IP."
     # run the tests locally
-    cmd = f"{SOC_BASE_DIR}/bazelisk.sh test --test_timeout=320"
+    cmd = f"{SOC_BASE_DIR}/bazelisk.sh test" + " "
     cmd += " ".join(tests)
     full_cmd = f"cd {SOC_BASE_DIR} && {cmd} 2>&1"
     try:
-        result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True, executable="/bin/bash")
+        result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True, executable="/bin/bash", env=os.environ.copy())
         output = result.stdout
+        print("OUTPUT:")
+        print(output)
         return output.split("INFO:")[-1]
     except Exception as e:
+        print("ERROR:")
+        print(e)
         return f"Error running verilator tests: {str(e)}"
 
 
 def build_verilator_graph():
-    if MODEL == "openai":
-        llm = ChatOpenAI(model="gpt-4.1", temperature=TEMP)
-    elif MODEL == "sonnet":
-        llm = ChatAnthropic(model="claude-3-7-sonnet-latest", temperature=TEMP)
-    else:
-        llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
+    llm = ChatAnthropic(model="claude-3-7-sonnet-latest", temperature=TEMP)
+
+    # if MODEL == "openai":
+    #     llm = ChatOpenAI(model="gpt-4.1", temperature=TEMP)
+    # elif MODEL == "sonnet":
+    #     llm = ChatAnthropic(model="claude-3-7-sonnet-latest", temperature=TEMP)
+    # else:
+    #     llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
 
     verilator_tools = [run_verilator_tests, list_dir, read_file]
 
@@ -112,7 +122,7 @@ def build_verilator_graph():
                                                You have access to a tool to run the verilator tests of a specific IP.
                                                Given the output of the verilator tests, look into the logs of failed ones and determine if there are security issues in the RTL.""")
     def verilator_agent(state: MessagesState):
-        return {"messages": [safe_openai_call(llm_verilator_checker.invoke, [sys_msg_verilator_agent] + state["messages"])]}
+        return {"messages": [safe_llm_call(llm_verilator_checker.invoke, [sys_msg_verilator_agent] + state["messages"])]}
 
     def verilator_tools_condition(state) -> Literal["verilator_tools", "END"]:
         prev_message = state["messages"][-2]
@@ -167,6 +177,6 @@ def run_verilator_agent(
     # Create the message for the agent
     message = [HumanMessage(content=instruction)]
     # Run the agent
-    result = verilator_graph.invoke({"messages": message})
+    result = verilator_graph.invoke({"messages": message}, {"recursion_limit": 200})
 
     return result['messages'][-1].content

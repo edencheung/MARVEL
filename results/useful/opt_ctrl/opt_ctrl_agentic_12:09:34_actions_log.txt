@@ -1,0 +1,62 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/doc
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/opt_ctrl
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv for otp_ctrl_pkg with security objective: hardcoded secrets / keys present in defaults; map to CWEs
+Running llm cwe details retriever tool on hardcoded secrets keys cryptographic credentials
+Running llm cwe details retriever tool on hardcoded cryptographic key
+Running llm cwe details retriever tool on hardcoded password credentials
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv for otp_ctrl_pkg with security objective: insecure default lifecycle state / default-unlocked leading to debug bypass; map to CWE
+Running llm cwe details retriever tool on insecure default lifecycle state default-unlocked debug bypass
+Running llm cwe details retriever tool on insecure default configuration weak default settings
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv for bug: ack: 1'b1
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv for bug: ack: 1'b1
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv for bug: ack: 1'b1
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv for otp_ctrl_pkg with security objective: Map hardcoded default keys/seeds and *_valid=1 to CWEs (CWE-798, CWE-321, CWE-259) and analyze surrounding RTL
+Running llm cwe details retriever tool on hardcoded cryptographic keys and seeds CWE-798 CWE-321 CWE-259
+Running llm cwe details retriever tool on CWE-798 hardcoded credentials
+Running llm cwe details retriever tool on CWE-321 hardcoded cryptographic key
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/sram_ctrl/rtl
+Review Agent invoked
+Agentic analysis completed
+
+
+Token Usage Summary:
+===================
+Total API Calls: 17
+Total Input Tokens: 77,127
+Total Output Tokens: 14,818
+Total Tokens: 91,945
+Average Input Tokens/Call: 4536.9
+Average Output Tokens/Call: 871.6
+Average Total Tokens/Call: 5408.5
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 43, Total: 1108
+Call 2: gpt-5-2025-08-07 - Input: 1250, Output: 110, Total: 1360
+Call 3: gpt-5-2025-08-07 - Input: 1360, Output: 42, Total: 1402
+Call 4: gpt-5-2025-08-07 - Input: 1475, Output: 111, Total: 1586
+Call 5: gpt-5-2025-08-07 - Input: 1532, Output: 249, Total: 1781
+Call 6: gpt-5-2025-08-07 - Input: 4089, Output: 238, Total: 4327
+Call 7: gpt-5-2025-08-07 - Input: 4145, Output: 1233, Total: 5378
+Call 8: gpt-5-mini-2025-08-07 - Input: 2347, Output: 56, Total: 2403
+Call 9: gpt-5-mini-2025-08-07 - Input: 2475, Output: 3071, Total: 5546
+Call 10: gpt-5-2025-08-07 - Input: 6016, Output: 1108, Total: 7124
+Call 11: gpt-5-2025-08-07 - Input: 6169, Output: 1688, Total: 7857
+Call 12: gpt-5-2025-08-07 - Input: 7074, Output: 110, Total: 7184
+Call 13: gpt-5-2025-08-07 - Input: 7184, Output: 450, Total: 7634
+Call 14: gpt-5-2025-08-07 - Input: 7490, Output: 872, Total: 8362
+Call 15: gpt-5-2025-08-07 - Input: 7668, Output: 1264, Total: 8932
+Call 16: gpt-5-2025-08-07 - Input: 7822, Output: 304, Total: 8126
+Call 17: gpt-5-2025-08-07 - Input: 7966, Output: 3869, Total: 11835
+    
+Token usage summary saved to: results/logs/opt_ctrl_agentic_12:09:34_token_usage.txt

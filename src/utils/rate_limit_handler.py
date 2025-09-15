@@ -9,6 +9,7 @@ from functools import wraps
 from typing import Any, Callable, Optional
 import openai
 from langchain_core.exceptions import LangChainException
+from .token_tracker import token_tracker
 
 def exponential_backoff_retry(
     max_retries: int = 10,
@@ -82,6 +83,7 @@ def exponential_backoff_retry(
                             delay *= (0.5 + random.random() * 0.5)
                         
                         print(f"Rate limit detected in error message for {func.__name__}. Retrying in {delay:.2f} seconds (attempt {attempt + 1}/{max_retries + 1})")
+                        print(e)
                         time.sleep(delay)
                     else:
                         # Not a rate limit error, re-raise immediately
@@ -93,12 +95,16 @@ def exponential_backoff_retry(
         return wrapper
     return decorator
 
-def safe_openai_call(func: Callable, *args, **kwargs) -> Any:
+def safe_llm_call(func: Callable, *args, **kwargs) -> Any:
     """
     Wrapper function for making safe OpenAI API calls with rate limit handling.
+    Also tracks token usage automatically.
     """
     @exponential_backoff_retry()
     def _wrapped_call():
-        return func(*args, **kwargs)
+        response = func(*args, **kwargs)
+        # Try to extract and track token usage from the response
+        token_tracker.add_from_response(response)
+        return response
     
     return _wrapped_call()

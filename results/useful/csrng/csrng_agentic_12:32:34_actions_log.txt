@@ -1,0 +1,81 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/doc
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/doc/theory_of_operation.md
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/doc/registers.md
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_reg_top.sv
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/doc/interfaces.md
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_core.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_main_sm.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_cmd_stage.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_state_db.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_block_encrypt.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_ctr_drbg_cmd.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_ctr_drbg_gen.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_core.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_reg_top.sv for csrng_reg_top with security objective: Check register access control: RWEN, W0C, multi-bit encodings, and any path that could allow unprivileged bypasses (e.g., INT_STATE_VAL exposure, FIPS_FORCE, ERR_CODE_TEST). Map to CWE-1220/1221/1233/1271/1317.
+Running llm cwe details retriever tool on Register access control vulnerabilities including REGWEN bypass, W0C bypass, multi-bit encoding weaknesses, unprivileged access to sensitive registers like INT_STATE_VAL, FIPS_FORCE, ERR_CODE_TEST
+Running llm cwe details retriever tool on Hardware register protection bypass vulnerabilities including REGWEN bypass, write-once-clear bypass, multi-bit encoding attacks, and privilege escalation through register access
+Running llm cwe details retriever tool on CWE-1220 Insufficient Granularity of Access Control, CWE-1221 Incorrect Register Defaults or Module Parameters, CWE-1233 Security-Sensitive Hardware Controls with Missing Lock Bit Protection, CWE-1271 Uninitialized Value on Reset for Registers Holding Security Settings, CWE-1317 Improper Access Control in Fabric Endpoint
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_core.sv for csrng_core with security objective: Map to CWEs for privilege/authorization checks (OTP gating), info disclosure, improper lock bits, insufficient verification of multi-bit encodings, and misuse of test features.
+Running llm cwe details retriever tool on privilege authorization checks OTP gating
+Running llm cwe details retriever tool on information disclosure
+Running llm cwe details retriever tool on improper lock bits
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_cmd_stage.sv for csrng_cmd_stage with security objective: CWE mapping for command sequencing, improper input validation, counter redundancy failure, FIFO over/underflow handling and status reporting
+Running llm cwe details retriever tool on command sequencing validation and state machine security
+Running llm cwe details retriever tool on improper input validation in hardware
+Running llm cwe details retriever tool on counter redundancy and integrity protection
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_state_db.sv for csrng_state_db with security objective: Check for CWE-668/1271 info exposure of cryptographic state via INT_STATE_VAL and dump gating; validate OTP/lc gating; check zeroization on UNI; check reseed counters write/read policy
+Running llm cwe details retriever tool on CWE-668 exposure of resource to wrong sphere
+Running llm cwe details retriever tool on CWE-1271 uninitialized value on reset
+Running llm cwe details retriever tool on CWE-668 exposure of resource to wrong sphere
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_core.sv for bug: assign cs_bus_cmp_alert = cs_rdata_capt_vld && cs_rdata_capt_vld_q && (cs_rdata_capt_q == genbits_stage_bus[NApps-1][63:0]);
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_core.sv for bug: assign cs_bus_cmp_alert = cs_rdata_capt_vld && cs_rdata_capt_vld_q && (cs_rdata_capt_q == genbits_stage_bus[NApps-1][63:0]);
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/csrng/rtl/csrng_core.sv
+Review Agent invoked
+Agentic analysis completed
+
+
+Token Usage Summary:
+===================
+Total API Calls: 25
+Total Input Tokens: 1,547,677
+Total Output Tokens: 17,917
+Total Tokens: 1,565,594
+Average Input Tokens/Call: 61907.1
+Average Output Tokens/Call: 716.7
+Average Total Tokens/Call: 62623.8
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 235, Total: 1300
+Call 2: gpt-5-2025-08-07 - Input: 1250, Output: 46, Total: 1296
+Call 3: gpt-5-2025-08-07 - Input: 1372, Output: 41, Total: 1413
+Call 4: gpt-5-2025-08-07 - Input: 1506, Output: 46, Total: 1552
+Call 5: gpt-5-2025-08-07 - Input: 7347, Output: 44, Total: 7391
+Call 6: gpt-5-2025-08-07 - Input: 20051, Output: 48, Total: 20099
+Call 7: gpt-5-2025-08-07 - Input: 20236, Output: 52, Total: 20288
+Call 8: gpt-5-2025-08-07 - Input: 48861, Output: 113, Total: 48974
+Call 9: gpt-5-2025-08-07 - Input: 50706, Output: 248, Total: 50954
+Call 10: gpt-5-2025-08-07 - Input: 53454, Output: 51, Total: 53505
+Call 11: gpt-5-2025-08-07 - Input: 79582, Output: 52, Total: 79634
+Call 12: gpt-5-2025-08-07 - Input: 81608, Output: 52, Total: 81660
+Call 13: gpt-5-2025-08-07 - Input: 88135, Output: 52, Total: 88187
+Call 14: gpt-5-2025-08-07 - Input: 91310, Output: 52, Total: 91362
+Call 15: gpt-5-2025-08-07 - Input: 93732, Output: 54, Total: 93786
+Call 16: gpt-5-2025-08-07 - Input: 98159, Output: 54, Total: 98213
+Call 17: gpt-5-2025-08-07 - Input: 106006, Output: 85, Total: 106091
+Call 18: gpt-5-mini-2025-08-07 - Input: 21800, Output: 56, Total: 21856
+Call 19: gpt-5-mini-2025-08-07 - Input: 26546, Output: 5011, Total: 31557
+Call 20: gpt-5-2025-08-07 - Input: 108035, Output: 131, Total: 108166
+Call 21: gpt-5-2025-08-07 - Input: 108997, Output: 1193, Total: 110190
+Call 22: gpt-5-2025-08-07 - Input: 109173, Output: 91, Total: 109264
+Call 23: gpt-5-2025-08-07 - Input: 109340, Output: 108, Total: 109448
+Call 24: gpt-5-2025-08-07 - Input: 109548, Output: 2280, Total: 111828
+Call 25: gpt-5-2025-08-07 - Input: 109858, Output: 7722, Total: 117580
+    
+Token usage summary saved to: results/logs/csrng_agentic_12:32:34_token_usage.txt

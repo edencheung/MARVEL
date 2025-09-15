@@ -1,0 +1,11 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src/doc
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src/doc/theory_of_operation.md
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src/doc/registers.md
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src/rtl
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src/rtl/entropy_src_reg_top.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src/rtl/entropy_src.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src/rtl/entropy_src_core.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/entropy_src/rtl/entropy_src_core.sv

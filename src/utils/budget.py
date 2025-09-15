@@ -1,7 +1,7 @@
 from utils.logging import log_action_message
 
 
-budget = 3000
+budget = 30000
 cost_of_actions = {}
 cost_of_actions['run_verilator_agent'] = 25
 cost_of_actions['run_assertions_checker_agent'] = 20

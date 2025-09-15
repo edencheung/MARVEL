@@ -1,0 +1,59 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/doc
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/doc/theory_of_operation.md
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/doc/registers.md
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn_reg_top.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn_core.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn_controller.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn.sv
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn.sv for bug: assign imem_rdata_bus_en_d = 1'b1;
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn.sv for bug: assign imem_rdata_bus_en_d = 1'b1;
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn.sv for otbn with security objective: Confidentiality: Ensure IMEM/DMEM contents are not exposed over TL-UL during BUSY/LOCKED; verify blanking logic, write ignore, and ILLEGAL_BUS_ACCESS behavior
+Running llm cwe details retriever tool on Confidentiality: Ensure IMEM/DMEM contents are not exposed over TL-UL during BUSY/LOCKED; verify blanking logic, write ignore, and ILLEGAL_BUS_ACCESS behavior
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn_instruction_fetch.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn_controller.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otbn/rtl/otbn_controller.sv for otbn_controller with security objective: Control-flow integrity: validate predecode redundancy checks and branch target check; CWE mapping
+Running llm cwe details retriever tool on Control-flow integrity validate predecode redundancy checks and branch target check
+Review Agent invoked
+Agentic analysis completed
+
+
+Token Usage Summary:
+===================
+Total API Calls: 20
+Total Input Tokens: 877,655
+Total Output Tokens: 30,003
+Total Tokens: 907,658
+Average Input Tokens/Call: 43882.8
+Average Output Tokens/Call: 1500.2
+Average Total Tokens/Call: 45382.9
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 174, Total: 1239
+Call 2: gpt-5-2025-08-07 - Input: 1197, Output: 41, Total: 1238
+Call 3: gpt-5-2025-08-07 - Input: 1353, Output: 46, Total: 1399
+Call 4: gpt-5-2025-08-07 - Input: 8627, Output: 44, Total: 8671
+Call 5: gpt-5-2025-08-07 - Input: 13568, Output: 48, Total: 13616
+Call 6: gpt-5-2025-08-07 - Input: 13835, Output: 52, Total: 13887
+Call 7: gpt-5-2025-08-07 - Input: 27082, Output: 312, Total: 27394
+Call 8: gpt-5-2025-08-07 - Input: 47629, Output: 2745, Total: 50374
+Call 9: gpt-5-2025-08-07 - Input: 61335, Output: 51, Total: 61386
+Call 10: gpt-5-2025-08-07 - Input: 83937, Output: 861, Total: 84798
+Call 11: gpt-5-mini-2025-08-07 - Input: 17204, Output: 55, Total: 17259
+Call 12: gpt-5-mini-2025-08-07 - Input: 19180, Output: 2861, Total: 22041
+Call 13: gpt-5-2025-08-07 - Input: 85418, Output: 1993, Total: 87411
+Call 14: gpt-5-2025-08-07 - Input: 85706, Output: 1836, Total: 87542
+Call 15: gpt-5-2025-08-07 - Input: 86627, Output: 3450, Total: 90077
+Call 16: gpt-5-2025-08-07 - Input: 92194, Output: 5143, Total: 97337
+Call 17: gpt-5-mini-2025-08-07 - Input: 18870, Output: 120, Total: 18990
+Call 18: gpt-5-mini-2025-08-07 - Input: 22084, Output: 5222, Total: 27306
+Call 19: gpt-5-2025-08-07 - Input: 94942, Output: 81, Total: 95023
+Call 20: gpt-5-2025-08-07 - Input: 95802, Output: 4868, Total: 100670
+    
+Token usage summary saved to: results/logs/otbn_agentic_11:54:34_token_usage.txt

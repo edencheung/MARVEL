@@ -1,0 +1,73 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/doc
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/doc/theory_of_operation.md
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/doc/registers.md
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_reg_top.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_core.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_main_sm.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_ack_sm.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_pkg.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_field_en.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_core.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_core.sv for edn_core with security objective: Register access control, alert signaling integrity, MUBI enforcement, CSRNG command sequencing
+Running llm cwe details retriever tool on Register access control and privilege escalation in hardware
+Running llm cwe details retriever tool on Alert signaling integrity and tamper detection in hardware
+Running llm cwe details retriever tool on MUBI multi-bit encoding enforcement and validation
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_main_sm.sv for edn_main_sm with security objective: FSM safety, illegal state handling, error escalation, command gating
+Running llm cwe details retriever tool on FSM safety illegal state handling error escalation command gating
+Running llm cwe details retriever tool on error escalation security state machine
+Running llm cwe details retriever tool on command gating access control hardware
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_reg_pkg.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_reg_top.sv for edn_reg_top with security objective: Register access control, integrity checks, lock enforcement
+Running llm cwe details retriever tool on Register access control, integrity checks, lock enforcement
+Running llm cwe details retriever tool on Hardware integrity checks and data corruption
+Running llm cwe details retriever tool on Register access control and privilege escalation
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_core.sv for bug: assign edn_bus_cmp_alert = cs_rdata_capt_vld && cs_rdata_capt_vld_q && (cs_rdata_capt_q == packer_cs_rdata[63:0]);
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_core.sv for bug: assign edn_bus_cmp_alert = cs_rdata_capt_vld && cs_rdata_capt_vld_q && (cs_rdata_capt_q == packer_cs_rdata[63:0]);
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/rtl/edn_core.sv
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/edn/doc/interfaces.md
+Review Agent invoked
+Agentic analysis completed
+
+
+Token Usage Summary:
+===================
+Total API Calls: 23
+Total Input Tokens: 802,415
+Total Output Tokens: 29,023
+Total Tokens: 831,438
+Average Input Tokens/Call: 34887.6
+Average Output Tokens/Call: 1261.9
+Average Total Tokens/Call: 36149.5
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 107, Total: 1172
+Call 2: gpt-5-2025-08-07 - Input: 1250, Output: 46, Total: 1296
+Call 3: gpt-5-2025-08-07 - Input: 1372, Output: 41, Total: 1413
+Call 4: gpt-5-2025-08-07 - Input: 1504, Output: 46, Total: 1550
+Call 5: gpt-5-2025-08-07 - Input: 4651, Output: 44, Total: 4695
+Call 6: gpt-5-2025-08-07 - Input: 12902, Output: 42, Total: 12944
+Call 7: gpt-5-2025-08-07 - Input: 13056, Output: 52, Total: 13108
+Call 8: gpt-5-2025-08-07 - Input: 31469, Output: 51, Total: 31520
+Call 9: gpt-5-2025-08-07 - Input: 45368, Output: 52, Total: 45420
+Call 10: gpt-5-2025-08-07 - Input: 48144, Output: 52, Total: 48196
+Call 11: gpt-5-2025-08-07 - Input: 49577, Output: 50, Total: 49627
+Call 12: gpt-5-2025-08-07 - Input: 51595, Output: 51, Total: 51646
+Call 13: gpt-5-2025-08-07 - Input: 52728, Output: 52, Total: 52780
+Call 14: gpt-5-2025-08-07 - Input: 53295, Output: 2127, Total: 55422
+Call 15: gpt-5-mini-2025-08-07 - Input: 11949, Output: 56, Total: 12005
+Call 16: gpt-5-mini-2025-08-07 - Input: 14703, Output: 3430, Total: 18133
+Call 17: gpt-5-2025-08-07 - Input: 54691, Output: 2456, Total: 57147
+Call 18: gpt-5-2025-08-07 - Input: 54852, Output: 79, Total: 54931
+Call 19: gpt-5-2025-08-07 - Input: 55784, Output: 52, Total: 55836
+Call 20: gpt-5-2025-08-07 - Input: 59578, Output: 3026, Total: 62604
+Call 21: gpt-5-2025-08-07 - Input: 60485, Output: 3878, Total: 64363
+Call 22: gpt-5-2025-08-07 - Input: 60789, Output: 3569, Total: 64358
+Call 23: gpt-5-2025-08-07 - Input: 61608, Output: 9664, Total: 71272
+    

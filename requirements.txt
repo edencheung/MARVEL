@@ -2,6 +2,7 @@ langchain-core
 langchain-openai
 langchain-anthropic
 langchain-deepseek
+langchain-google-genai
 langgraph
 langchain
 langchain-text-splitters

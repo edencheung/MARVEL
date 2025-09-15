@@ -1,0 +1,60 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/doc
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/README.md
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/data
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/data/otp_macro.hjson
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_pkg.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_reg_pkg.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_reg_top.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro.sv for otp_macro with security objective: Memory integrity, lifecycle/test gating, privilege protections
+Running llm cwe details retriever tool on memory integrity protection and ECC error handling in hardware
+Running llm cwe details retriever tool on lifecycle state gating and privilege escalation in hardware test interfaces
+Running llm cwe details retriever tool on finite state machine security and sparse encoding for hardware protection
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_reg_top.sv for otp_macro_reg_top with security objective: Register access policies, CWE-1209 improper access control of hardware registers, CWE-1231 lock bits
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro.sv for bug: assign wdata_rmw = (write_ecc_on) ? wdata_ecc | rdata_q[cnt_q]
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_reg_top.sv
+Review Agent invoked
+Agentic analysis completed
+
+
+Token Usage Summary:
+===================
+Total API Calls: 21
+Total Input Tokens: 283,855
+Total Output Tokens: 20,496
+Total Tokens: 304,351
+Average Input Tokens/Call: 13516.9
+Average Output Tokens/Call: 976.0
+Average Total Tokens/Call: 14492.9
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 171, Total: 1236
+Call 2: gpt-5-2025-08-07 - Input: 1250, Output: 46, Total: 1296
+Call 3: gpt-5-2025-08-07 - Input: 1371, Output: 41, Total: 1412
+Call 4: gpt-5-2025-08-07 - Input: 1428, Output: 42, Total: 1470
+Call 5: gpt-5-2025-08-07 - Input: 1559, Output: 43, Total: 1602
+Call 6: gpt-5-2025-08-07 - Input: 1723, Output: 111, Total: 1834
+Call 7: gpt-5-2025-08-07 - Input: 1843, Output: 46, Total: 1889
+Call 8: gpt-5-2025-08-07 - Input: 5223, Output: 185, Total: 5408
+Call 9: gpt-5-2025-08-07 - Input: 5732, Output: 52, Total: 5784
+Call 10: gpt-5-2025-08-07 - Input: 8498, Output: 52, Total: 8550
+Call 11: gpt-5-2025-08-07 - Input: 23767, Output: 50, Total: 23817
+Call 12: gpt-5-2025-08-07 - Input: 29627, Output: 1294, Total: 30921
+Call 13: gpt-5-mini-2025-08-07 - Input: 5006, Output: 55, Total: 5061
+Call 14: gpt-5-mini-2025-08-07 - Input: 5315, Output: 5447, Total: 10762
+Call 15: gpt-5-2025-08-07 - Input: 31950, Output: 654, Total: 32604
+Call 16: gpt-5-2025-08-07 - Input: 32831, Output: 88, Total: 32919
+Call 17: gpt-5-2025-08-07 - Input: 33024, Output: 467, Total: 33491
+Call 18: gpt-5-2025-08-07 - Input: 33203, Output: 1494, Total: 34697
+Call 19: gpt-5-mini-2025-08-07 - Input: 11867, Output: 57, Total: 11924
+Call 20: gpt-5-mini-2025-08-07 - Input: 12584, Output: 4005, Total: 16589
+Call 21: gpt-5-2025-08-07 - Input: 34989, Output: 6096, Total: 41085
+    
+Token usage summary saved to: results/logs/otp_macro_agentic_12:17:32_token_usage.txt

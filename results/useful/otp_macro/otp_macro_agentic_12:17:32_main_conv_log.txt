@@ -1,0 +1,3488 @@
+================================ System Message ================================
+
+
+    You are a supervisor agent in a multi-agent system focused on identifying hardware security vulnerabilities in RTL code. 
+    Your objective is to analyze the given SoC and generate a detailed security report.
+
+    You have access to the following tools: ['run_anomaly_detector_agent', 'run_llm_cwe_checker_agent', 'run_similar_bug_agent', 'list_dir', 'read_file', 'read_file_with_line_numbers']. Each tool specializes in a specific task:
+
+    - CWE Agent: Given a Verilog file, a top module, and a security aspect, this agent maps the RTL code to relevant CWEs and detects CWE-related vulnerabilities.
+    - Similar Bug Agent: Accepts a file path and a line number (where a bug was found) to locate similar patterns or recurring bugs throughout the RTL code.
+
+    Instructions for analysis:
+
+    - Read the documentataion to identify security features and register interfaces policies.
+    - Read through the different systemverilog files to probe for issues and use the anomaly agent
+    - If a bug is detected but not localized, use the CWE Agent to further inspect the related security aspect in the surrounding RTL.
+    - After detecting any bugs, use the Similar Bug Agent to scan similar files (of the same or of different IPs) for similar vulnerabilities.
+
+    Output Format:
+
+    - For each identified issue, report:
+    - File name
+    - Line number(s)
+    - Brief description of the issue
+    - Security aspect affected
+    - Tools used to identify the issue
+
+    When your analysis is complete, end your response with "END".
+    
+================================ Human Message =================================
+
+Identify security issues in the otp_macro IP of the OpenTitan SoC, located at /home/eden/Desktop/Code/HACK@CHES/p2/opentitan.
+
+    - All IPs are located in the 'hw/ip' directory.
+    - RTL code for each IP is located in its 'rtl' subdirectory, with source files having the '.sv' extension.
+        - reg_top files contain the register interface for the IP.
+        - control/fsm files contain the control logic for the IP.
+        - core files contain the core logic for the IP.
+    - Documentation files (.md) are located in the 'doc' directories of each IP.
+        - theory_of_operation explains the properties of the IP and its security features.
+        - registers.md files contain the register interface and its read/write access policies.
+    - Ignore '.core' files; they are used by build tools and are not relevant for security analysis.
+
+    Focus on the otp_macro IP and make sure to analyze it thoroughly.
+
+    First, identify the relevant security properties and read/write policies of the register interfaces from the documentation. 
+    Then, use all available tools to perform a comprehensive security analysis on the RTL code.
+    
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_79jl0jhgCdDkXhSNRbuLtO4v)
+ Call ID: call_79jl0jhgCdDkXhSNRbuLtO4v
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip:
+README.md BUILD
+
+Directories in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip:
+pattgen csrng aon_timer prim_generic keymgr_dpe uart keymgr i2c dma spi_host otp_ctrl rom_ctrl spi_device edn usbdev adc_ctrl trial1 kmac flash_ctrl otp_macro rv_dm mbx rv_timer prim_xilinx prim prim_xilinx_ultrascale aes lc_ctrl hmac rv_core_ibex sram_ctrl entropy_src racl_ctrl sysrst_ctrl tlul soc_dbg_ctrl otbn ascon
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_gzzGzSgNMnQ6E6wwiEbAA2ow)
+ Call ID: call_gzzGzSgNMnQ6E6wwiEbAA2ow
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro:
+otp_macro_pkg.core README.md BUILD defs.bzl otp_macro.core
+
+Directories in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro:
+data dv rtl lint
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_iYF1tbwvHsBThd6ypBBseTwZ)
+ Call ID: call_iYF1tbwvHsBThd6ypBBseTwZ
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/doc
+================================= Tool Message =================================
+Name: list_dir
+
+Directory does not exist.
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_herJs744wvWBTWUVaVFPh5Dt)
+ Call ID: call_herJs744wvWBTWUVaVFPh5Dt
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl:
+otp_macro_reg_top.sv otp_macro_pkg.sv otp_macro_reg_pkg.sv otp_macro.sv
+
+Directories in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_p2ZTajVhxMPtAsvTNloueN0u)
+ Call ID: call_p2ZTajVhxMPtAsvTNloueN0u
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/README.md
+================================= Tool Message =================================
+Name: read_file
+
+# OTP MACRO HWIP Technical Specification
+
+# Overview
+
+This document specifies the OTP MACRO hardware IP functionality.
+The OTP MACRO is a comportable IP that wraps an OTP macro.
+This block is expected to be used in conjunction with an OTP Controller, and most of the features of the macro correspond to features of the controller.
+
+## Features
+
+The OTP MACRO wraps a one-time-programmable memory block, which can be either a simulation model, or a vendor specific macro cell.
+The wrapper features a CSR block for vendor specific operations.
+
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_i2Qr9q3TZ1aiJ3Tvo44uha1L)
+ Call ID: call_i2Qr9q3TZ1aiJ3Tvo44uha1L
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/data
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/data:
+otp_macro_sec_cm_testplan.hjson BUILD otp_macro.hjson
+
+Directories in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/data:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_P0C6OvjR6wm7auwBdojNT2Mk)
+ Call ID: call_P0C6OvjR6wm7auwBdojNT2Mk
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/data/otp_macro.hjson
+================================= Tool Message =================================
+Name: read_file
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name:               "otp_macro",
+  human_name:         "OTP Macro Wrapper",
+  one_line_desc:      "OTP macro simulation model and CSR block",
+  one_paragraph_desc: '''
+  OTP macro has one-time programmable fuses that configure this top.
+  It is tightly coupled to the OTP controller, but placed at the top for
+  ease of integration. It contains a CSR block for testing and macro specific
+  functionality.
+  '''
+  // Unique comportable IP identifier defined under KNOWN_CIP_IDS in the regtool.
+  cip_id:             "44",
+  design_spec:        "../doc",
+#  dv_doc:             "../doc/dv",
+#  hw_checklist:       "../doc/checklist",
+#  sw_checklist:       "/sw/device/lib/dif/dif_pwm",
+  revisions: [
+    {
+      version:            "1.0.0",
+      life_stage:         "L1",
+      design_stage:       "D1",
+      verification_stage: "V1",
+      dif_stage:          "S2",
+      notes:              "Use OTP to perform block level verification.",
+    }
+  ]
+  clocking: [
+    {clock: "clk_i", reset: "rst_ni", primary: true},
+  ]
+  available_output_list: [
+    { name: "test",
+      width: 8,
+      desc: "Test-related GPIOs. Only active in DFT-enabled life cycle states."
+    }
+  ],
+  bus_interfaces: [
+    { protocol: "tlul", direction: "device" }
+  ],
+  scan: "true", // Enable `scanmode_i` port
+  scan_reset: "true", // Enable `scan_rst_ni` port
+  scan_en: "true",    // Enable `scan_en_i` port
+
+  available_output_list: [
+    { name: "test",
+      width: 8,
+      desc: "Test-related GPIOs. Only active in DFT-enabled life cycle states."
+    }
+  ],
+
+  regwidth: "32",
+  param_list: [
+    { name: "Width",
+      desc: "Size of storage words in bits",
+      type: "int",
+      default: "16",
+      local: "false",
+    },
+    { name: "Depth",
+      desc: "Number of words",
+      type: "int",
+      default: "1024",
+      local: "false",
+    },
+    { name: "SizeWidth",
+      desc: "Number of words transferred per access",
+      type: "int",
+      default: "2",
+      local: "false",
+    },
+    {
+      name: "MemInitFile",
+      desc: "",
+      type: "",
+      default: '""',
+      expose: "true",
+      local: "false",
+    },
+    {
+      name: "VendorTestOffset",
+      desc: "",
+      type: "int",
+      default: "8",
+      local: "false",
+    },
+    {
+      name: "VendorTestSize",
+      desc: "",
+      type: "int",
+      default: "8",
+      local: "false",
+    },
+  ],
+  alert_list: [],
+  features: []
+    countermeasures: [
+    { name: "BUS.INTEGRITY",
+      desc: "End-to-end bus integrity scheme."
+    }
+  ]
+  inter_signal_list: [
+    // AST observability control
+    { struct: "ast_obs_ctrl",
+      type: "uni",
+      name: "obs_ctrl",
+      act: "rcv",
+      package: "ast_pkg"
+      desc:    "AST observability control signals."
+    }
+    // otp macro observe bus
+    { struct: "logic",
+      type: "uni",
+      name: "otp_obs",
+      act: "req",
+      width: "8",
+      package: ""
+      desc:    "AST observability bus."
+    }
+    // Power sequencing signals to AST
+    { struct:  "pwr_seq"
+      type:    "uni"
+      name:    "pwr_seq"
+      act:     "req"
+      default: "'0"
+      package: "otp_macro_pkg"
+      desc:    "Power sequencing signals to AST (VDD domain)."
+    }
+    // Power sequencing signals from AST
+    { struct:  "pwr_seq"
+      type:    "uni"
+      name:    "pwr_seq_h"
+      act:     "rcv"
+      default: "'0"
+      package: "otp_macro_pkg"
+      desc:    "Power sequencing signals coming from AST (VCC domain)."
+    }
+    // OTP dedicated power connection from AST
+    { struct:  ""
+      type:    "io"
+      name:    "ext_voltage_h"
+      act:     "none"
+      default: "'0"
+      package: "",
+    }
+
+    // LC_CTRL test enable input
+    { struct:  "lc_tx"
+      type:    "uni"
+      name:    "lc_dft_en"
+      act:     "rcv"
+      default: "lc_ctrl_pkg::Off"
+      package: "lc_ctrl_pkg"
+      desc:    '''
+               Test enable qualifier coming from life cycle controller.
+               This signals enables the TL-UL access port.
+               '''
+    }
+    // Macro specific test signals to/from LC TAP
+    { struct:  "otp_test"
+      type:    "req_rsp"
+      name:    "test"
+      act:     "rsp"
+      default: "'0"
+      package: "otp_macro_pkg"
+      desc:    "Vendor test control signals from/to the life cycle TAP."
+    }
+    // OTP_CTRL Interface
+    { struct:  "otp_ctrl_macro"
+      type:    "req_rsp"
+      name:    "otp"
+      act:     "rsp"
+      default: "'0"
+      package: "otp_ctrl_macro_pkg"
+      desc:    "Data interface for the OTP macro."
+    }
+    // DFT CFG and RSP signals
+    { struct:  "otp_cfg"
+      type:    "uni"
+      name:    "cfg"
+      act:     "rcv"
+      default: "'0"
+      package: "otp_macro_pkg"
+    },
+    { struct:  "otp_cfg_rsp"
+      type:    "uni"
+      name:    "cfg_rsp"
+      act:     "req"
+      default: "'0"
+      package: "otp_macro_pkg"
+    },
+  ],
+
+  countermeasures: [
+    { name: "LC_CTRL.INTERSIG.MUBI",
+      desc: "The life cycle control signals are multibit encoded."
+    }
+    { name: "TEST.BUS.LC_GATED",
+      desc: "Prevent access to test signals and the OTP backdoor interface in non-test lifecycle states."
+    }
+    { name: "TEST_TL_LC_GATE.FSM.SPARSE",
+      desc: "The control FSM inside the TL-UL gating primitive is sparsely encoded."
+    }
+    { name: "MACRO.MEM.INTEGRITY",
+      desc: '''
+            The OTP macro employs a vendor-specific integrity scheme at the granularity of the native 16bit OTP words.
+            The scheme is able to at least detect single bit errors.
+            '''
+    }
+    { name: "MACRO.MEM.CM",
+      desc: "The OTP macro may contain additional vendor-specific countermeasures."
+    }
+  ]
+
+  registers: [
+    { name: "CSR0",
+      desc: ""
+      swaccess: "rw",
+      hwaccess: "hro",
+      hwext:    "false",
+      hwqe:     "false",
+      fields: [
+        { bits: "0",
+          name: "field0",
+          desc: "",
+          resval: "0x0",
+        }
+        { bits: "1",
+          name: "field1",
+          desc: "",
+          resval: "0x0",
+        }
+        { bits: "2",
+          name: "field2",
+          desc: "",
+          resval: "0x0",
+        }
+        { bits: "13:4",
+          name: "field3",
+          desc: ""
+          resval: "0x0",
+        }
+        { bits: "26:16",
+          name: "field4",
+          desc: ""
+          resval: "0x0",
+        }
+      ]
+    },
+    { name: "CSR1",
+      desc: ""
+      swaccess: "rw",
+      hwaccess: "hro",
+      hwext:    "false",
+      hwqe:     "false",
+      fields: [
+        { bits: "6:0",
+          name: "field0",
+          desc: ""
+          resval: "0x0",
+        }
+        { bits: "7:7",
+          name: "field1",
+          desc: "",
+          resval: "0x0",
+        }
+        { bits: "14:8",
+          name: "field2",
+          desc: ""
+          resval: "0x0",
+        }
+        { bits: "15:15",
+          name: "field3",
+          desc: "",
+          resval: "0x0",
+        }
+        { bits: "31:16",
+          name: "field4",
+          desc: "",
+          resval: "0x0",
+        }
+      ]
+    },
+    { name: "CSR2",
+      desc: ""
+      swaccess: "rw",
+      hwaccess: "hro",
+      hwext:    "false",
+      hwqe:     "false",
+      fields: [
+        { bits: "0",
+          name: "field0",
+          desc: "",
+          resval: "0x0",
+        }
+      ]
+    },
+    { name: "CSR3",
+      desc: ""
+      swaccess: "rw",
+      hwaccess: "hrw",
+      hwext:    "false",
+      hwqe:     "false",
+      fields: [
+       { bits: "2:0",
+          name: "field0",
+          desc: ""
+          swaccess: "rw1c",
+          resval: "0x0",
+       }
+       { bits: "13:4",
+          name: "field1",
+          desc: "",
+          swaccess: "rw1c",
+          resval: "0x0",
+       }
+       { bits: "16",
+          name: "field2",
+          desc: "",
+          swaccess: "rw1c",
+          resval: "0x0",
+       }
+       { bits: "17",
+          name: "field3",
+          desc: "",
+          swaccess: "ro",
+          resval: "0x0",
+       }
+       { bits: "18",
+          name: "field4",
+          desc: "",
+          swaccess: "ro",
+          resval: "0x0",
+       }
+       { bits: "19",
+          name: "field5",
+          desc: "",
+          swaccess: "ro",
+          resval: "0x0",
+       }
+       { bits: "20",
+          name: "field6",
+          desc: "",
+          swaccess: "ro",
+          resval: "0x0",
+       }
+       { bits: "21",
+          name: "field7",
+          desc: "",
+          swaccess: "ro",
+          resval: "0x0",
+       }
+       { bits: "22",
+          name: "field8",
+          desc: "",
+          swaccess: "ro",
+          resval: "0x0",
+       }
+      ]
+    },
+    { name: "CSR4",
+      desc: ""
+      swaccess: "rw",
+      hwaccess: "hro",
+      hwext:    "false",
+      hwqe:     "false",
+      fields: [
+        { bits: "9:0",
+          name: "field0",
+          desc: ""
+          resval: "0x0",
+        }
+        { bits: "12",
+          name: "field1",
+          desc: ""
+          resval: "0x0",
+        }
+        { bits: "13",
+          name: "field2",
+          desc: ""
+          resval: "0x0",
+        }
+        { bits: "14",
+          name: "field3",
+          desc: ""
+          resval: "0x0",
+        }
+      ]
+    },
+    { name: "CSR5",
+      desc: ""
+      swaccess: "rw",
+      hwaccess: "hrw",
+      hwext:    "false",
+      hwqe:     "false",
+      fields: [
+       { bits: "5:0",
+          name: "field0",
+          desc: ""
+          swaccess: "rw",
+          resval: "0x0",
+       }
+       { bits: "7:6",
+          name: "field1",
+          desc: ""
+          swaccess: "rw",
+          resval: "0x0",
+       }
+       { bits: "8",
+          name: "field2",
+          desc: "",
+          swaccess: "ro",
+          resval: "0x0",
+       }
+       { bits: "11:9",
+         name: "field3",
+         desc: ""
+         swaccess: "ro",
+         resval: "0x0",
+       }
+       { bits: "12",
+         name: "field4",
+         desc: ""
+         swaccess: "ro",
+         resval: "0x0",
+       }
+       { bits: "13",
+         name: "field5",
+         desc: ""
+         swaccess: "ro",
+         resval: "0x0",
+       }
+       { bits: "31:16",
+          name: "field6",
+          desc: ""
+          swaccess: "rw",
+          resval: "0x0",
+       }
+      ]
+    },
+    { name: "CSR6",
+      desc: ""
+      swaccess: "rw",
+      hwaccess: "hro",
+      hwext:    "false",
+      hwqe:     "false",
+      fields: [
+        { bits: "9:0",
+          name: "field0",
+          desc: ""
+          resval: "0x0",
+        }
+        { bits: "11",
+          name: "field1",
+          desc: "",
+          swaccess: "rw",
+          resval: "0x0",
+        }
+        { bits: "12",
+          name: "field2",
+          desc: "",
+          swaccess: "rw",
+          resval: "0x0",
+        }
+        { bits: "31:16",
+          name: "field3",
+          desc: ""
+          resval: "0x0",
+        }
+      ]
+    },
+    { name: "CSR7",
+      desc: "",
+      swaccess: "ro",
+      hwaccess: "hrw",
+      hwext:    "false",
+      hwqe:     "false",
+      fields: [
+       { bits: "5:0",
+         name: "field0",
+         desc: ""
+         swaccess: "ro",
+         resval: "0x0",
+       }
+       { bits: "10:8",
+         name: "field1",
+         desc: "",
+         swaccess: "ro",
+         resval: "0x0",
+       }
+       { bits: "14",
+         name: "field2",
+         desc: "",
+         swaccess: "ro",
+         resval: "0x0",
+       }
+       { bits: "15",
+         name: "field3",
+         desc: "",
+         swaccess: "ro",
+         resval: "0x0",
+       }
+     ]
+    },
+  ]
+}
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_qYvLQYaIb4E9WmMTdHJrfAV3)
+ Call ID: call_qYvLQYaIb4E9WmMTdHJrfAV3
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_pkg.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: 
+6: package otp_macro_pkg;
+7: 
+8:   parameter int OtpPwrSeqWidth     = 2;
+9:   parameter int OtpTestCtrlWidth   = 32;
+10:   parameter int OtpTestStatusWidth = 32;
+11:   parameter int OtpTestVectWidth   = 8;
+12: 
+13:   // AST Interface
+14: 
+15:   typedef logic [OtpPwrSeqWidth-1:0] pwr_seq_t;
+16:   typedef struct packed {
+17:     pwr_seq_t pwr_seq;
+18:   } otp_ast_req_t;
+19: 
+20:   typedef struct packed {
+21:     pwr_seq_t pwr_seq_h;
+22:   } otp_ast_rsp_t;
+23: 
+24:   // DFT interface
+25:   typedef logic [OtpTestCtrlWidth-1:0] otp_test_ctrl_t;
+26:   typedef struct packed {
+27:     otp_test_ctrl_t ctrl;
+28:   } otp_test_req_t;
+29: 
+30:   typedef logic [OtpTestStatusWidth-1:0] otp_test_status_t;
+31:   typedef struct packed {
+32:     otp_test_status_t status;
+33:   } otp_test_rsp_t;
+34: 
+35:   typedef logic [OtpTestVectWidth-1:0] otp_test_vect_t;
+36: 
+37:   parameter otp_test_req_t OTP_TEST_DEFAULT = '0;
+38: 
+39:   // Config interface
+40:   typedef struct packed {
+41:     logic test;
+42:   } otp_cfg_t;
+43: 
+44:   typedef struct packed {
+45:     logic done;
+46:   } otp_cfg_rsp_t;
+47: 
+48:   parameter otp_cfg_t OTP_CFG_DEFAULT = '0;
+49: 
+50: endpackage : otp_macro_pkg
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_NQXB0oHE5BVrvs7bI3EQqmWy)
+ Call ID: call_NQXB0oHE5BVrvs7bI3EQqmWy
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_reg_pkg.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Register Package auto-generated by `reggen` containing data structure
+6: 
+7: package otp_macro_reg_pkg;
+8: 
+9:   // Address widths within the block
+10:   parameter int BlockAw = 5;
+11: 
+12:   // Number of registers for every interface
+13:   parameter int NumRegs = 8;
+14: 
+15:   ////////////////////////////
+16:   // Typedefs for registers //
+17:   ////////////////////////////
+18: 
+19:   typedef struct packed {
+20:     struct packed {
+21:       logic [10:0] q;
+22:     } field4;
+23:     struct packed {
+24:       logic [9:0] q;
+25:     } field3;
+26:     struct packed {
+27:       logic        q;
+28:     } field2;
+29:     struct packed {
+30:       logic        q;
+31:     } field1;
+32:     struct packed {
+33:       logic        q;
+34:     } field0;
+35:   } otp_macro_reg2hw_csr0_reg_t;
+36: 
+37:   typedef struct packed {
+38:     struct packed {
+39:       logic [15:0] q;
+40:     } field4;
+41:     struct packed {
+42:       logic        q;
+43:     } field3;
+44:     struct packed {
+45:       logic [6:0]  q;
+46:     } field2;
+47:     struct packed {
+48:       logic        q;
+49:     } field1;
+50:     struct packed {
+51:       logic [6:0]  q;
+52:     } field0;
+53:   } otp_macro_reg2hw_csr1_reg_t;
+54: 
+55:   typedef struct packed {
+56:     logic        q;
+57:   } otp_macro_reg2hw_csr2_reg_t;
+58: 
+59:   typedef struct packed {
+60:     struct packed {
+61:       logic        q;
+62:     } field8;
+63:     struct packed {
+64:       logic        q;
+65:     } field7;
+66:     struct packed {
+67:       logic        q;
+68:     } field6;
+69:     struct packed {
+70:       logic        q;
+71:     } field5;
+72:     struct packed {
+73:       logic        q;
+74:     } field4;
+75:     struct packed {
+76:       logic        q;
+77:     } field3;
+78:     struct packed {
+79:       logic        q;
+80:     } field2;
+81:     struct packed {
+82:       logic [9:0] q;
+83:     } field1;
+84:     struct packed {
+85:       logic [2:0]  q;
+86:     } field0;
+87:   } otp_macro_reg2hw_csr3_reg_t;
+88: 
+89:   typedef struct packed {
+90:     struct packed {
+91:       logic        q;
+92:     } field3;
+93:     struct packed {
+94:       logic        q;
+95:     } field2;
+96:     struct packed {
+97:       logic        q;
+98:     } field1;
+99:     struct packed {
+100:       logic [9:0] q;
+101:     } field0;
+102:   } otp_macro_reg2hw_csr4_reg_t;
+103: 
+104:   typedef struct packed {
+105:     struct packed {
+106:       logic [15:0] q;
+107:     } field6;
+108:     struct packed {
+109:       logic        q;
+110:     } field5;
+111:     struct packed {
+112:       logic        q;
+113:     } field4;
+114:     struct packed {
+115:       logic [2:0]  q;
+116:     } field3;
+117:     struct packed {
+118:       logic        q;
+119:     } field2;
+120:     struct packed {
+121:       logic [1:0]  q;
+122:     } field1;
+123:     struct packed {
+124:       logic [5:0]  q;
+125:     } field0;
+126:   } otp_macro_reg2hw_csr5_reg_t;
+127: 
+128:   typedef struct packed {
+129:     struct packed {
+130:       logic [15:0] q;
+131:     } field3;
+132:     struct packed {
+133:       logic        q;
+134:     } field2;
+135:     struct packed {
+136:       logic        q;
+137:     } field1;
+138:     struct packed {
+139:       logic [9:0] q;
+140:     } field0;
+141:   } otp_macro_reg2hw_csr6_reg_t;
+142: 
+143:   typedef struct packed {
+144:     struct packed {
+145:       logic        q;
+146:     } field3;
+147:     struct packed {
+148:       logic        q;
+149:     } field2;
+150:     struct packed {
+151:       logic [2:0]  q;
+152:     } field1;
+153:     struct packed {
+154:       logic [5:0]  q;
+155:     } field0;
+156:   } otp_macro_reg2hw_csr7_reg_t;
+157: 
+158:   typedef struct packed {
+159:     struct packed {
+160:       logic        d;
+161:       logic        de;
+162:     } field8;
+163:     struct packed {
+164:       logic        d;
+165:       logic        de;
+166:     } field7;
+167:     struct packed {
+168:       logic        d;
+169:       logic        de;
+170:     } field6;
+171:     struct packed {
+172:       logic        d;
+173:       logic        de;
+174:     } field5;
+175:     struct packed {
+176:       logic        d;
+177:       logic        de;
+178:     } field4;
+179:     struct packed {
+180:       logic        d;
+181:       logic        de;
+182:     } field3;
+183:     struct packed {
+184:       logic        d;
+185:       logic        de;
+186:     } field2;
+187:     struct packed {
+188:       logic [9:0] d;
+189:       logic        de;
+190:     } field1;
+191:     struct packed {
+192:       logic [2:0]  d;
+193:       logic        de;
+194:     } field0;
+195:   } otp_macro_hw2reg_csr3_reg_t;
+196: 
+197:   typedef struct packed {
+198:     struct packed {
+199:       logic [15:0] d;
+200:       logic        de;
+201:     } field6;
+202:     struct packed {
+203:       logic        d;
+204:       logic        de;
+205:     } field5;
+206:     struct packed {
+207:       logic        d;
+208:       logic        de;
+209:     } field4;
+210:     struct packed {
+211:       logic [2:0]  d;
+212:       logic        de;
+213:     } field3;
+214:     struct packed {
+215:       logic        d;
+216:       logic        de;
+217:     } field2;
+218:     struct packed {
+219:       logic [1:0]  d;
+220:       logic        de;
+221:     } field1;
+222:     struct packed {
+223:       logic [5:0]  d;
+224:       logic        de;
+225:     } field0;
+226:   } otp_macro_hw2reg_csr5_reg_t;
+227: 
+228:   typedef struct packed {
+229:     struct packed {
+230:       logic        d;
+231:       logic        de;
+232:     } field3;
+233:     struct packed {
+234:       logic        d;
+235:       logic        de;
+236:     } field2;
+237:     struct packed {
+238:       logic [2:0]  d;
+239:       logic        de;
+240:     } field1;
+241:     struct packed {
+242:       logic [5:0]  d;
+243:       logic        de;
+244:     } field0;
+245:   } otp_macro_hw2reg_csr7_reg_t;
+246: 
+247:   // Register -> HW type
+248:   typedef struct packed {
+249:     otp_macro_reg2hw_csr0_reg_t csr0; // [158:135]
+250:     otp_macro_reg2hw_csr1_reg_t csr1; // [134:103]
+251:     otp_macro_reg2hw_csr2_reg_t csr2; // [102:102]
+252:     otp_macro_reg2hw_csr3_reg_t csr3; // [101:82]
+253:     otp_macro_reg2hw_csr4_reg_t csr4; // [81:69]
+254:     otp_macro_reg2hw_csr5_reg_t csr5; // [68:39]
+255:     otp_macro_reg2hw_csr6_reg_t csr6; // [38:11]
+256:     otp_macro_reg2hw_csr7_reg_t csr7; // [10:0]
+257:   } otp_macro_reg2hw_t;
+258: 
+259:   // HW -> register type
+260:   typedef struct packed {
+261:     otp_macro_hw2reg_csr3_reg_t csr3; // [80:52]
+262:     otp_macro_hw2reg_csr5_reg_t csr5; // [51:15]
+263:     otp_macro_hw2reg_csr7_reg_t csr7; // [14:0]
+264:   } otp_macro_hw2reg_t;
+265: 
+266:   // Register offsets
+267:   parameter logic [BlockAw-1:0] OTP_MACRO_CSR0_OFFSET = 5'h 0;
+268:   parameter logic [BlockAw-1:0] OTP_MACRO_CSR1_OFFSET = 5'h 4;
+269:   parameter logic [BlockAw-1:0] OTP_MACRO_CSR2_OFFSET = 5'h 8;
+270:   parameter logic [BlockAw-1:0] OTP_MACRO_CSR3_OFFSET = 5'h c;
+271:   parameter logic [BlockAw-1:0] OTP_MACRO_CSR4_OFFSET = 5'h 10;
+272:   parameter logic [BlockAw-1:0] OTP_MACRO_CSR5_OFFSET = 5'h 14;
+273:   parameter logic [BlockAw-1:0] OTP_MACRO_CSR6_OFFSET = 5'h 18;
+274:   parameter logic [BlockAw-1:0] OTP_MACRO_CSR7_OFFSET = 5'h 1c;
+275: 
+276:   // Register index
+277:   typedef enum int {
+278:     OTP_MACRO_CSR0,
+279:     OTP_MACRO_CSR1,
+280:     OTP_MACRO_CSR2,
+281:     OTP_MACRO_CSR3,
+282:     OTP_MACRO_CSR4,
+283:     OTP_MACRO_CSR5,
+284:     OTP_MACRO_CSR6,
+285:     OTP_MACRO_CSR7
+286:   } otp_macro_id_e;
+287: 
+288:   // Register width information to check illegal writes
+289:   parameter logic [3:0] OTP_MACRO_PERMIT [8] = '{
+290:     4'b 1111, // index[0] OTP_MACRO_CSR0
+291:     4'b 1111, // index[1] OTP_MACRO_CSR1
+292:     4'b 0001, // index[2] OTP_MACRO_CSR2
+293:     4'b 0111, // index[3] OTP_MACRO_CSR3
+294:     4'b 0011, // index[4] OTP_MACRO_CSR4
+295:     4'b 1111, // index[5] OTP_MACRO_CSR5
+296:     4'b 1111, // index[6] OTP_MACRO_CSR6
+297:     4'b 0011  // index[7] OTP_MACRO_CSR7
+298:   };
+299: 
+300: endpackage
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_kzLQ6TODt8BdaClvqFhCwfGb)
+ Call ID: call_kzLQ6TODt8BdaClvqFhCwfGb
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_reg_top.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Register Top module auto-generated by `reggen`
+6: 
+7: `include "prim_assert.sv"
+8: 
+9: module otp_macro_reg_top (
+10:   input clk_i,
+11:   input rst_ni,
+12:   input  tlul_pkg::tl_h2d_t tl_i,
+13:   output tlul_pkg::tl_d2h_t tl_o,
+14:   // To HW
+15:   output otp_macro_reg_pkg::otp_macro_reg2hw_t reg2hw, // Write
+16:   input  otp_macro_reg_pkg::otp_macro_hw2reg_t hw2reg, // Read
+17: 
+18:   // Integrity check errors
+19:   output logic intg_err_o
+20: );
+21: 
+22:   import otp_macro_reg_pkg::* ;
+23: 
+24:   localparam int AW = 5;
+25:   localparam int DW = 32;
+26:   localparam int DBW = DW/8;                    // Byte Width
+27: 
+28:   // register signals
+29:   logic           reg_we;
+30:   logic           reg_re;
+31:   logic [AW-1:0]  reg_addr;
+32:   logic [DW-1:0]  reg_wdata;
+33:   logic [DBW-1:0] reg_be;
+34:   logic [DW-1:0]  reg_rdata;
+35:   logic           reg_error;
+36: 
+37:   logic          addrmiss, wr_err;
+38: 
+39:   logic [DW-1:0] reg_rdata_next;
+40:   logic reg_busy;
+41: 
+42:   tlul_pkg::tl_h2d_t tl_reg_h2d;
+43:   tlul_pkg::tl_d2h_t tl_reg_d2h;
+44: 
+45: 
+46:   // incoming payload check
+47:   logic intg_err;
+48:   tlul_cmd_intg_chk u_chk (
+49:     .tl_i(tl_i),
+50:     .err_o(intg_err)
+51:   );
+52: 
+53:   // also check for spurious write enables
+54:   logic reg_we_err;
+55:   logic [7:0] reg_we_check;
+56:   prim_reg_we_check #(
+57:     .OneHotWidth(8)
+58:   ) u_prim_reg_we_check (
+59:     .clk_i(clk_i),
+60:     .rst_ni(rst_ni),
+61:     .oh_i  (reg_we_check),
+62:     .en_i  (reg_we && !addrmiss),
+63:     .err_o (reg_we_err)
+64:   );
+65: 
+66:   logic err_q;
+67:   always_ff @(posedge clk_i or negedge rst_ni) begin
+68:     if (!rst_ni) begin
+69:       err_q <= '0;
+70:     end else if (intg_err || reg_we_err) begin
+71:       err_q <= 1'b1;
+72:     end
+73:   end
+74: 
+75:   // integrity error output is permanent and should be used for alert generation
+76:   // register errors are transactional
+77:   assign intg_err_o = err_q | intg_err | reg_we_err;
+78: 
+79:   // outgoing integrity generation
+80:   tlul_pkg::tl_d2h_t tl_o_pre;
+81:   tlul_rsp_intg_gen #(
+82:     .EnableRspIntgGen(1),
+83:     .EnableDataIntgGen(1)
+84:   ) u_rsp_intg_gen (
+85:     .tl_i(tl_o_pre),
+86:     .tl_o(tl_o)
+87:   );
+88: 
+89:   assign tl_reg_h2d = tl_i;
+90:   assign tl_o_pre   = tl_reg_d2h;
+91: 
+92:   tlul_adapter_reg #(
+93:     .RegAw(AW),
+94:     .RegDw(DW),
+95:     .EnableDataIntgGen(0)
+96:   ) u_reg_if (
+97:     .clk_i  (clk_i),
+98:     .rst_ni (rst_ni),
+99: 
+100:     .tl_i (tl_reg_h2d),
+101:     .tl_o (tl_reg_d2h),
+102: 
+103:     .en_ifetch_i(prim_mubi_pkg::MuBi4False),
+104:     .intg_error_o(),
+105: 
+106:     .we_o    (reg_we),
+107:     .re_o    (reg_re),
+108:     .addr_o  (reg_addr),
+109:     .wdata_o (reg_wdata),
+110:     .be_o    (reg_be),
+111:     .busy_i  (reg_busy),
+112:     .rdata_i (reg_rdata),
+113:     .error_i (reg_error)
+114:   );
+115: 
+116:   // cdc oversampling signals
+117: 
+118:   assign reg_rdata = reg_rdata_next ;
+119:   assign reg_error = addrmiss | wr_err | intg_err;
+120: 
+121:   // Define SW related signals
+122:   // Format: <reg>_<field>_{wd|we|qs}
+123:   //        or <reg>_{wd|we|qs} if field == 1 or 0
+124:   logic csr0_we;
+125:   logic csr0_field0_qs;
+126:   logic csr0_field0_wd;
+127:   logic csr0_field1_qs;
+128:   logic csr0_field1_wd;
+129:   logic csr0_field2_qs;
+130:   logic csr0_field2_wd;
+131:   logic [9:0] csr0_field3_qs;
+132:   logic [9:0] csr0_field3_wd;
+133:   logic [10:0] csr0_field4_qs;
+134:   logic [10:0] csr0_field4_wd;
+135:   logic csr1_we;
+136:   logic [6:0] csr1_field0_qs;
+137:   logic [6:0] csr1_field0_wd;
+138:   logic csr1_field1_qs;
+139:   logic csr1_field1_wd;
+140:   logic [6:0] csr1_field2_qs;
+141:   logic [6:0] csr1_field2_wd;
+142:   logic csr1_field3_qs;
+143:   logic csr1_field3_wd;
+144:   logic [15:0] csr1_field4_qs;
+145:   logic [15:0] csr1_field4_wd;
+146:   logic csr2_we;
+147:   logic csr2_qs;
+148:   logic csr2_wd;
+149:   logic csr3_we;
+150:   logic [2:0] csr3_field0_qs;
+151:   logic [2:0] csr3_field0_wd;
+152:   logic [9:0] csr3_field1_qs;
+153:   logic [9:0] csr3_field1_wd;
+154:   logic csr3_field2_qs;
+155:   logic csr3_field2_wd;
+156:   logic csr3_field3_qs;
+157:   logic csr3_field4_qs;
+158:   logic csr3_field5_qs;
+159:   logic csr3_field6_qs;
+160:   logic csr3_field7_qs;
+161:   logic csr3_field8_qs;
+162:   logic csr4_we;
+163:   logic [9:0] csr4_field0_qs;
+164:   logic [9:0] csr4_field0_wd;
+165:   logic csr4_field1_qs;
+166:   logic csr4_field1_wd;
+167:   logic csr4_field2_qs;
+168:   logic csr4_field2_wd;
+169:   logic csr4_field3_qs;
+170:   logic csr4_field3_wd;
+171:   logic csr5_we;
+172:   logic [5:0] csr5_field0_qs;
+173:   logic [5:0] csr5_field0_wd;
+174:   logic [1:0] csr5_field1_qs;
+175:   logic [1:0] csr5_field1_wd;
+176:   logic csr5_field2_qs;
+177:   logic [2:0] csr5_field3_qs;
+178:   logic csr5_field4_qs;
+179:   logic csr5_field5_qs;
+180:   logic [15:0] csr5_field6_qs;
+181:   logic [15:0] csr5_field6_wd;
+182:   logic csr6_we;
+183:   logic [9:0] csr6_field0_qs;
+184:   logic [9:0] csr6_field0_wd;
+185:   logic csr6_field1_qs;
+186:   logic csr6_field1_wd;
+187:   logic csr6_field2_qs;
+188:   logic csr6_field2_wd;
+189:   logic [15:0] csr6_field3_qs;
+190:   logic [15:0] csr6_field3_wd;
+191:   logic [5:0] csr7_field0_qs;
+192:   logic [2:0] csr7_field1_qs;
+193:   logic csr7_field2_qs;
+194:   logic csr7_field3_qs;
+195: 
+196:   // Register instances
+197:   // R[csr0]: V(False)
+198:   //   F[field0]: 0:0
+199:   prim_subreg #(
+200:     .DW      (1),
+201:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+202:     .RESVAL  (1'h0),
+203:     .Mubi    (1'b0)
+204:   ) u_csr0_field0 (
+205:     .clk_i   (clk_i),
+206:     .rst_ni  (rst_ni),
+207: 
+208:     // from register interface
+209:     .we     (csr0_we),
+210:     .wd     (csr0_field0_wd),
+211: 
+212:     // from internal hardware
+213:     .de     (1'b0),
+214:     .d      ('0),
+215: 
+216:     // to internal hardware
+217:     .qe     (),
+218:     .q      (reg2hw.csr0.field0.q),
+219:     .ds     (),
+220: 
+221:     // to register interface (read)
+222:     .qs     (csr0_field0_qs)
+223:   );
+224: 
+225:   //   F[field1]: 1:1
+226:   prim_subreg #(
+227:     .DW      (1),
+228:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+229:     .RESVAL  (1'h0),
+230:     .Mubi    (1'b0)
+231:   ) u_csr0_field1 (
+232:     .clk_i   (clk_i),
+233:     .rst_ni  (rst_ni),
+234: 
+235:     // from register interface
+236:     .we     (csr0_we),
+237:     .wd     (csr0_field1_wd),
+238: 
+239:     // from internal hardware
+240:     .de     (1'b0),
+241:     .d      ('0),
+242: 
+243:     // to internal hardware
+244:     .qe     (),
+245:     .q      (reg2hw.csr0.field1.q),
+246:     .ds     (),
+247: 
+248:     // to register interface (read)
+249:     .qs     (csr0_field1_qs)
+250:   );
+251: 
+252:   //   F[field2]: 2:2
+253:   prim_subreg #(
+254:     .DW      (1),
+255:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+256:     .RESVAL  (1'h0),
+257:     .Mubi    (1'b0)
+258:   ) u_csr0_field2 (
+259:     .clk_i   (clk_i),
+260:     .rst_ni  (rst_ni),
+261: 
+262:     // from register interface
+263:     .we     (csr0_we),
+264:     .wd     (csr0_field2_wd),
+265: 
+266:     // from internal hardware
+267:     .de     (1'b0),
+268:     .d      ('0),
+269: 
+270:     // to internal hardware
+271:     .qe     (),
+272:     .q      (reg2hw.csr0.field2.q),
+273:     .ds     (),
+274: 
+275:     // to register interface (read)
+276:     .qs     (csr0_field2_qs)
+277:   );
+278: 
+279:   //   F[field3]: 13:4
+280:   prim_subreg #(
+281:     .DW      (10),
+282:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+283:     .RESVAL  (10'h0),
+284:     .Mubi    (1'b0)
+285:   ) u_csr0_field3 (
+286:     .clk_i   (clk_i),
+287:     .rst_ni  (rst_ni),
+288: 
+289:     // from register interface
+290:     .we     (csr0_we),
+291:     .wd     (csr0_field3_wd),
+292: 
+293:     // from internal hardware
+294:     .de     (1'b0),
+295:     .d      ('0),
+296: 
+297:     // to internal hardware
+298:     .qe     (),
+299:     .q      (reg2hw.csr0.field3.q),
+300:     .ds     (),
+301: 
+302:     // to register interface (read)
+303:     .qs     (csr0_field3_qs)
+304:   );
+305: 
+306:   //   F[field4]: 26:16
+307:   prim_subreg #(
+308:     .DW      (11),
+309:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+310:     .RESVAL  (11'h0),
+311:     .Mubi    (1'b0)
+312:   ) u_csr0_field4 (
+313:     .clk_i   (clk_i),
+314:     .rst_ni  (rst_ni),
+315: 
+316:     // from register interface
+317:     .we     (csr0_we),
+318:     .wd     (csr0_field4_wd),
+319: 
+320:     // from internal hardware
+321:     .de     (1'b0),
+322:     .d      ('0),
+323: 
+324:     // to internal hardware
+325:     .qe     (),
+326:     .q      (reg2hw.csr0.field4.q),
+327:     .ds     (),
+328: 
+329:     // to register interface (read)
+330:     .qs     (csr0_field4_qs)
+331:   );
+332: 
+333: 
+334:   // R[csr1]: V(False)
+335:   //   F[field0]: 6:0
+336:   prim_subreg #(
+337:     .DW      (7),
+338:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+339:     .RESVAL  (7'h0),
+340:     .Mubi    (1'b0)
+341:   ) u_csr1_field0 (
+342:     .clk_i   (clk_i),
+343:     .rst_ni  (rst_ni),
+344: 
+345:     // from register interface
+346:     .we     (csr1_we),
+347:     .wd     (csr1_field0_wd),
+348: 
+349:     // from internal hardware
+350:     .de     (1'b0),
+351:     .d      ('0),
+352: 
+353:     // to internal hardware
+354:     .qe     (),
+355:     .q      (reg2hw.csr1.field0.q),
+356:     .ds     (),
+357: 
+358:     // to register interface (read)
+359:     .qs     (csr1_field0_qs)
+360:   );
+361: 
+362:   //   F[field1]: 7:7
+363:   prim_subreg #(
+364:     .DW      (1),
+365:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+366:     .RESVAL  (1'h0),
+367:     .Mubi    (1'b0)
+368:   ) u_csr1_field1 (
+369:     .clk_i   (clk_i),
+370:     .rst_ni  (rst_ni),
+371: 
+372:     // from register interface
+373:     .we     (csr1_we),
+374:     .wd     (csr1_field1_wd),
+375: 
+376:     // from internal hardware
+377:     .de     (1'b0),
+378:     .d      ('0),
+379: 
+380:     // to internal hardware
+381:     .qe     (),
+382:     .q      (reg2hw.csr1.field1.q),
+383:     .ds     (),
+384: 
+385:     // to register interface (read)
+386:     .qs     (csr1_field1_qs)
+387:   );
+388: 
+389:   //   F[field2]: 14:8
+390:   prim_subreg #(
+391:     .DW      (7),
+392:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+393:     .RESVAL  (7'h0),
+394:     .Mubi    (1'b0)
+395:   ) u_csr1_field2 (
+396:     .clk_i   (clk_i),
+397:     .rst_ni  (rst_ni),
+398: 
+399:     // from register interface
+400:     .we     (csr1_we),
+401:     .wd     (csr1_field2_wd),
+402: 
+403:     // from internal hardware
+404:     .de     (1'b0),
+405:     .d      ('0),
+406: 
+407:     // to internal hardware
+408:     .qe     (),
+409:     .q      (reg2hw.csr1.field2.q),
+410:     .ds     (),
+411: 
+412:     // to register interface (read)
+413:     .qs     (csr1_field2_qs)
+414:   );
+415: 
+416:   //   F[field3]: 15:15
+417:   prim_subreg #(
+418:     .DW      (1),
+419:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+420:     .RESVAL  (1'h0),
+421:     .Mubi    (1'b0)
+422:   ) u_csr1_field3 (
+423:     .clk_i   (clk_i),
+424:     .rst_ni  (rst_ni),
+425: 
+426:     // from register interface
+427:     .we     (csr1_we),
+428:     .wd     (csr1_field3_wd),
+429: 
+430:     // from internal hardware
+431:     .de     (1'b0),
+432:     .d      ('0),
+433: 
+434:     // to internal hardware
+435:     .qe     (),
+436:     .q      (reg2hw.csr1.field3.q),
+437:     .ds     (),
+438: 
+439:     // to register interface (read)
+440:     .qs     (csr1_field3_qs)
+441:   );
+442: 
+443:   //   F[field4]: 31:16
+444:   prim_subreg #(
+445:     .DW      (16),
+446:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+447:     .RESVAL  (16'h0),
+448:     .Mubi    (1'b0)
+449:   ) u_csr1_field4 (
+450:     .clk_i   (clk_i),
+451:     .rst_ni  (rst_ni),
+452: 
+453:     // from register interface
+454:     .we     (csr1_we),
+455:     .wd     (csr1_field4_wd),
+456: 
+457:     // from internal hardware
+458:     .de     (1'b0),
+459:     .d      ('0),
+460: 
+461:     // to internal hardware
+462:     .qe     (),
+463:     .q      (reg2hw.csr1.field4.q),
+464:     .ds     (),
+465: 
+466:     // to register interface (read)
+467:     .qs     (csr1_field4_qs)
+468:   );
+469: 
+470: 
+471:   // R[csr2]: V(False)
+472:   prim_subreg #(
+473:     .DW      (1),
+474:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+475:     .RESVAL  (1'h0),
+476:     .Mubi    (1'b0)
+477:   ) u_csr2 (
+478:     .clk_i   (clk_i),
+479:     .rst_ni  (rst_ni),
+480: 
+481:     // from register interface
+482:     .we     (csr2_we),
+483:     .wd     (csr2_wd),
+484: 
+485:     // from internal hardware
+486:     .de     (1'b0),
+487:     .d      ('0),
+488: 
+489:     // to internal hardware
+490:     .qe     (),
+491:     .q      (reg2hw.csr2.q),
+492:     .ds     (),
+493: 
+494:     // to register interface (read)
+495:     .qs     (csr2_qs)
+496:   );
+497: 
+498: 
+499:   // R[csr3]: V(False)
+500:   //   F[field0]: 2:0
+501:   prim_subreg #(
+502:     .DW      (3),
+503:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+504:     .RESVAL  (3'h0),
+505:     .Mubi    (1'b0)
+506:   ) u_csr3_field0 (
+507:     .clk_i   (clk_i),
+508:     .rst_ni  (rst_ni),
+509: 
+510:     // from register interface
+511:     .we     (csr3_we),
+512:     .wd     (csr3_field0_wd),
+513: 
+514:     // from internal hardware
+515:     .de     (hw2reg.csr3.field0.de),
+516:     .d      (hw2reg.csr3.field0.d),
+517: 
+518:     // to internal hardware
+519:     .qe     (),
+520:     .q      (reg2hw.csr3.field0.q),
+521:     .ds     (),
+522: 
+523:     // to register interface (read)
+524:     .qs     (csr3_field0_qs)
+525:   );
+526: 
+527:   //   F[field1]: 13:4
+528:   prim_subreg #(
+529:     .DW      (10),
+530:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+531:     .RESVAL  (10'h0),
+532:     .Mubi    (1'b0)
+533:   ) u_csr3_field1 (
+534:     .clk_i   (clk_i),
+535:     .rst_ni  (rst_ni),
+536: 
+537:     // from register interface
+538:     .we     (csr3_we),
+539:     .wd     (csr3_field1_wd),
+540: 
+541:     // from internal hardware
+542:     .de     (hw2reg.csr3.field1.de),
+543:     .d      (hw2reg.csr3.field1.d),
+544: 
+545:     // to internal hardware
+546:     .qe     (),
+547:     .q      (reg2hw.csr3.field1.q),
+548:     .ds     (),
+549: 
+550:     // to register interface (read)
+551:     .qs     (csr3_field1_qs)
+552:   );
+553: 
+554:   //   F[field2]: 16:16
+555:   prim_subreg #(
+556:     .DW      (1),
+557:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+558:     .RESVAL  (1'h0),
+559:     .Mubi    (1'b0)
+560:   ) u_csr3_field2 (
+561:     .clk_i   (clk_i),
+562:     .rst_ni  (rst_ni),
+563: 
+564:     // from register interface
+565:     .we     (csr3_we),
+566:     .wd     (csr3_field2_wd),
+567: 
+568:     // from internal hardware
+569:     .de     (hw2reg.csr3.field2.de),
+570:     .d      (hw2reg.csr3.field2.d),
+571: 
+572:     // to internal hardware
+573:     .qe     (),
+574:     .q      (reg2hw.csr3.field2.q),
+575:     .ds     (),
+576: 
+577:     // to register interface (read)
+578:     .qs     (csr3_field2_qs)
+579:   );
+580: 
+581:   //   F[field3]: 17:17
+582:   prim_subreg #(
+583:     .DW      (1),
+584:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+585:     .RESVAL  (1'h0),
+586:     .Mubi    (1'b0)
+587:   ) u_csr3_field3 (
+588:     .clk_i   (clk_i),
+589:     .rst_ni  (rst_ni),
+590: 
+591:     // from register interface
+592:     .we     (1'b0),
+593:     .wd     ('0),
+594: 
+595:     // from internal hardware
+596:     .de     (hw2reg.csr3.field3.de),
+597:     .d      (hw2reg.csr3.field3.d),
+598: 
+599:     // to internal hardware
+600:     .qe     (),
+601:     .q      (reg2hw.csr3.field3.q),
+602:     .ds     (),
+603: 
+604:     // to register interface (read)
+605:     .qs     (csr3_field3_qs)
+606:   );
+607: 
+608:   //   F[field4]: 18:18
+609:   prim_subreg #(
+610:     .DW      (1),
+611:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+612:     .RESVAL  (1'h0),
+613:     .Mubi    (1'b0)
+614:   ) u_csr3_field4 (
+615:     .clk_i   (clk_i),
+616:     .rst_ni  (rst_ni),
+617: 
+618:     // from register interface
+619:     .we     (1'b0),
+620:     .wd     ('0),
+621: 
+622:     // from internal hardware
+623:     .de     (hw2reg.csr3.field4.de),
+624:     .d      (hw2reg.csr3.field4.d),
+625: 
+626:     // to internal hardware
+627:     .qe     (),
+628:     .q      (reg2hw.csr3.field4.q),
+629:     .ds     (),
+630: 
+631:     // to register interface (read)
+632:     .qs     (csr3_field4_qs)
+633:   );
+634: 
+635:   //   F[field5]: 19:19
+636:   prim_subreg #(
+637:     .DW      (1),
+638:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+639:     .RESVAL  (1'h0),
+640:     .Mubi    (1'b0)
+641:   ) u_csr3_field5 (
+642:     .clk_i   (clk_i),
+643:     .rst_ni  (rst_ni),
+644: 
+645:     // from register interface
+646:     .we     (1'b0),
+647:     .wd     ('0),
+648: 
+649:     // from internal hardware
+650:     .de     (hw2reg.csr3.field5.de),
+651:     .d      (hw2reg.csr3.field5.d),
+652: 
+653:     // to internal hardware
+654:     .qe     (),
+655:     .q      (reg2hw.csr3.field5.q),
+656:     .ds     (),
+657: 
+658:     // to register interface (read)
+659:     .qs     (csr3_field5_qs)
+660:   );
+661: 
+662:   //   F[field6]: 20:20
+663:   prim_subreg #(
+664:     .DW      (1),
+665:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+666:     .RESVAL  (1'h0),
+667:     .Mubi    (1'b0)
+668:   ) u_csr3_field6 (
+669:     .clk_i   (clk_i),
+670:     .rst_ni  (rst_ni),
+671: 
+672:     // from register interface
+673:     .we     (1'b0),
+674:     .wd     ('0),
+675: 
+676:     // from internal hardware
+677:     .de     (hw2reg.csr3.field6.de),
+678:     .d      (hw2reg.csr3.field6.d),
+679: 
+680:     // to internal hardware
+681:     .qe     (),
+682:     .q      (reg2hw.csr3.field6.q),
+683:     .ds     (),
+684: 
+685:     // to register interface (read)
+686:     .qs     (csr3_field6_qs)
+687:   );
+688: 
+689:   //   F[field7]: 21:21
+690:   prim_subreg #(
+691:     .DW      (1),
+692:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+693:     .RESVAL  (1'h0),
+694:     .Mubi    (1'b0)
+695:   ) u_csr3_field7 (
+696:     .clk_i   (clk_i),
+697:     .rst_ni  (rst_ni),
+698: 
+699:     // from register interface
+700:     .we     (1'b0),
+701:     .wd     ('0),
+702: 
+703:     // from internal hardware
+704:     .de     (hw2reg.csr3.field7.de),
+705:     .d      (hw2reg.csr3.field7.d),
+706: 
+707:     // to internal hardware
+708:     .qe     (),
+709:     .q      (reg2hw.csr3.field7.q),
+710:     .ds     (),
+711: 
+712:     // to register interface (read)
+713:     .qs     (csr3_field7_qs)
+714:   );
+715: 
+716:   //   F[field8]: 22:22
+717:   prim_subreg #(
+718:     .DW      (1),
+719:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+720:     .RESVAL  (1'h0),
+721:     .Mubi    (1'b0)
+722:   ) u_csr3_field8 (
+723:     .clk_i   (clk_i),
+724:     .rst_ni  (rst_ni),
+725: 
+726:     // from register interface
+727:     .we     (1'b0),
+728:     .wd     ('0),
+729: 
+730:     // from internal hardware
+731:     .de     (hw2reg.csr3.field8.de),
+732:     .d      (hw2reg.csr3.field8.d),
+733: 
+734:     // to internal hardware
+735:     .qe     (),
+736:     .q      (reg2hw.csr3.field8.q),
+737:     .ds     (),
+738: 
+739:     // to register interface (read)
+740:     .qs     (csr3_field8_qs)
+741:   );
+742: 
+743: 
+744:   // R[csr4]: V(False)
+745:   //   F[field0]: 9:0
+746:   prim_subreg #(
+747:     .DW      (10),
+748:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+749:     .RESVAL  (10'h0),
+750:     .Mubi    (1'b0)
+751:   ) u_csr4_field0 (
+752:     .clk_i   (clk_i),
+753:     .rst_ni  (rst_ni),
+754: 
+755:     // from register interface
+756:     .we     (csr4_we),
+757:     .wd     (csr4_field0_wd),
+758: 
+759:     // from internal hardware
+760:     .de     (1'b0),
+761:     .d      ('0),
+762: 
+763:     // to internal hardware
+764:     .qe     (),
+765:     .q      (reg2hw.csr4.field0.q),
+766:     .ds     (),
+767: 
+768:     // to register interface (read)
+769:     .qs     (csr4_field0_qs)
+770:   );
+771: 
+772:   //   F[field1]: 12:12
+773:   prim_subreg #(
+774:     .DW      (1),
+775:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+776:     .RESVAL  (1'h0),
+777:     .Mubi    (1'b0)
+778:   ) u_csr4_field1 (
+779:     .clk_i   (clk_i),
+780:     .rst_ni  (rst_ni),
+781: 
+782:     // from register interface
+783:     .we     (csr4_we),
+784:     .wd     (csr4_field1_wd),
+785: 
+786:     // from internal hardware
+787:     .de     (1'b0),
+788:     .d      ('0),
+789: 
+790:     // to internal hardware
+791:     .qe     (),
+792:     .q      (reg2hw.csr4.field1.q),
+793:     .ds     (),
+794: 
+795:     // to register interface (read)
+796:     .qs     (csr4_field1_qs)
+797:   );
+798: 
+799:   //   F[field2]: 13:13
+800:   prim_subreg #(
+801:     .DW      (1),
+802:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+803:     .RESVAL  (1'h0),
+804:     .Mubi    (1'b0)
+805:   ) u_csr4_field2 (
+806:     .clk_i   (clk_i),
+807:     .rst_ni  (rst_ni),
+808: 
+809:     // from register interface
+810:     .we     (csr4_we),
+811:     .wd     (csr4_field2_wd),
+812: 
+813:     // from internal hardware
+814:     .de     (1'b0),
+815:     .d      ('0),
+816: 
+817:     // to internal hardware
+818:     .qe     (),
+819:     .q      (reg2hw.csr4.field2.q),
+820:     .ds     (),
+821: 
+822:     // to register interface (read)
+823:     .qs     (csr4_field2_qs)
+824:   );
+825: 
+826:   //   F[field3]: 14:14
+827:   prim_subreg #(
+828:     .DW      (1),
+829:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+830:     .RESVAL  (1'h0),
+831:     .Mubi    (1'b0)
+832:   ) u_csr4_field3 (
+833:     .clk_i   (clk_i),
+834:     .rst_ni  (rst_ni),
+835: 
+836:     // from register interface
+837:     .we     (csr4_we),
+838:     .wd     (csr4_field3_wd),
+839: 
+840:     // from internal hardware
+841:     .de     (1'b0),
+842:     .d      ('0),
+843: 
+844:     // to internal hardware
+845:     .qe     (),
+846:     .q      (reg2hw.csr4.field3.q),
+847:     .ds     (),
+848: 
+849:     // to register interface (read)
+850:     .qs     (csr4_field3_qs)
+851:   );
+852: 
+853: 
+854:   // R[csr5]: V(False)
+855:   //   F[field0]: 5:0
+856:   prim_subreg #(
+857:     .DW      (6),
+858:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+859:     .RESVAL  (6'h0),
+860:     .Mubi    (1'b0)
+861:   ) u_csr5_field0 (
+862:     .clk_i   (clk_i),
+863:     .rst_ni  (rst_ni),
+864: 
+865:     // from register interface
+866:     .we     (csr5_we),
+867:     .wd     (csr5_field0_wd),
+868: 
+869:     // from internal hardware
+870:     .de     (hw2reg.csr5.field0.de),
+871:     .d      (hw2reg.csr5.field0.d),
+872: 
+873:     // to internal hardware
+874:     .qe     (),
+875:     .q      (reg2hw.csr5.field0.q),
+876:     .ds     (),
+877: 
+878:     // to register interface (read)
+879:     .qs     (csr5_field0_qs)
+880:   );
+881: 
+882:   //   F[field1]: 7:6
+883:   prim_subreg #(
+884:     .DW      (2),
+885:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+886:     .RESVAL  (2'h0),
+887:     .Mubi    (1'b0)
+888:   ) u_csr5_field1 (
+889:     .clk_i   (clk_i),
+890:     .rst_ni  (rst_ni),
+891: 
+892:     // from register interface
+893:     .we     (csr5_we),
+894:     .wd     (csr5_field1_wd),
+895: 
+896:     // from internal hardware
+897:     .de     (hw2reg.csr5.field1.de),
+898:     .d      (hw2reg.csr5.field1.d),
+899: 
+900:     // to internal hardware
+901:     .qe     (),
+902:     .q      (reg2hw.csr5.field1.q),
+903:     .ds     (),
+904: 
+905:     // to register interface (read)
+906:     .qs     (csr5_field1_qs)
+907:   );
+908: 
+909:   //   F[field2]: 8:8
+910:   prim_subreg #(
+911:     .DW      (1),
+912:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+913:     .RESVAL  (1'h0),
+914:     .Mubi    (1'b0)
+915:   ) u_csr5_field2 (
+916:     .clk_i   (clk_i),
+917:     .rst_ni  (rst_ni),
+918: 
+919:     // from register interface
+920:     .we     (1'b0),
+921:     .wd     ('0),
+922: 
+923:     // from internal hardware
+924:     .de     (hw2reg.csr5.field2.de),
+925:     .d      (hw2reg.csr5.field2.d),
+926: 
+927:     // to internal hardware
+928:     .qe     (),
+929:     .q      (reg2hw.csr5.field2.q),
+930:     .ds     (),
+931: 
+932:     // to register interface (read)
+933:     .qs     (csr5_field2_qs)
+934:   );
+935: 
+936:   //   F[field3]: 11:9
+937:   prim_subreg #(
+938:     .DW      (3),
+939:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+940:     .RESVAL  (3'h0),
+941:     .Mubi    (1'b0)
+942:   ) u_csr5_field3 (
+943:     .clk_i   (clk_i),
+944:     .rst_ni  (rst_ni),
+945: 
+946:     // from register interface
+947:     .we     (1'b0),
+948:     .wd     ('0),
+949: 
+950:     // from internal hardware
+951:     .de     (hw2reg.csr5.field3.de),
+952:     .d      (hw2reg.csr5.field3.d),
+953: 
+954:     // to internal hardware
+955:     .qe     (),
+956:     .q      (reg2hw.csr5.field3.q),
+957:     .ds     (),
+958: 
+959:     // to register interface (read)
+960:     .qs     (csr5_field3_qs)
+961:   );
+962: 
+963:   //   F[field4]: 12:12
+964:   prim_subreg #(
+965:     .DW      (1),
+966:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+967:     .RESVAL  (1'h0),
+968:     .Mubi    (1'b0)
+969:   ) u_csr5_field4 (
+970:     .clk_i   (clk_i),
+971:     .rst_ni  (rst_ni),
+972: 
+973:     // from register interface
+974:     .we     (1'b0),
+975:     .wd     ('0),
+976: 
+977:     // from internal hardware
+978:     .de     (hw2reg.csr5.field4.de),
+979:     .d      (hw2reg.csr5.field4.d),
+980: 
+981:     // to internal hardware
+982:     .qe     (),
+983:     .q      (reg2hw.csr5.field4.q),
+984:     .ds     (),
+985: 
+986:     // to register interface (read)
+987:     .qs     (csr5_field4_qs)
+988:   );
+989: 
+990:   //   F[field5]: 13:13
+991:   prim_subreg #(
+992:     .DW      (1),
+993:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+994:     .RESVAL  (1'h0),
+995:     .Mubi    (1'b0)
+996:   ) u_csr5_field5 (
+997:     .clk_i   (clk_i),
+998:     .rst_ni  (rst_ni),
+999: 
+1000:     // from register interface
+1001:     .we     (1'b0),
+1002:     .wd     ('0),
+1003: 
+1004:     // from internal hardware
+1005:     .de     (hw2reg.csr5.field5.de),
+1006:     .d      (hw2reg.csr5.field5.d),
+1007: 
+1008:     // to internal hardware
+1009:     .qe     (),
+1010:     .q      (reg2hw.csr5.field5.q),
+1011:     .ds     (),
+1012: 
+1013:     // to register interface (read)
+1014:     .qs     (csr5_field5_qs)
+1015:   );
+1016: 
+1017:   //   F[field6]: 31:16
+1018:   prim_subreg #(
+1019:     .DW      (16),
+1020:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1021:     .RESVAL  (16'h0),
+1022:     .Mubi    (1'b0)
+1023:   ) u_csr5_field6 (
+1024:     .clk_i   (clk_i),
+1025:     .rst_ni  (rst_ni),
+1026: 
+1027:     // from register interface
+1028:     .we     (csr5_we),
+1029:     .wd     (csr5_field6_wd),
+1030: 
+1031:     // from internal hardware
+1032:     .de     (hw2reg.csr5.field6.de),
+1033:     .d      (hw2reg.csr5.field6.d),
+1034: 
+1035:     // to internal hardware
+1036:     .qe     (),
+1037:     .q      (reg2hw.csr5.field6.q),
+1038:     .ds     (),
+1039: 
+1040:     // to register interface (read)
+1041:     .qs     (csr5_field6_qs)
+1042:   );
+1043: 
+1044: 
+1045:   // R[csr6]: V(False)
+1046:   //   F[field0]: 9:0
+1047:   prim_subreg #(
+1048:     .DW      (10),
+1049:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1050:     .RESVAL  (10'h0),
+1051:     .Mubi    (1'b0)
+1052:   ) u_csr6_field0 (
+1053:     .clk_i   (clk_i),
+1054:     .rst_ni  (rst_ni),
+1055: 
+1056:     // from register interface
+1057:     .we     (csr6_we),
+1058:     .wd     (csr6_field0_wd),
+1059: 
+1060:     // from internal hardware
+1061:     .de     (1'b0),
+1062:     .d      ('0),
+1063: 
+1064:     // to internal hardware
+1065:     .qe     (),
+1066:     .q      (reg2hw.csr6.field0.q),
+1067:     .ds     (),
+1068: 
+1069:     // to register interface (read)
+1070:     .qs     (csr6_field0_qs)
+1071:   );
+1072: 
+1073:   //   F[field1]: 11:11
+1074:   prim_subreg #(
+1075:     .DW      (1),
+1076:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1077:     .RESVAL  (1'h0),
+1078:     .Mubi    (1'b0)
+1079:   ) u_csr6_field1 (
+1080:     .clk_i   (clk_i),
+1081:     .rst_ni  (rst_ni),
+1082: 
+1083:     // from register interface
+1084:     .we     (csr6_we),
+1085:     .wd     (csr6_field1_wd),
+1086: 
+1087:     // from internal hardware
+1088:     .de     (1'b0),
+1089:     .d      ('0),
+1090: 
+1091:     // to internal hardware
+1092:     .qe     (),
+1093:     .q      (reg2hw.csr6.field1.q),
+1094:     .ds     (),
+1095: 
+1096:     // to register interface (read)
+1097:     .qs     (csr6_field1_qs)
+1098:   );
+1099: 
+1100:   //   F[field2]: 12:12
+1101:   prim_subreg #(
+1102:     .DW      (1),
+1103:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1104:     .RESVAL  (1'h0),
+1105:     .Mubi    (1'b0)
+1106:   ) u_csr6_field2 (
+1107:     .clk_i   (clk_i),
+1108:     .rst_ni  (rst_ni),
+1109: 
+1110:     // from register interface
+1111:     .we     (csr6_we),
+1112:     .wd     (csr6_field2_wd),
+1113: 
+1114:     // from internal hardware
+1115:     .de     (1'b0),
+1116:     .d      ('0),
+1117: 
+1118:     // to internal hardware
+1119:     .qe     (),
+1120:     .q      (reg2hw.csr6.field2.q),
+1121:     .ds     (),
+1122: 
+1123:     // to register interface (read)
+1124:     .qs     (csr6_field2_qs)
+1125:   );
+1126: 
+1127:   //   F[field3]: 31:16
+1128:   prim_subreg #(
+1129:     .DW      (16),
+1130:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1131:     .RESVAL  (16'h0),
+1132:     .Mubi    (1'b0)
+1133:   ) u_csr6_field3 (
+1134:     .clk_i   (clk_i),
+1135:     .rst_ni  (rst_ni),
+1136: 
+1137:     // from register interface
+1138:     .we     (csr6_we),
+1139:     .wd     (csr6_field3_wd),
+1140: 
+1141:     // from internal hardware
+1142:     .de     (1'b0),
+1143:     .d      ('0),
+1144: 
+1145:     // to internal hardware
+1146:     .qe     (),
+1147:     .q      (reg2hw.csr6.field3.q),
+1148:     .ds     (),
+1149: 
+1150:     // to register interface (read)
+1151:     .qs     (csr6_field3_qs)
+1152:   );
+1153: 
+1154: 
+1155:   // R[csr7]: V(False)
+1156:   //   F[field0]: 5:0
+1157:   prim_subreg #(
+1158:     .DW      (6),
+1159:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+1160:     .RESVAL  (6'h0),
+1161:     .Mubi    (1'b0)
+1162:   ) u_csr7_field0 (
+1163:     .clk_i   (clk_i),
+1164:     .rst_ni  (rst_ni),
+1165: 
+1166:     // from register interface
+1167:     .we     (1'b0),
+1168:     .wd     ('0),
+1169: 
+1170:     // from internal hardware
+1171:     .de     (hw2reg.csr7.field0.de),
+1172:     .d      (hw2reg.csr7.field0.d),
+1173: 
+1174:     // to internal hardware
+1175:     .qe     (),
+1176:     .q      (reg2hw.csr7.field0.q),
+1177:     .ds     (),
+1178: 
+1179:     // to register interface (read)
+1180:     .qs     (csr7_field0_qs)
+1181:   );
+1182: 
+1183:   //   F[field1]: 10:8
+1184:   prim_subreg #(
+1185:     .DW      (3),
+1186:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+1187:     .RESVAL  (3'h0),
+1188:     .Mubi    (1'b0)
+1189:   ) u_csr7_field1 (
+1190:     .clk_i   (clk_i),
+1191:     .rst_ni  (rst_ni),
+1192: 
+1193:     // from register interface
+1194:     .we     (1'b0),
+1195:     .wd     ('0),
+1196: 
+1197:     // from internal hardware
+1198:     .de     (hw2reg.csr7.field1.de),
+1199:     .d      (hw2reg.csr7.field1.d),
+1200: 
+1201:     // to internal hardware
+1202:     .qe     (),
+1203:     .q      (reg2hw.csr7.field1.q),
+1204:     .ds     (),
+1205: 
+1206:     // to register interface (read)
+1207:     .qs     (csr7_field1_qs)
+1208:   );
+1209: 
+1210:   //   F[field2]: 14:14
+1211:   prim_subreg #(
+1212:     .DW      (1),
+1213:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+1214:     .RESVAL  (1'h0),
+1215:     .Mubi    (1'b0)
+1216:   ) u_csr7_field2 (
+1217:     .clk_i   (clk_i),
+1218:     .rst_ni  (rst_ni),
+1219: 
+1220:     // from register interface
+1221:     .we     (1'b0),
+1222:     .wd     ('0),
+1223: 
+1224:     // from internal hardware
+1225:     .de     (hw2reg.csr7.field2.de),
+1226:     .d      (hw2reg.csr7.field2.d),
+1227: 
+1228:     // to internal hardware
+1229:     .qe     (),
+1230:     .q      (reg2hw.csr7.field2.q),
+1231:     .ds     (),
+1232: 
+1233:     // to register interface (read)
+1234:     .qs     (csr7_field2_qs)
+1235:   );
+1236: 
+1237:   //   F[field3]: 15:15
+1238:   prim_subreg #(
+1239:     .DW      (1),
+1240:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+1241:     .RESVAL  (1'h0),
+1242:     .Mubi    (1'b0)
+1243:   ) u_csr7_field3 (
+1244:     .clk_i   (clk_i),
+1245:     .rst_ni  (rst_ni),
+1246: 
+1247:     // from register interface
+1248:     .we     (1'b0),
+1249:     .wd     ('0),
+1250: 
+1251:     // from internal hardware
+1252:     .de     (hw2reg.csr7.field3.de),
+1253:     .d      (hw2reg.csr7.field3.d),
+1254: 
+1255:     // to internal hardware
+1256:     .qe     (),
+1257:     .q      (reg2hw.csr7.field3.q),
+1258:     .ds     (),
+1259: 
+1260:     // to register interface (read)
+1261:     .qs     (csr7_field3_qs)
+1262:   );
+1263: 
+1264: 
+1265: 
+1266:   logic [7:0] addr_hit;
+1267:   always_comb begin
+1268:     addr_hit[0] = (reg_addr == OTP_MACRO_CSR0_OFFSET);
+1269:     addr_hit[1] = (reg_addr == OTP_MACRO_CSR1_OFFSET);
+1270:     addr_hit[2] = (reg_addr == OTP_MACRO_CSR2_OFFSET);
+1271:     addr_hit[3] = (reg_addr == OTP_MACRO_CSR3_OFFSET);
+1272:     addr_hit[4] = (reg_addr == OTP_MACRO_CSR4_OFFSET);
+1273:     addr_hit[5] = (reg_addr == OTP_MACRO_CSR5_OFFSET);
+1274:     addr_hit[6] = (reg_addr == OTP_MACRO_CSR6_OFFSET);
+1275:     addr_hit[7] = (reg_addr == OTP_MACRO_CSR7_OFFSET);
+1276:   end
+1277: 
+1278:   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
+1279: 
+1280:   // Check sub-word write is permitted
+1281:   always_comb begin
+1282:     wr_err = (reg_we &
+1283:               ((addr_hit[0] & (|(OTP_MACRO_PERMIT[0] & ~reg_be))) |
+1284:                (addr_hit[1] & (|(OTP_MACRO_PERMIT[1] & ~reg_be))) |
+1285:                (addr_hit[2] & (|(OTP_MACRO_PERMIT[2] & ~reg_be))) |
+1286:                (addr_hit[3] & (|(OTP_MACRO_PERMIT[3] & ~reg_be))) |
+1287:                (addr_hit[4] & (|(OTP_MACRO_PERMIT[4] & ~reg_be))) |
+1288:                (addr_hit[5] & (|(OTP_MACRO_PERMIT[5] & ~reg_be))) |
+1289:                (addr_hit[6] & (|(OTP_MACRO_PERMIT[6] & ~reg_be))) |
+1290:                (addr_hit[7] & (|(OTP_MACRO_PERMIT[7] & ~reg_be)))));
+1291:   end
+1292: 
+1293:   // Generate write-enables
+1294:   assign csr0_we = addr_hit[0] & reg_we & !reg_error;
+1295: 
+1296:   assign csr0_field0_wd = reg_wdata[0];
+1297: 
+1298:   assign csr0_field1_wd = reg_wdata[1];
+1299: 
+1300:   assign csr0_field2_wd = reg_wdata[2];
+1301: 
+1302:   assign csr0_field3_wd = reg_wdata[13:4];
+1303: 
+1304:   assign csr0_field4_wd = reg_wdata[26:16];
+1305:   assign csr1_we = addr_hit[1] & reg_we & !reg_error;
+1306: 
+1307:   assign csr1_field0_wd = reg_wdata[6:0];
+1308: 
+1309:   assign csr1_field1_wd = reg_wdata[7];
+1310: 
+1311:   assign csr1_field2_wd = reg_wdata[14:8];
+1312: 
+1313:   assign csr1_field3_wd = reg_wdata[15];
+1314: 
+1315:   assign csr1_field4_wd = reg_wdata[31:16];
+1316:   assign csr2_we = addr_hit[2] & reg_we & !reg_error;
+1317: 
+1318:   assign csr2_wd = reg_wdata[0];
+1319:   assign csr3_we = addr_hit[3] & reg_we & !reg_error;
+1320: 
+1321:   assign csr3_field0_wd = reg_wdata[2:0];
+1322: 
+1323:   assign csr3_field1_wd = reg_wdata[13:4];
+1324: 
+1325:   assign csr3_field2_wd = reg_wdata[16];
+1326:   assign csr4_we = addr_hit[4] & reg_we & !reg_error;
+1327: 
+1328:   assign csr4_field0_wd = reg_wdata[9:0];
+1329: 
+1330:   assign csr4_field1_wd = reg_wdata[12];
+1331: 
+1332:   assign csr4_field2_wd = reg_wdata[13];
+1333: 
+1334:   assign csr4_field3_wd = reg_wdata[14];
+1335:   assign csr5_we = addr_hit[5] & reg_we & !reg_error;
+1336: 
+1337:   assign csr5_field0_wd = reg_wdata[5:0];
+1338: 
+1339:   assign csr5_field1_wd = reg_wdata[7:6];
+1340: 
+1341:   assign csr5_field6_wd = reg_wdata[31:16];
+1342:   assign csr6_we = addr_hit[6] & reg_we & !reg_error;
+1343: 
+1344:   assign csr6_field0_wd = reg_wdata[9:0];
+1345: 
+1346:   assign csr6_field1_wd = reg_wdata[11];
+1347: 
+1348:   assign csr6_field2_wd = reg_wdata[12];
+1349: 
+1350:   assign csr6_field3_wd = reg_wdata[31:16];
+1351: 
+1352:   // Assign write-enables to checker logic vector.
+1353:   always_comb begin
+1354:     reg_we_check[0] = csr0_we;
+1355:     reg_we_check[1] = csr1_we;
+1356:     reg_we_check[2] = csr2_we;
+1357:     reg_we_check[3] = csr3_we;
+1358:     reg_we_check[4] = csr4_we;
+1359:     reg_we_check[5] = csr5_we;
+1360:     reg_we_check[6] = csr6_we;
+1361:     reg_we_check[7] = 1'b0;
+1362:   end
+1363: 
+1364:   // Read data return
+1365:   always_comb begin
+1366:     reg_rdata_next = '0;
+1367:     unique case (1'b1)
+1368:       addr_hit[0]: begin
+1369:         reg_rdata_next[0] = csr0_field0_qs;
+1370:         reg_rdata_next[1] = csr0_field1_qs;
+1371:         reg_rdata_next[2] = csr0_field2_qs;
+1372:         reg_rdata_next[13:4] = csr0_field3_qs;
+1373:         reg_rdata_next[26:16] = csr0_field4_qs;
+1374:       end
+1375: 
+1376:       addr_hit[1]: begin
+1377:         reg_rdata_next[6:0] = csr1_field0_qs;
+1378:         reg_rdata_next[7] = csr1_field1_qs;
+1379:         reg_rdata_next[14:8] = csr1_field2_qs;
+1380:         reg_rdata_next[15] = csr1_field3_qs;
+1381:         reg_rdata_next[31:16] = csr1_field4_qs;
+1382:       end
+1383: 
+1384:       addr_hit[2]: begin
+1385:         reg_rdata_next[0] = csr2_qs;
+1386:       end
+1387: 
+1388:       addr_hit[3]: begin
+1389:         reg_rdata_next[2:0] = csr3_field0_qs;
+1390:         reg_rdata_next[13:4] = csr3_field1_qs;
+1391:         reg_rdata_next[16] = csr3_field2_qs;
+1392:         reg_rdata_next[17] = csr3_field3_qs;
+1393:         reg_rdata_next[18] = csr3_field4_qs;
+1394:         reg_rdata_next[19] = csr3_field5_qs;
+1395:         reg_rdata_next[20] = csr3_field6_qs;
+1396:         reg_rdata_next[21] = csr3_field7_qs;
+1397:         reg_rdata_next[22] = csr3_field8_qs;
+1398:       end
+1399: 
+1400:       addr_hit[4]: begin
+1401:         reg_rdata_next[9:0] = csr4_field0_qs;
+1402:         reg_rdata_next[12] = csr4_field1_qs;
+1403:         reg_rdata_next[13] = csr4_field2_qs;
+1404:         reg_rdata_next[14] = csr4_field3_qs;
+1405:       end
+1406: 
+1407:       addr_hit[5]: begin
+1408:         reg_rdata_next[5:0] = csr5_field0_qs;
+1409:         reg_rdata_next[7:6] = csr5_field1_qs;
+1410:         reg_rdata_next[8] = csr5_field2_qs;
+1411:         reg_rdata_next[11:9] = csr5_field3_qs;
+1412:         reg_rdata_next[12] = csr5_field4_qs;
+1413:         reg_rdata_next[13] = csr5_field5_qs;
+1414:         reg_rdata_next[31:16] = csr5_field6_qs;
+1415:       end
+1416: 
+1417:       addr_hit[6]: begin
+1418:         reg_rdata_next[9:0] = csr6_field0_qs;
+1419:         reg_rdata_next[11] = csr6_field1_qs;
+1420:         reg_rdata_next[12] = csr6_field2_qs;
+1421:         reg_rdata_next[31:16] = csr6_field3_qs;
+1422:       end
+1423: 
+1424:       addr_hit[7]: begin
+1425:         reg_rdata_next[5:0] = csr7_field0_qs;
+1426:         reg_rdata_next[10:8] = csr7_field1_qs;
+1427:         reg_rdata_next[14] = csr7_field2_qs;
+1428:         reg_rdata_next[15] = csr7_field3_qs;
+1429:       end
+1430: 
+1431:       default: begin
+1432:         reg_rdata_next = '1;
+1433:       end
+1434:     endcase
+1435:   end
+1436: 
+1437:   // shadow busy
+1438:   logic shadow_busy;
+1439:   assign shadow_busy = 1'b0;
+1440: 
+1441:   // register busy
+1442:   assign reg_busy = shadow_busy;
+1443: 
+1444:   // Unused signal tieoff
+1445: 
+1446:   // wdata / byte enable are not always fully used
+1447:   // add a blanket unused statement to handle lint waivers
+1448:   logic unused_wdata;
+1449:   logic unused_be;
+1450:   assign unused_wdata = ^reg_wdata;
+1451:   assign unused_be = ^reg_be;
+1452: 
+1453:   // Assertions for Register Interface
+1454:   `ASSERT_PULSE(wePulse, reg_we, clk_i, !rst_ni)
+1455:   `ASSERT_PULSE(rePulse, reg_re, clk_i, !rst_ni)
+1456: 
+1457:   `ASSERT(reAfterRv, $rose(reg_re || reg_we) |=> tl_o_pre.d_valid, clk_i, !rst_ni)
+1458: 
+1459:   `ASSERT(en2addrHit, (reg_we || reg_re) |-> $onehot0(addr_hit), clk_i, !rst_ni)
+1460: 
+1461:   // this is formulated as an assumption such that the FPV testbenches do disprove this
+1462:   // property by mistake
+1463:   //`ASSUME(reqParity, tl_reg_h2d.a_valid |-> tl_reg_h2d.a_user.chk_en == tlul_pkg::CheckDis)
+1464: 
+1465: endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_jVFmQT9UcjE3a8Pn7tFQwl5F)
+ Call ID: call_jVFmQT9UcjE3a8Pn7tFQwl5F
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: 
+5: module otp_macro
+6:   import otp_ctrl_macro_pkg::*;
+7:   import otp_macro_reg_pkg::*;
+8:   import otp_macro_pkg::*;
+9: #(
+10:   // Native OTP word size. This determines the size_i granule.
+11:   parameter  int    Width            = 16,
+12:   parameter  int    Depth            = 1024,
+13:   // This determines the maximum number of native words that
+14:   // can be transferred across the interface in one cycle.
+15:   parameter  int    SizeWidth        = 2,
+16:   // Derived parameters
+17:   localparam int    AddrWidth        = prim_util_pkg::vbits(Depth),
+18:   // VMEM file to initialize the memory with
+19:   parameter         MemInitFile   = "",
+20:   // Vendor test partition offset and size (both in bytes)
+21:   parameter  int    VendorTestOffset = 0,
+22:   parameter  int    VendorTestSize   = 0
+23: ) (
+24:   input                          clk_i,
+25:   input                          rst_ni,
+26:   // Bus interface
+27:   input                          tlul_pkg::tl_h2d_t tl_i,
+28:   output                         tlul_pkg::tl_d2h_t tl_o,
+29: 
+30:   // Lifecycle broadcast inputs
+31:   // SEC_CM: LC_CTRL.INTERSIG.MUBI
+32:   input                          lc_ctrl_pkg::lc_tx_t lc_dft_en_i,
+33: 
+34:   input                          ast_pkg::ast_obs_ctrl_t obs_ctrl_i,
+35:   output logic [7:0]             otp_obs_o,
+36:   // Macro-specific power sequencing signals to/from AST
+37:   output pwr_seq_t               pwr_seq_o,
+38:   input  pwr_seq_t               pwr_seq_h_i,
+39:   // External programming voltage
+40:   inout wire                     ext_voltage_h_io,
+41:   // Test interfaces
+42:   input                          otp_test_req_t test_i,
+43:   output                         otp_test_rsp_t test_o,
+44:   output                         otp_test_vect_t cio_test_o,
+45:   output                         otp_test_vect_t cio_test_en_o,
+46:   // Other DFT signals
+47:   input                          prim_mubi_pkg::mubi4_t scanmode_i,
+48:   input                          scan_en_i,
+49:   input                          scan_rst_ni,
+50: 
+51:   // Incoming request from OTP_CTRL
+52:   input                          otp_ctrl_macro_req_t otp_i,
+53:   output                         otp_ctrl_macro_rsp_t otp_o,
+54: 
+55:   // DFT config and response port
+56:   input                          otp_cfg_t cfg_i,
+57:   output                         otp_cfg_rsp_t cfg_rsp_o
+58: );
+59:   // SEC_CM: MACRO.MEM.INTEGRITY
+60:   // SEC_CM: MACRO.MEM.CM
+61:   import prim_mubi_pkg::MuBi4False;
+62: 
+63:   // This is only restricted by the supported ECC poly further
+64:   // below, and is straightforward to extend, if needed.
+65:   localparam int EccWidth = 6;
+66:   `ASSERT_INIT(SecDecWidth_A, Width == 16)
+67: 
+68:   // Not supported in open-source emulation model.
+69:   pwr_seq_t unused_pwr_seq_h;
+70:   assign unused_pwr_seq_h = pwr_seq_h_i;
+71:   assign pwr_seq_o = '0;
+72: 
+73:   logic unused_obs;
+74:   assign unused_obs = |obs_ctrl_i;
+75:   assign otp_obs_o = '0;
+76: 
+77:   wire unused_ext_voltage;
+78:   assign unused_ext_voltage = ext_voltage_h_io;
+79: 
+80:   logic unused_test_ctrl_i;
+81:   assign unused_test_ctrl_i = ^test_i.ctrl;
+82: 
+83:   logic unused_scan;
+84:   assign unused_scan = ^{scanmode_i, scan_en_i, scan_rst_ni};
+85: 
+86:   logic lc_fsm_err, intg_err, fsm_err;
+87:   assign otp_o.fatal_lc_fsm_err = lc_fsm_err;
+88:   assign otp_o.fatal_alert = intg_err || fsm_err;
+89:   assign otp_o.recov_alert = 1'b0;
+90: 
+91:   otp_test_vect_t test_vect;
+92:   assign test_vect = '0;
+93:   assign test_o.status = '0;
+94: 
+95:   logic unused_cfg;
+96:   assign unused_cfg = ^cfg_i;
+97:   assign cfg_rsp_o  = '0;
+98: 
+99:   ///////////////////////////////////////
+100:   // Life Cycle Signal Synchronization //
+101:   ///////////////////////////////////////
+102: 
+103:   lc_ctrl_pkg::lc_tx_t [2:0] lc_dft_en;
+104: 
+105:   prim_lc_sync #(
+106:     .NumCopies(3)
+107:   ) u_prim_lc_sync_dft_en (
+108:     .clk_i,
+109:     .rst_ni,
+110:     .lc_en_i(lc_dft_en_i),
+111:     .lc_en_o(lc_dft_en)
+112:   );
+113: 
+114:   // Test-related GPIOs.
+115:   // SEC_CM: TEST.BUS.LC_GATED
+116:   assign cio_test_o = test_vect;
+117:   assign cio_test_en_o = (lc_ctrl_pkg::lc_tx_test_true_strict(lc_dft_en[2])) ?
+118:                          {OtpTestVectWidth{1'b1}} : '0;
+119: 
+120:   ////////////////////////////////////
+121:   // TL-UL Test Interface Emulation //
+122:   ////////////////////////////////////
+123:   tlul_pkg::tl_h2d_t           tl_h2d_gated;
+124:   tlul_pkg::tl_d2h_t           tl_d2h_gated;
+125: 
+126:   // Life cycle qualification of TL-UL test interface.
+127:   // SEC_CM: TEST.BUS.LC_GATED
+128:   // SEC_CM: TEST_TL_LC_GATE.FSM.SPARSE
+129:   tlul_lc_gate #(
+130:     .NumGatesPerDirection(2)
+131:   ) u_tlul_lc_gate (
+132:     .clk_i,
+133:     .rst_ni,
+134:     .tl_h2d_i(tl_i),
+135:     .tl_d2h_o(tl_o),
+136:     .tl_h2d_o(tl_h2d_gated),
+137:     .tl_d2h_i(tl_d2h_gated),
+138:     .lc_en_i (lc_dft_en[0]),
+139:     .flush_req_i('0),
+140:     .flush_ack_o(),
+141:     .resp_pending_o(),
+142:     .err_o   (lc_fsm_err)
+143:   );
+144: 
+145:   otp_macro_reg_pkg::otp_macro_reg2hw_t reg2hw;
+146:   otp_macro_reg_pkg::otp_macro_hw2reg_t hw2reg;
+147:   otp_macro_reg_top u_reg_top (
+148:     .clk_i,
+149:     .rst_ni,
+150:     .tl_i      (tl_h2d_gated ),
+151:     .tl_o      (tl_d2h_gated ),
+152:     .reg2hw    (reg2hw    ),
+153:     .hw2reg    (hw2reg    ),
+154:     .intg_err_o(intg_err  )
+155:   );
+156: 
+157:   logic unused_reg_sig;
+158:   assign unused_reg_sig = ^reg2hw;
+159:   assign hw2reg = '0;
+160: 
+161:   ///////////////////
+162:   // Control logic //
+163:   ///////////////////
+164: 
+165:   // Encoding generated with:
+166:   // $ ./util/design/sparse-fsm-encode.py -d 5 -m 9 -n 10 \
+167:   //      -s 2599950981 --language=sv
+168:   //
+169:   // Hamming distance histogram:
+170:   //
+171:   //  0: --
+172:   //  1: --
+173:   //  2: --
+174:   //  3: --
+175:   //  4: --
+176:   //  5: |||||||||||||||||||| (52.78%)
+177:   //  6: ||||||||||||||| (41.67%)
+178:   //  7: | (2.78%)
+179:   //  8: | (2.78%)
+180:   //  9: --
+181:   // 10: --
+182:   //
+183:   // Minimum Hamming distance: 5
+184:   // Maximum Hamming distance: 8
+185:   // Minimum Hamming weight: 3
+186:   // Maximum Hamming weight: 8
+187:   //
+188:   localparam int StateWidth = 10;
+189:   typedef enum logic [StateWidth-1:0] {
+190:     ResetSt      = 10'b1100000110,
+191:     InitSt       = 10'b1000110011,
+192:     IdleSt       = 10'b0101110000,
+193:     ReadSt       = 10'b0010011111,
+194:     ReadWaitSt   = 10'b1001001101,
+195:     WriteCheckSt = 10'b1111101011,
+196:     WriteWaitSt  = 10'b0011000010,
+197:     WriteSt      = 10'b0110100101,
+198:     ErrorSt      = 10'b1110011000
+199:   } state_e;
+200: 
+201:   state_e state_d, state_q;
+202:   err_e err_d, err_q;
+203:   logic valid_d, valid_q;
+204:   logic integrity_en_d, integrity_en_q;
+205:   logic req, wren, rvalid;
+206:   logic [1:0] rerror;
+207:   otp_macro_addr_t addr_q;
+208:   logic [SizeWidth-1:0] size_q;
+209:   logic [SizeWidth-1:0] cnt_d, cnt_q;
+210:   logic cnt_clr, cnt_en;
+211:   logic read_ecc_on, write_ecc_on;
+212:   logic wdata_inconsistent;
+213: 
+214:   // Response to otp_ctrl
+215:   assign otp_o.rvalid = valid_q;
+216:   assign otp_o.err   = err_q;
+217: 
+218:   assign cnt_d = (cnt_clr) ? '0           :
+219:                  (cnt_en)  ? cnt_q + 1'b1 : cnt_q;
+220: 
+221:   always_comb begin : p_fsm
+222:     // Default
+223:     state_d        = state_q;
+224:     otp_o.ready    = 1'b0;
+225:     valid_d        = 1'b0;
+226:     err_d          = err_q;
+227:     req            = 1'b0;
+228:     wren           = 1'b0;
+229:     cnt_clr        = 1'b0;
+230:     cnt_en         = 1'b0;
+231:     read_ecc_on    = 1'b1;
+232:     write_ecc_on   = 1'b1;
+233:     fsm_err        = 1'b0;
+234:     integrity_en_d = integrity_en_q;
+235: 
+236:     unique case (state_q)
+237:       // Wait here until we receive an initialization command.
+238:       ResetSt: begin
+239:         err_d = NoError;
+240:         otp_o.ready = 1'b1;
+241:         if (otp_i.valid) begin
+242:           if (otp_i.cmd == Init) begin
+243:             state_d = InitSt;
+244:           end
+245:         end
+246:       end
+247:       // Wait for some time until the OTP macro is ready.
+248:       InitSt: begin
+249:         state_d = IdleSt;
+250:         valid_d = 1'b1;
+251:         err_d = NoError;
+252:       end
+253:       // In the idle state, we basically wait for read or write commands.
+254:       IdleSt: begin
+255:         otp_o.ready = 1'b1;
+256:         err_d = NoError;
+257:         if (otp_i.valid) begin
+258:           cnt_clr = 1'b1;
+259:           err_d = NoError;
+260:           unique case (otp_i.cmd)
+261:             Read:  begin
+262:               state_d = ReadSt;
+263:               integrity_en_d = 1'b1;
+264:             end
+265:             Write: begin
+266:               state_d = WriteCheckSt;
+267:               integrity_en_d = 1'b1;
+268:             end
+269:             ReadRaw:  begin
+270:               state_d = ReadSt;
+271:               integrity_en_d = 1'b0;
+272:             end
+273:             WriteRaw: begin
+274:               state_d = WriteCheckSt;
+275:               integrity_en_d = 1'b0;
+276:             end
+277:             default: ;
+278:           endcase // otp_i.cmd
+279:         end
+280:       end
+281:       // Issue a read command to the macro.
+282:       ReadSt: begin
+283:         state_d = ReadWaitSt;
+284:         req     = 1'b1;
+285:         // Suppress ECC correction if needed.
+286:         read_ecc_on = integrity_en_q;
+287:       end
+288:       // Wait for response from macro.
+289:       ReadWaitSt: begin
+290:         // Suppress ECC correction if needed.
+291:         read_ecc_on = integrity_en_q;
+292:         if (rvalid) begin
+293:           cnt_en = 1'b1;
+294:           // Uncorrectable error, bail out.
+295:           if (rerror[1] && integrity_en_q) begin
+296:             state_d = IdleSt;
+297:             valid_d = 1'b1;
+298:             err_d = MacroEccUncorrError;
+299:           end else begin
+300:             if (cnt_q == size_q) begin
+301:               state_d = IdleSt;
+302:               valid_d = 1'b1;
+303:             end else begin
+304:               state_d = ReadSt;
+305:             end
+306:             // Correctable error, carry on but signal back.
+307:             if (rerror[0] && integrity_en_q) begin
+308:               err_d = MacroEccCorrError;
+309:             end
+310:           end
+311:         end
+312:       end
+313:       // First, read out to perform the write blank check and
+314:       // read-modify-write operation.
+315:       WriteCheckSt: begin
+316:         state_d = WriteWaitSt;
+317:         req     = 1'b1;
+318:         // Register raw memory contents without correction so that we can
+319:         // perform the read-modify-write correctly.
+320:         read_ecc_on = 1'b0;
+321:       end
+322:       // Wait for readout to complete first.
+323:       WriteWaitSt: begin
+324:         // Register raw memory contents without correction so that we can
+325:         // perform the read-modify-write correctly.
+326:         read_ecc_on = 1'b0;
+327:         if (rvalid) begin
+328:           cnt_en = 1'b1;
+329: 
+330:           if (cnt_q == size_q) begin
+331:             cnt_clr = 1'b1;
+332:             state_d = WriteSt;
+333:           end else begin
+334:             state_d = WriteCheckSt;
+335:           end
+336:         end
+337:       end
+338:       // If the write data attempts to clear an already programmed bit,
+339:       // the MacroWriteBlankError needs to be asserted.
+340:       WriteSt: begin
+341:         req = 1'b1;
+342:         wren = 1'b1;
+343:         cnt_en = 1'b1;
+344:         // Suppress ECC calculation if needed.
+345:         write_ecc_on = integrity_en_q;
+346: 
+347:         if (wdata_inconsistent) begin
+348:           err_d = MacroWriteBlankError;
+349:         end
+350: 
+351:         if (cnt_q == size_q) begin
+352:           valid_d = 1'b1;
+353:           state_d = IdleSt;
+354:         end
+355:       end
+356:       // If the FSM is glitched into an invalid state.
+357:       ErrorSt: begin
+358:         fsm_err = 1'b1;
+359:       end
+360:       default: begin
+361:         state_d = ErrorSt;
+362:         fsm_err = 1'b1;
+363:       end
+364:     endcase // state_q
+365:   end
+366: 
+367:   ///////////////////////////////////////////
+368:   // Emulate using ECC protected Block RAM //
+369:   ///////////////////////////////////////////
+370: 
+371:   otp_macro_addr_t addr;
+372:   assign addr = addr_q + AddrWidth'(cnt_q);
+373: 
+374:   logic [Width-1:0] rdata_corr;
+375:   logic [Width+EccWidth-1:0] rdata_d, wdata_ecc, rdata_ecc, wdata_rmw;
+376:   logic [2**SizeWidth-1:0][Width-1:0] wdata_q, rdata_reshaped;
+377:   logic [2**SizeWidth-1:0][Width+EccWidth-1:0] rdata_q;
+378: 
+379:   // Use a standard Hamming ECC for OTP.
+380:   prim_secded_hamming_22_16_enc u_enc (
+381:     .data_i(wdata_q[cnt_q]),
+382:     .data_o(wdata_ecc)
+383:   );
+384: 
+385:   prim_secded_hamming_22_16_dec u_dec (
+386:     .data_i     (rdata_ecc),
+387:     .data_o     (rdata_corr),
+388:     .syndrome_o ( ),
+389:     .err_o      (rerror)
+390:   );
+391: 
+392:   assign rdata_d = (read_ecc_on) ? {{EccWidth{1'b0}}, rdata_corr}
+393:                                  : rdata_ecc;
+394: 
+395:   // Read-modify-write (OTP can only set bits to 1, but not clear to 0).
+396:   assign wdata_rmw = (write_ecc_on) ? wdata_ecc | rdata_q[cnt_q]
+397:                                     : {{EccWidth{1'b0}}, wdata_q[cnt_q]} | rdata_q[cnt_q];
+398: 
+399:   // This indicates if the write data is inconsistent (i.e., if the operation attempts to
+400:   // clear an already programmed bit to zero).
+401:   assign wdata_inconsistent = (rdata_q[cnt_q] & wdata_ecc) != rdata_q[cnt_q];
+402: 
+403:   // Output data without ECC bits.
+404:   always_comb begin : p_output_map
+405:     for (int k = 0; k < 2**SizeWidth; k++) begin
+406:       rdata_reshaped[k] = rdata_q[k][Width-1:0];
+407:     end
+408:     otp_o.rdata = rdata_reshaped;
+409:   end
+410: 
+411:   prim_ram_1p_adv #(
+412:     .Depth                (Depth),
+413:     .Width                (Width + EccWidth),
+414:     .MemInitFile          (MemInitFile),
+415:     .EnableInputPipeline  (1),
+416:     .EnableOutputPipeline (1)
+417:   ) u_prim_ram_1p_adv (
+418:     .clk_i,
+419:     .rst_ni,
+420:     .req_i    ( req                    ),
+421:     .write_i  ( wren                   ),
+422:     .addr_i   ( addr                   ),
+423:     .wdata_i  ( wdata_rmw              ),
+424:     .wmask_i  ( {Width+EccWidth{1'b1}} ),
+425:     .rdata_o  ( rdata_ecc              ),
+426:     .rvalid_o ( rvalid                 ),
+427:     .rerror_o (                        ),
+428:     .cfg_i    ( '0                     ),
+429:     .cfg_rsp_o(                        ),
+430:     .alert_o  (                        )
+431:   );
+432: 
+433:   // Currently it is assumed that no wrap arounds can occur.
+434:   `ASSERT(NoWrapArounds_A, req |-> (addr >= addr_q))
+435: 
+436:   //////////
+437:   // Regs //
+438:   //////////
+439: 
+440:  `PRIM_FLOP_SPARSE_FSM(u_state_regs, state_d, state_q, state_e, ResetSt)
+441: 
+442:   always_ff @(posedge clk_i or negedge rst_ni) begin : p_regs
+443:     if (!rst_ni) begin
+444:       valid_q <= '0;
+445:       err_q   <= NoError;
+446:       addr_q  <= '0;
+447:       wdata_q <= '0;
+448:       rdata_q <= '0;
+449:       cnt_q   <= '0;
+450:       size_q  <= '0;
+451:       integrity_en_q <= 1'b0;
+452:     end else begin
+453:       valid_q <= valid_d;
+454:       err_q   <= err_d;
+455:       cnt_q   <= cnt_d;
+456:       integrity_en_q <= integrity_en_d;
+457:       if (otp_o.ready && otp_i.valid) begin
+458:         addr_q  <= otp_i.addr;
+459:         wdata_q <= otp_i.wdata;
+460:         size_q  <= otp_i.size;
+461:       end
+462:       if (rvalid) begin
+463:         rdata_q[cnt_q] <= rdata_d;
+464:       end
+465:     end
+466:   end
+467: 
+468:   ////////////////
+469:   // Assertions //
+470:   ////////////////
+471: 
+472:   // Check that the otp_ctrl FSMs only issue legal commands to the wrapper.
+473:   `ASSERT(CheckCommands0_A, state_q == ResetSt && otp_i.valid && otp_o.ready |-> otp_i.cmd == Init)
+474:   `ASSERT(CheckCommands1_A, state_q != ResetSt && otp_i.valid && otp_o.ready
+475:       |-> otp_i.cmd inside {Read, ReadRaw, Write, WriteRaw})
+476: 
+477:   // Check all parameters are as expected.
+478:   `ASSERT_INIT(WidthMatches_A, Width == otp_ctrl_macro_pkg::OtpWidth)
+479:   `ASSERT_INIT(DepthMatches_A, Depth == otp_ctrl_macro_pkg::OtpDepth)
+480:   `ASSERT_INIT(SizeWidthMatches_A, SizeWidth == otp_ctrl_macro_pkg::OtpSizeWidth)
+481:   `ASSERT_INIT(VendorTestOffsetMatches_A, VendorTestOffset == otp_ctrl_reg_pkg::VendorTestOffset)
+482:   `ASSERT_INIT(VendorTestSizeMatches_A, VendorTestSize == otp_ctrl_reg_pkg::VendorTestSize)
+483: 
+484:   `ASSERT_KNOWN(OtpAstPwrSeqKnown_A, pwr_seq_o)
+485:   `ASSERT_KNOWN(OtpMacroTlOutKnown_A, tl_o)
+486: 
+487:   // Assertions for countermeasures inside otp_macro are done in three parts
+488:   // - Assert invalid conditions propagate to otp_o.fatal_alert
+489:   // - Check that otp_o.fatal_alert is connected to u_otp_ctrl.otp_macro_i as a connectivity check
+490:   // - Check that u_otp_ctrl.otp_macro_i is connected to u_otp_ctrl.alert_tx_o[3]
+491: //  `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(PrimFsmCheck_A, u_state_regs, otp_o.fatal_alert)
+492:   `ASSERT_ERROR_TRIGGER_ERR(PrimFsmCheck_A, u_state_regs, otp_o.fatal_alert, 0,
+493:       `_SEC_CM_ALERT_MAX_CYC, unused_err_o, `ASSERT_DEFAULT_CLK, `ASSERT_DEFAULT_RST)
+494:   `ASSUME_FPV(PrimFsmCheck_ATriggerAfterAlertInit_S,
+495:               $stable(rst_ni) == 0 |-> u_state_regs.unused_err_o == 0 [*10])
+496: 
+497:   `ASSERT_ERROR_TRIGGER_ERR(TlLcGateFsm_A, u_tlul_lc_gate.u_state_regs, otp_o.fatal_lc_fsm_err, 0,
+498:       `_SEC_CM_ALERT_MAX_CYC, unused_err_o, `ASSERT_DEFAULT_CLK, `ASSERT_DEFAULT_RST)
+499:   `ASSUME_FPV(TlLcGateFsm_ATriggerAfterAlertInit_S,
+500:               $stable(rst_ni) == 0 |-> u_tlul_lc_gate.u_state_regs.unused_err_o == 0 [*10])
+501: 
+502: 
+503: //  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(PrimRegWeOnehotCheck_A,
+504: //      u_reg_top, otp_o.fatal_alert)
+505:   `ASSERT_ERROR_TRIGGER_ERR(PrimRegWeOnehotCheck_A,
+506:       u_reg_top.u_prim_reg_we_check.u_prim_onehot_check, otp_o.fatal_alert, 0,
+507:       `_SEC_CM_ALERT_MAX_CYC, err_o, `ASSERT_DEFAULT_CLK, `ASSERT_DEFAULT_RST)
+508:   `ASSUME_FPV(PrimRegWeOneHotCheck_ATriggerAfterAlertInit_S,
+509:               $stable(rst_ni) == 0 |-> u_state_regs.err_o == 0 [*10])
+510: 
+511: endmodule : otp_macro
+
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_rYF6enMWyuNl4R8gGi6JO7uu)
+ Call ID: call_rYF6enMWyuNl4R8gGi6JO7uu
+  Args:
+    design_filepath: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro.sv
+    top_module: otp_macro
+    security_objective: Access control, lifecycle gating, memory integrity, privilege escalation
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+I ran the anomaly detector on the supplied otp_macro.sv and reviewed the clustered results. From those clusters I focused on lines/expressions that are atypical for this kind of macro and that could affect the four security aspects you asked about (access control, lifecycle gating, memory integrity, privilege escalation). Below I list the anomalous lines/expressions, explain why they are anomalous, and give a judgment whether each is a security issue and recommended fixes.
+
+Summary of highest priority findings
+- Two related anomalies in the RMW / ECC handling are real memory-integrity issues and should be treated as high priority:
+  1) The write RMW value is formed with an OR that mixes ECC bits from the new ECC and the previous stored ECC: wdata_rmw = wdata_ecc | rdata_q[cnt_q]
+  2) The write-blank-check (wdata_inconsistent) compares the full ECC+data word instead of just the data payload: wdata_inconsistent = (rdata_q[cnt_q] & wdata_ecc) != rdata_q[cnt_q];
+
+Both lead to incorrect ECC after programming and/or incorrect blank-check behavior (false positives), which breaks memory integrity and can cause DoS/availability or false error conditions. See details and fixes below.
+
+Detailed anomalies, security impact, and recommended fixes
+
+1) Anomaly — incorrect forming of write data + ECC (memory-integrity)
+- Code (cluster 4):
+  wdata_rmw = (write_ecc_on) ? wdata_ecc | rdata_q[cnt_q]
+                                : {{EccWidth{1'b0}}, wdata_q[cnt_q]} | rdata_q[cnt_q];
+- Why anomalous:
+  - When write_ecc_on is true, wdata_ecc contains the ECC bits computed for the new data only. rdata_q[cnt_q] contains the previously stored (ECC + data). OR'ing these full words means ECC bits in the word that get written are combination/OR of the new ECC and old ECC, not a correct ECC computed for the final data actually stored. ECC must be computed over the actual final data word, not constructed by OR-ing old/new ECC fields.
+  - The same pattern (in the write_ecc_off branch) leaves ECC zeros ORed with old ECC — also not a correct ECC for the final data payload.
+- Security impact:
+  - Memory integrity (HIGH): The ECC stored in memory will likely not match the payload data. Subsequent reads with ECC checking (integrity_on) will report errors (correctable or uncorrectable), causing false corruption alerts, possible denial of availability of OTP contents, or spurious alerts. This undermines the trustworthiness of OTP stored values and integrity countermeasures.
+  - Access control / privilege escalation: Not directly an access control bypass, but corrupt ECC could be abused to create persistent error states or to mask/force error conditions; this can affect system behavior.
+- Recommended fix:
+  - Compute the final data payload first (final_data = rdata_q[cnt_q][Width-1:0] | wdata_q[cnt_q]) and then compute ECC on that final_data with the ECC encoder. Then form wdata_rmw = {computed_ecc, final_data}. I.e. do ECC(enc(final_data)) rather than OR'ing ECC fields.
+  - Example (pseudocode):
+    final_data = rdata_q[cnt_q][Width-1:0] | wdata_q[cnt_q];
+    prim_secded_hamming_22_16_enc enc_final (.data_i(final_data), .data_o(final_ecc_and_data));
+    wdata_rmw = final_ecc_and_data;
+  - Ensure the code paths that write respect write_ecc_on / write_ecc_off semantics but always compute ECC for the actual final payload that will be stored.
+
+2) Anomaly — write blank check compares ECC+data instead of only data (memory-integrity / false positives)
+- Code (cluster 4):
+  wdata_inconsistent = (rdata_q[cnt_q] & wdata_ecc) != rdata_q[cnt_q];
+- Why anomalous:
+  - This expression ANDs the stored word with wdata_ecc (which contains ECC bits too) and compares to the stored word. The intended check is to detect attempts to clear already-programmed data bits (i.e., trying to write a 0 where memory already has a 1). That test should only be done on the data bits, not the ECC bits.
+  - Comparing the full (ECC+data) word will cause the check to be sensitive to ECC bit differences, producing false positives whenever ECC changes even when the data payload is legal.
+- Security impact:
+  - Memory integrity / availability (MEDIUM-HIGH): Legitimate write attempts may be flagged as MacroWriteBlankError when they are actually permitted. This can block programming (availability) or generate spurious error conditions/alerts.
+- Recommended fix:
+  - Compare data fields only. E.g.:
+    wdata_inconsistent = (rdata_q[cnt_q][Width-1:0] & wdata_q[cnt_q]) != rdata_q[cnt_q][Width-1:0];
+  - If write_ecc_on is used, compute final_data as suggested in (1) and then check (stored_data & new_data) != stored_data (only on data bits).
+
+3) Anomaly — returning corrected data with ECC bits zeroed (interaction with RMW)
+- Code:
+  assign rdata_d = (read_ecc_on) ? {{EccWidth{1'b0}}, rdata_corr} : rdata_ecc;
+- Why anomalous:
+  - When read_ecc_on is true the code returns corrected data with ECC bits zeroed. That is convenient for presenting data to the rest of the wrapper, but combined with the current RMW approach (OR'ing ECC fields) it yields inconsistent ECC when later reconstructing a final write (see (1) and (2)). Even if you keep the RMW fix, it is worth noting that storing zeros in ECC field in rdata_q for corrected reads is a design choice that must be matched by the write logic (i.e., always recompute ECC from the data stored).
+- Security impact:
+  - Memory integrity (MEDIUM): If not handled properly by write logic, this can lead to the same ECC mismatch problems in (1).
+- Recommendation:
+  - Keep the design choice but ensure write logic always recomputes ECC from final data (see fix 1). Consider storing corrected data together with a canonical ECC (computed from that corrected data) if the design expects to write back corrected words.
+
+4) Anomaly — hw2reg tied to zero (possible loss of status visibility)
+- Code (cluster 3):
+  assign hw2reg = '0;
+- Why anomalous:
+  - hw2reg is the HW->register(s) bus; tying it to zero means the register interface receives no status information from hardware. The code does still expose intg_err via reg_top intg_err_o(intg_err), but hw2reg being zero will prevent other status bits from being available to software.
+- Security impact:
+  - Observability / alerting (LOW-MEDIUM): If hw status bits (that should be observed by firmware for monitoring/attestation) are not propagated, firmware cannot reliably detect certain hardware states. That can hide faults or make it impossible for software to react to hardware conditions. This can reduce the effectiveness of security monitoring or lifecycle checks.
+- Recommendation:
+  - Reconnect the intended hw2reg signals from the RTL design, or explicitly document why hw2reg is zero (e.g., for emulation only) and ensure in silicon it is properly connected. Add assertions or access checks to ensure any essential status signals are routed to registers.
+
+5) Anomaly — pwr_seq_o tied off (lifecycle/power gating)
+- Code (cluster 0):
+  assign pwr_seq_o = '0;
+  (and unused_pwr_seq_h = pwr_seq_h_i;)
+- Why anomalous:
+  - Macro-specific power sequencing is tied off to zero, with a comment "Not supported in open-source emulation model." In silicon this signal likely must be connected to AST/power controller so that lifecycle/power sequencing works.
+- Security impact:
+  - Lifecycle gating / power control (LOW for simulation; MEDIUM in real product): For the open-source/emulation build this is probably intentional. But in real silicon, incorrect power-sequence handling could allow unintended access or prevent lifecycle transitions and can influence test/programming behavior. If power sequencing gates programming or test access, tying it off could change accessibility of programming paths.
+- Recommendation:
+  - Ensure in product/FPGA/silicon builds pwr_seq_o is connected to the AST/power sequencer. Add a build-time check or configuration flag so the tied-off behavior is explicit only for the emulation model. Add an ASSERT/KNOWN rule to ensure expected connections in production builds.
+
+6) Anomaly — test vectors / test outputs driven to zero (test interface)
+- Code (cluster 2):
+  assign test_vect = '0;
+  assign cio_test_o = test_vect;
+  cio_test_en_o is lifecycle gated when lc_dft_en[2] true
+- Why anomalous:
+  - Test vector outputs are zeroed. This is likely intentional in the OSS emulation model, and the enable is lifecycle-gated. If test functionality is required in silicon, tying test vectors off here could be a problem.
+- Security impact:
+  - Low in OSS/emulation; if mistakenly left in production it could disable test hooks or have lifecycle implications. The gating is present, which is good.
+- Recommendation:
+  - Ensure production builds provide the intended test vector values and that test enable control is properly lifecycle-gated.
+
+Other notes / assertions
+- There are many ASSERT/ASSUME directives asserting parameters and connectivity; these are useful and should remain.
+- The most urgent fixes are to the RMW/ECC logic (items 1 and 2). Those directly impact memory integrity and correctness and can produce persistent, reproducible failure modes (false ECC errors, blocked writes).
+- The other anomalies (hw2reg/pwr_seq/test vectors tied off) are probably intentional for the open-source/emulation model but must be carefully handled in silicon/production builds. Document these intentionally-tied-off signals and gate them behind a configuration so they are not silently left disconnected in a product build.
+
+If you want, I can:
+- produce a concrete patch suggestion (SystemVerilog snippets) to (a) compute final_data then compute ECC and write that, and (b) change the blank-check to compare only data bits; and
+- re-run a quick consistency check of other dependent signals (e.g., rdata storage/format) to ensure the fixes don't break other logic. Which would you prefer?
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_zPaEXq5vzNZ8OvL6VdmMKQWh)
+ Call ID: call_zPaEXq5vzNZ8OvL6VdmMKQWh
+  Args:
+    design_filepath: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro.sv
+    top_module: otp_macro
+    security_objective: Memory integrity, lifecycle/test gating, privilege protections
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+Now let me analyze the RTL code for security issues related to these CWEs:
+
+## Security Analysis of the OTP Macro RTL
+
+Based on the CWE analysis and code review, I've identified several security-relevant aspects in the RTL:
+
+### 1. **Memory Integrity Protection (Related to CWE-1247)**
+
+**POSITIVE SECURITY FEATURES:**
+- **ECC Protection**: The code implements Hamming ECC (22,16) for memory integrity:
+  ```verilog
+  // SEC_CM: MACRO.MEM.INTEGRITY
+  // SEC_CM: MACRO.MEM.CM
+  prim_secded_hamming_22_16_enc u_enc (
+    .data_i(wdata_q[cnt_q]),
+    .data_o(wdata_ecc)
+  );
+  
+  prim_secded_hamming_22_16_dec u_dec (
+    .data_i     (rdata_ecc),
+    .data_o     (rdata_corr),
+    .syndrome_o ( ),
+    .err_o      (rerror)
+  );
+  ```
+
+- **Error Handling**: Proper handling of correctable and uncorrectable ECC errors:
+  ```verilog
+  // Uncorrectable error, bail out.
+  if (rerror[1] && integrity_en_q) begin
+    state_d = IdleSt;
+    valid_d = 1'b1;
+    err_d = MacroEccUncorrError;
+  end else begin
+    // Correctable error, carry on but signal back.
+    if (rerror[0] && integrity_en_q) begin
+      err_d = MacroEccCorrError;
+    end
+  end
+  ```
+
+### 2. **Lifecycle/Test Gating (Related to CWE-1313)**
+
+**POSITIVE SECURITY FEATURES:**
+- **Lifecycle-Gated Test Interface**: Test interfaces are properly gated by lifecycle signals:
+  ```verilog
+  // SEC_CM: TEST.BUS.LC_GATED
+  assign cio_test_en_o = (lc_ctrl_pkg::lc_tx_test_true_strict(lc_dft_en[2])) ?
+                         {OtpTestVectWidth{1'b1}} : '0;
+  ```
+
+- **TL-UL Interface Gating**: The TL-UL test interface is lifecycle-controlled:
+  ```verilog
+  // SEC_CM: TEST.BUS.LC_GATED
+  // SEC_CM: TEST_TL_LC_GATE.FSM.SPARSE
+  tlul_lc_gate #(
+    .NumGatesPerDirection(2)
+  ) u_tlul_lc_gate (
+    .clk_i,
+    .rst_ni,
+    .tl_h2d_i(tl_i),
+    .tl_d2h_o(tl_o),
+    .tl_h2d_o(tl_h2d_gated),
+    .tl_d2h_i(tl_d2h_gated),
+    .lc_en_i (lc_dft_en[0]),
+    .flush_req_i('0),
+    .flush_ack_o(),
+    .resp_pending_o(),
+    .err_o   (lc_fsm_err)
+  );
+  ```
+
+### 3. **Finite State Machine Security (Related to CWE-1245)**
+
+**POSITIVE SECURITY FEATURES:**
+- **Sparse FSM Encoding**: The FSM uses sparse encoding with good Hamming distance properties:
+  ```verilog
+  // Encoding generated with:
+  // $ ./util/design/sparse-fsm-encode.py -d 5 -m 9 -n 10 \
+  //      -s 2599950981 --language=sv
+  //
+  // Minimum Hamming distance: 5
+  // Maximum Hamming distance: 8
+  typedef enum logic [StateWidth-1:0] {
+    ResetSt      = 10'b1100000110,
+    InitSt       = 10'b1
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_NGXfN13UHQi854UN9XGVPGxQ)
+ Call ID: call_NGXfN13UHQi854UN9XGVPGxQ
+  Args:
+    design_filepath: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_reg_top.sv
+    top_module: otp_macro_reg_top
+    security_objective: Register access policies, CWE-1209 improper access control of hardware registers, CWE-1231 lock bits
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+Error: BadRequestError("Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CT8CvqTJyqDgmj5PHeVdi'}")
+ Please fix your mistakes.
+================================== Ai Message ==================================
+Tool Calls:
+  run_similar_bug_agent (call_TVw8TyDKaLU9TDIDa32LI1dS)
+ Call ID: call_TVw8TyDKaLU9TDIDa32LI1dS
+  Args:
+    bug: assign wdata_rmw = (write_ecc_on) ? wdata_ecc | rdata_q[cnt_q]
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro.sv
+================================= Tool Message =================================
+Name: run_similar_bug_agent
+
+Error: BadRequestError("Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CT8CwP55zrfepxkdtfxqe'}")
+ Please fix your mistakes.
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_KfrWn48AfVeNCyggrMpKH1Ip)
+ Call ID: call_KfrWn48AfVeNCyggrMpKH1Ip
+  Args:
+    design_filepath: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro/rtl/otp_macro_reg_top.sv
+    top_module: otp_macro_reg_top
+    security_objective: Register access control, misgated writes, integrity checks, privileged test access
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+I ran the anomaly detector over the supplied otp_macro_reg_top.sv. It clustered similar code lines and highlighted a small set of places that stand out as potential anomalies. Below I list the suspicious lines / code patterns, explain why each looks anomalous, and state whether I judge it a security issue (and why) and give recommended fixes or checks.
+
+Summary of anomalies found
+1) reg busy/shadow busy tied low
+- Lines:
+  - assign shadow_busy = 1'b0;
+  - assign reg_busy = shadow_busy;
+- Why anomalous:
+  - The module provides a reg_busy input to the tlul adapter but the “shadow” busy is hardwired to 0. That means the register interface never reports busy for this IP (reg_busy is permanently 0).
+- Security impact:
+  - Potential security risk (medium) if any CSR write triggers a long-latency operation in hardware (e.g., OTP programming or irreversible operations) and that internal operation expects the register-layer busy flag to block or serialize accesses. If software can issue multiple writes/reads while the hardware is actually busy but reg_busy is always 0, that could lead to race conditions or inconsistent/undefined hardware state and possibly leakage or corruption.
+  - If this IP truly has no long-latency operations and is intentionally always non-busy, then it is not a security problem.
+- Recommendation:
+  - Connect reg_busy to the actual hardware “busy” signal if any long-latency ops exist (OTP write/erase, fuse programming, etc.). If the underlying macro has a busy, surface it here. If there is no such operation, add a comment documenting why busy is permanently 0.
+  - Add a unit/FPV check to ensure the busy signal reflects hardware activity if applicable.
+
+2) Default read returns all-ones
+- Line / block:
+  - default: begin
+      reg_rdata_next = '1;
+    end
+- Why anomalous:
+  - When no addr_hit is true, the read mux returns all-ones (reg_rdata_next = '1). Often designs return zeros or an explicit error pattern on unmapped reads. Returning 0xFFFFFFFF may be surprising and can be misused by SW or tests.
+- Security impact:
+  - Low-to-medium. Returning all-ones can be confusing to SW (it might assume that register is present or contains some data). In particular, if software uses reads of unmapped addresses to infer presence of hardware or to check status bits, returning ones could cause incorrect decisions. It is not by itself a secret-leakage vector, but it can hide errors or be misinterpreted by software.
+- Recommendation:
+  - Consider returning 0 or a defined fault pattern (and ensure the error response bit/handshake indicates the read was to an unmapped address). At minimum, document the chosen behavior. Ensure software expects and handles this pattern correctly.
+  - Note: the design already sets reg_error = addrmiss | wr_err | intg_err. Ensure the adapter returns a response error to the host for addrmiss cases (so SW can detect the error rather than rely on data value).
+
+3) reg_we_check vector omits CSR7 (bit 7 = 0)
+- Line:
+  - reg_we_check[7] = 1'b0;
+- Why anomalous:
+  - The reg_we_check vector (used by prim_reg_we_check) contains one bit per register in positions 0..6, but bit 7 is forced low. There are 8 addr_hit entries (0..7) and CSR7 exists in the file but all CSR7 fields are RO. This is an intentional omission (RO registers do not get write-enable bits set).
+- Security impact:
+  - Not a security bug per se — this is consistent with the design practice of detecting spurious writes: if software tries to write to a read-only register (CSR7), en_i to the checker will be true (reg_we && !addrmiss) but oh_i will have no bit set, so prim_reg_we_check should raise reg_we_err. That behaviour protects against silent writes to RO fields by turning them into an error.
+  - Verify that prim_reg_we_check indeed flags the case of en_i asserted but oh_i has no bits set (i.e., it raises reg_we_err). If prim_reg_we_check were silent instead, that would be an issue.
+- Recommendation:
+  - Confirm prim_reg_we_check behaviour on no-one-hot inputs (should assert err_o). Leave an explanatory comment near reg_we_check[7] = 1'b0 to clarify why the bit is zero (RO registers).
+
+4) Default/no privilege checks visible in this module
+- Observations:
+  - The module uses prim_subreg SwAccess parameters (e.g., SwAccessRW, SwAccessRO, SwAccessW1C) but does not implement any privilege checking / security domain gating inside this top-level file.
+- Security impact:
+  - Potential security issue (medium) depending on the system: sensitive OTP control registers must be protected by privilege/security controls. The absence of privilege checks in this module is not necessarily a bug: privilege enforcement is often implemented at a higher layer (e.g., the TL bus interconnect or host access policy), not in the per-IP reg_top. However, you must ensure such checks exist elsewhere.
+- Recommendation:
+  - Verify that the TL interface (or system interconnect) enforces privilege/security attributes for these registers. If some OTP registers are sensitive (e.g., permit programming, blow fuses, enable debug/test access), those must be protected by HW-enforced privilege and/or lifecycle state checks. Add explicit comments in this file that privilege is enforced elsewhere, or add local gating if applicable.
+
+5) Integrity and write-error handling looks present but verify coverage
+- Observations:
+  - There is an incoming integrity check (tlul_cmd_intg_chk) and an outgoing integrity generator (tlul_rsp_intg_gen). There is also a one-hot write checker prim_reg_we_check.
+- Security impact:
+  - Positive: detection logic exists (intg_err, reg_we_err). Make sure tlul_cmd_intg_chk actually covers the TL protocol security requirements (parity/CRC/auth when applicable).
+- Recommendation:
+  - Review tlul_cmd_intg_chk, tlul_rsp_intg_gen, and prim_reg_we_check implementation and tests to ensure they correctly detect tampering and mis-framed requests and that errors lead to permanent alerting where required. Ensure intg_err_o semantics match the alerting model for the project.
+
+Other notes (non-anomalous / informational)
+- Many fields are RO/W1C and the prim_subreg instances are wired appropriately (RO fields use .we=1'b0). That is fine.
+- The addrmiss logic and wr_err checks (via OTP_MACRO_PERMIT & reg_be) are present and look correct — verify OTP_MACRO_PERMIT is configured correctly in the package for byte-enable permissions.
+- The unused signals are tied off cleanly and assertions for reg pulses and one-hot hits are present.
+
+Conclusion / action items
+- Highest-priority review: ensure reg_busy reflects real hardware busy if OTP programming (or other long-latency ops) exists. If not applicable, add comment/documentation explaining why busy = 0 is correct.
+- Medium priority: change or document the default read value ('1) so SW knows to consult the error response rather than the data value.
+- Verify prim_reg_we_check behaviour on writes to RO registers and that it raises reg_we_err (so writes to RO become detected errors).
+- Verify system-level privilege gating for any sensitive OTP-related registers (this file does not show privilege checks — ensure they are enforced elsewhere).
+- Verify integrity-check primitives fully cover integrity/anti-tamper requirements and that intg_err_o is connected to the alerting/monitoring system.
+
+If you want, I can:
+- point to the exact source lines and produce a small patch suggestion (e.g., change default reg_rdata_next to '0 or add a comment for shadow_busy), or
+- inspect the referenced primitives (prim_reg_we_check, tlul_cmd_intg_chk, tlul_rsp_intg_gen) if you provide them to confirm behaviour.
+================================== Ai Message ==================================
+
+Security review of OpenTitan otp_macro IP (path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/otp_macro)
+
+Summary of documented security properties and register access policies
+- IP role: Wrapper around an OTP macro with CSR block for vendor-specific operations (README.md).
+- Countermeasures (data/otp_macro.hjson):
+  - BUS.INTEGRITY: End-to-end TL-UL integrity scheme on the CSR port.
+  - LC_CTRL.INTERSIG.MUBI: Lifecycle control signals are multibit encoded.
+  - TEST.BUS.LC_GATED: Test signals and OTP backdoor interface gated in non-test lifecycle states.
+  - TEST_TL_LC_GATE.FSM.SPARSE: TL-UL gating FSM sparsely encoded.
+  - MACRO.MEM.INTEGRITY: Vendor-specific integrity scheme; at least detects single-bit errors.
+  - MACRO.MEM.CM: Macro may contain additional vendor-specific countermeasures.
+- Register interface (data/otp_macro.hjson):
+  - 8 CSRs: CSR0..CSR7 (32-bit each).
+  - Mixed swaccess: rw, ro, and rw1c fields; some registers are hw read-only (hro) or hw read/write (hrw).
+  - Important pattern: RO fields are present (e.g., CSR7 entirely RO). RW1C fields present in CSR3 (field0/1/2).
+  - regwidth: 32; byte-enable write-permission masks specified (otp_macro_reg_pkg.sv -> OTP_MACRO_PERMIT).
+- Lifecycle/test gating (rtl/otp_macro.sv):
+  - TL-UL device port is gated by lc_dft_en via tlul_lc_gate (sparse FSM, error reporting).
+  - Test GPIO enables are gated via lc_tx_test_true_strict.
+  - Lifecycle signals are synchronized with prim_lc_sync (multiple copies for redundancy).
+- Bus integrity and alerts:
+  - tlul_cmd_intg_chk and tlul_rsp_intg_gen used in register top.
+  - prim_reg_we_check monitors spurious WE to RO registers and sets permanent intg_err.
+  - otp_macro propagates fatal alerts on lifecycle gate FSM error, register integrity errors, or FSM error.
+
+Identified issues
+
+1) File: rtl/otp_macro.sv
+   Line number(s): 396-398
+   Issue: Incorrect ECC RMW formation (ECC bits OR’ed with prior ECC)
+   Description: The write data to memory is formed by OR’ing the new ECC+data with the previously stored ECC+data:
+     assign wdata_rmw = (write_ecc_on) ? wdata_ecc | rdata_q[cnt_q]
+                                       : {{EccWidth{1'b0}}, wdata_q[cnt_q]} | rdata_q[cnt_q];
+   This produces an ECC field that is an OR of old and new ECC, rather than a fresh ECC computed over the final data payload (old_data | new_data). It will cause ECC/data mismatch and spurious ECC errors on subsequent reads, undermining integrity and potentially causing persistent alerts or DoS-like conditions.
+   Security aspect affected: Memory integrity (MACRO.MEM.INTEGRITY)
+   Tools used: Anomaly Detector Agent (run_anomaly_detector_agent), CWE Checker Agent (run_llm_cwe_checker_agent)
+   Brief fix recommendation: Compute final_data = old_data | new_data, recompute ECC over final_data, and write {ecc(final_data), final_data}. Do not OR ECC fields.
+
+2) File: rtl/otp_macro.sv
+   Line number(s): 401-402
+   Issue: Write blank-check compares ECC+data instead of data-only
+   Description: The blank-check intended to detect attempts to clear already-programmed bits uses ECC+data in the comparison:
+     assign wdata_inconsistent = (rdata_q[cnt_q] & wdata_ecc) != rdata_q[cnt_q];
+   Because wdata_ecc includes ECC bits, the comparison can spuriously fail when ECC legitimately changes, causing false MacroWriteBlankError reports and blocking valid writes.
+   Security aspect affected: Memory integrity/availability (erroneous MacroWriteBlankError)
+   Tools used: Anomaly Detector Agent (run_anomaly_detector_agent), CWE Checker Agent (run_llm_cwe_checker_agent)
+   Brief fix recommendation: Restrict the blank-check to data bits only. Example: (rdata_q[cnt_q][Width-1:0] & wdata_q[cnt_q]) != rdata_q[cnt_q][Width-1:0]. If integrity is enabled, recompute ECC on final_data but still do the blank-check on data bits only.
+
+3) File: rtl/otp_macro.sv
+   Line number(s): 392-394 (context for issue 1)
+   Issue: Corrected reads store data-only with ECC bits zeroed; requires consistent write path
+   Description: When read_ecc_on is true, the design stores corrected data with ECC bits zeroed in rdata_d. This is fine, but combined with issue (1) it leads to ECC/data inconsistencies. After fixing (1), ensure the write path always recomputes ECC from the final data stored.
+   Security aspect affected: Memory integrity (consistency)
+   Tools used: Anomaly Detector Agent (run_anomaly_detector_agent)
+   Brief fix recommendation: After fix (1), always recompute ECC on the actual final data; the read path behavior then remains safe.
+
+4) File: rtl/otp_macro.sv
+   Line number(s): 158-160
+   Issue: HW-to-CSR status bus tied off to zero
+   Description: hw2reg is tied to '0, so no internal status is exposed through CSRs. While intg_err is propagated at the reg_top, other status intended for observability or attestation is not surfaced.
+   Security aspect affected: Observability/alerting (could reduce SW’s ability to monitor security state)
+   Tools used: Anomaly Detector Agent (run_anomaly_detector_agent)
+   Brief mitigation recommendation: Connect required status fields to hw2reg (e.g., error states, FSM states, write-protect indications) or document why they are intentionally absent in this emulation wrapper. Ensure critical alerts are still propagated via dedicated alert lines (as they currently are).
+
+5) File: rtl/otp_macro_reg_top.sv
+   Line number(s): 438-443
+   Issue: Register interface busy permanently tied low
+   Description: shadow_busy and reg_busy are tied to 0. If any long-latency or serialized programming operations are triggered via CSRs, the interface will not backpressure the host. This risks race conditions or undefined states under successive writes.
+   Security aspect affected: Robustness/atomicity of privileged operations (could enable unexpected sequencing)
+   Tools used: Anomaly Detector Agent (run_anomaly_detector_agent)
+   Brief mitigation recommendation: If any CSR operations drive long-latency actions, wire reg_busy to the true hardware busy. If not applicable for this wrapper, add a note explaining why busy is permanently 0.
+
+6) File: rtl/otp_macro_reg_top.sv
+   Line number(s): 1431-1433
+   Issue: Default read data is all-ones on unmapped address
+   Description: When an unmapped address is read, reg_rdata_next is set to '1. While reg_error is asserted (so the TL response should indicate error), returning 0xFFFFFFFF can mislead SW that ignores the error response.
+   Security aspect affected: Interface robustness (low severity)
+   Tools used: Anomaly Detector Agent (run_anomaly_detector_agent)
+   Brief mitigation recommendation: Consider returning 0x00000000 or a defined fault pattern, and ensure SW checks the TL response error bit rather than relying on data. Document the chosen behavior.
+
+7) File: rtl/otp_macro.sv
+   Line number(s): 71-72 (and related ties: 78-85, 91-98)
+   Issue: Power sequencing and test vectors tied off (emulation build risk)
+   Description: pwr_seq_o is tied to 0; test vectors are tied to 0; scan signals are tied unused. This is likely intentional for the open-source emulation model. In silicon, incorrect tie-offs could disable required sequencing or test features.
+   Security aspect affected: Lifecycle/power sequencing (configuration risk)
+   Tools used: Anomaly Detector Agent (run_anomaly_detector_agent)
+   Brief mitigation recommendation: Guard these tie-offs behind build-time params; ensure in production these are correctly connected to AST/power and test logic; keep ASSERT/KNOWN checks for production configs.
+
+Notes on lifecycle/test gating, integrity, and FSM security
+- Lifecycle gating of TL-UL test interface is present and uses a sparse FSM (lines ~126-143). The gate’s FSM error is plumbed to otp_o.fatal_lc_fsm_err. Test GPIO enables are lifecycle-gated via lc_tx_test_true_strict. This aligns with TEST.BUS.LC_GATED, TEST_TL_LC_GATE.FSM.SPARSE, and LC_CTRL.INTERSIG.MUBI countermeasures.
+- TL-UL integrity checking and response integrity generation are implemented in reg_top. Spurious writes to RO CSRs trigger prim_reg_we_check error, which latches into intg_err_o and is propagated to the macro’s fatal alert.
+- The control FSM is sparsely encoded (minimum Hamming distance 5) with error state and alert triggering; good practice for fault injection resilience.
+
+CWE mapping for key issues
+- Incorrect ECC RMW and blank-check on ECC bits: CWE-682 (Incorrect Calculation) leading to integrity protection failure. Also related to robust implementation of integrity checks (conceptually CWE-353 Insufficient Support for Integrity Check, though here the support exists but is implemented incorrectly).
+- Interface robustness (busy tied low): CWE-1280 (Access of Uninitialized Pointer) is not applicable; better fit is CWE-703 (Improper Check or Handling of Exceptional Conditions) in hardware context, as improper busy handling can cause improper sequencing.
+- Observability (hw2reg tied off): CWE-778 (Insufficient Logging) analog in hardware observability context; impacts detection/monitoring rather than immediate exploitation.
+
+Tooling usage summary
+- Documentation reviewed: README.md, data/otp_macro.hjson (registers and countermeasures).
+- RTL analyzed with line numbers: rtl/otp_macro.sv, rtl/otp_macro_reg_top.sv, rtl/otp_macro_reg_pkg.sv, rtl/otp_macro_pkg.sv.
+- Anomaly Detector Agent:
+  - otp_macro.sv (focus: memory integrity, lifecycle gating) → flagged ECC RMW/blank-check issues, tie-offs.
+  - otp_macro_reg_top.sv (focus: register access control) → flagged reg_busy=0, default read '1.
+- CWE Checker Agent:
+  - otp_macro.sv (focus: memory integrity, lifecycle/test gating) → confirmed ECC protection presence and lifecycle gating; aided classification. A second run on reg_top could not be completed due to API limits.
+- Similar Bug Agent:
+  - Attempted on otp_macro.sv to scan for similar ECC/RMW patterns. Could not complete due to API limits. Manual grep suggests this pattern is localized to otp_macro (no additional instances in this IP).
+
+Actionable remediation summary
+- Fix ECC RMW and blank-check logic (Issues 1 and 2):
+  - Compute final_data = old_data | new_data.
+  - Recompute ECC over final_data.
+  - Write {final_ecc, final_data}.
+  - Perform blank-check on data bits only: (old_data & new_data) == old_data.
+- Decide on hw2reg exposure (Issue 4):
+  - If status is needed, connect it; otherwise, document why it is unused in this wrapper.
+- Consider wiring reg_busy or document non-use (Issue 5).
+- Consider default read data pattern and ensure SW checks TL error responses (Issue 6).
+- Ensure production builds have correct power/test connections (Issue 7).
+
+END
+
+
+Token Usage Summary:
+===================
+Total API Calls: 21
+Total Input Tokens: 283,855
+Total Output Tokens: 20,496
+Total Tokens: 304,351
+Average Input Tokens/Call: 13516.9
+Average Output Tokens/Call: 976.0
+Average Total Tokens/Call: 14492.9
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 171, Total: 1236
+Call 2: gpt-5-2025-08-07 - Input: 1250, Output: 46, Total: 1296
+Call 3: gpt-5-2025-08-07 - Input: 1371, Output: 41, Total: 1412
+Call 4: gpt-5-2025-08-07 - Input: 1428, Output: 42, Total: 1470
+Call 5: gpt-5-2025-08-07 - Input: 1559, Output: 43, Total: 1602
+Call 6: gpt-5-2025-08-07 - Input: 1723, Output: 111, Total: 1834
+Call 7: gpt-5-2025-08-07 - Input: 1843, Output: 46, Total: 1889
+Call 8: gpt-5-2025-08-07 - Input: 5223, Output: 185, Total: 5408
+Call 9: gpt-5-2025-08-07 - Input: 5732, Output: 52, Total: 5784
+Call 10: gpt-5-2025-08-07 - Input: 8498, Output: 52, Total: 8550
+Call 11: gpt-5-2025-08-07 - Input: 23767, Output: 50, Total: 23817
+Call 12: gpt-5-2025-08-07 - Input: 29627, Output: 1294, Total: 30921
+Call 13: gpt-5-mini-2025-08-07 - Input: 5006, Output: 55, Total: 5061
+Call 14: gpt-5-mini-2025-08-07 - Input: 5315, Output: 5447, Total: 10762
+Call 15: gpt-5-2025-08-07 - Input: 31950, Output: 654, Total: 32604
+Call 16: gpt-5-2025-08-07 - Input: 32831, Output: 88, Total: 32919
+Call 17: gpt-5-2025-08-07 - Input: 33024, Output: 467, Total: 33491
+Call 18: gpt-5-2025-08-07 - Input: 33203, Output: 1494, Total: 34697
+Call 19: gpt-5-mini-2025-08-07 - Input: 11867, Output: 57, Total: 11924
+Call 20: gpt-5-mini-2025-08-07 - Input: 12584, Output: 4005, Total: 16589
+Call 21: gpt-5-2025-08-07 - Input: 34989, Output: 6096, Total: 41085
+    

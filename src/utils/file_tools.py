@@ -50,7 +50,7 @@ import argparse
 
 from utils.budget import update_budget
 from utils.logging import log_action_message
-from utils.rate_limit_handler import safe_openai_call
+from utils.rate_limit_handler import safe_llm_call
 
 @tool
 def read_file_with_line_numbers(file_path: str) -> str:
@@ -60,7 +60,7 @@ def read_file_with_line_numbers(file_path: str) -> str:
     log_action_message(f"Reading file with line numbers: {file_path}")
     update_budget('read_file_with_line_numbers')
     #print(f"Reading file with line numbers: {file_path}")
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', errors='ignore') as file:
         lines = file.readlines()
     numbered_lines = [f"{i + 1}: {line}" for i, line in enumerate(lines)]
     return "".join(numbered_lines)
@@ -104,7 +104,7 @@ def read_file(
         return "File does not exist."
     
     # read the content of the file
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', errors='ignore') as f:
         content = f.read()
     
     return content

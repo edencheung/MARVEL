@@ -28,7 +28,7 @@ import pandas as pd
 from settings import *
 from utils.budget import update_budget
 from utils.logging import error_string, log_action_message, log_full_conv_message
-from utils.rate_limit_handler import safe_openai_call
+from utils.rate_limit_handler import safe_llm_call
 
 @tool
 def llm_cwe_details_retriever_tool(security_issue: str):
@@ -71,12 +71,14 @@ def llm_cwe_details_retriever_tool(security_issue: str):
 
 def build_llm_cwe_checker_graph():
     ''' Agent for LLM CWE Checker '''
-    if MODEL == "openai":
-        llm = ChatOpenAI(model="gpt-4.1-mini")
-    elif MODEL == "sonnet":
-        llm = ChatAnthropic(model="claude-3-7-sonnet-latest", temperature=TEMP)
-    else:
-        llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
+    llm = ChatAnthropic(model="claude-sonnet-4-20250514", temperature=TEMP)
+
+    # if MODEL == "openai":
+    #     llm = ChatOpenAI(model="gpt-4.1-mini")
+    # elif MODEL == "sonnet":
+    #     llm = ChatAnthropic(model="claude-3-7-sonnet-latest", temperature=TEMP)
+    # else:
+    #     llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
 
     llm_cwe_checker_tools = [llm_cwe_details_retriever_tool]
     llm_cwe_checker = llm.bind_tools(llm_cwe_checker_tools)
@@ -84,7 +86,7 @@ def build_llm_cwe_checker_graph():
     # Nodes of graph
     sys_msg_llm_cwe_checker_agent = SystemMessage(content="You are a helpful assistant tasked with testing RTL code for security issues using guidance from Common Weakness Enumerations (CWEs).")
     def llm_cwe_checker_agent(state: MessagesState):
-        return {"messages": [safe_openai_call(llm_cwe_checker.invoke, [sys_msg_llm_cwe_checker_agent] + state["messages"])]}
+        return {"messages": [safe_llm_call(llm_cwe_checker.invoke, [sys_msg_llm_cwe_checker_agent] + state["messages"])]}
 
     def llm_cwe_tools_condition(state) -> Literal["llm_cwe_checker_tools", "END"]:
         
@@ -158,6 +160,6 @@ def run_llm_cwe_checker_agent(
     # Create the message for the agent
     message = [HumanMessage(content=instruction)]
     # Run the agent
-    result = llm_cwe_checker_graph.invoke({"messages": message})
+    result = llm_cwe_checker_graph.invoke({"messages": message}, {"recursion_limit": 200})
     
     return result['messages'][-1].content

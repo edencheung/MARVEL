@@ -1,0 +1,69 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/doc
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/doc/theory_of_operation.md
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/doc/registers.md
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_core.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_tx.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_rx.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_pkg.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_core.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_core.sv for uart_core with security objective: DMA/LSIO handshake gating; improperly asserted triggers; privilege bypass via constant request; map to relevant CWEs
+Running llm cwe details retriever tool on DMA handshake gating improper trigger assertion privilege bypass constant request
+Running llm cwe details retriever tool on improper handshake protocol DMA trigger assertion bypass
+Running llm cwe details retriever tool on privilege escalation constant signal assertion bypass access control
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv for uart_reg_top with security objective: Sub-word write permission enforcement; incorrect byte mask logic; map to CWEs (improper access control, inconsistent access policy)
+Running llm cwe details retriever tool on Sub-word write permission enforcement; incorrect byte mask logic; improper access control; inconsistent access policy
+Running llm cwe details retriever tool on improper access control byte enable mask validation
+Running llm cwe details retriever tool on improper access control CWE-284
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv for bug: (|(UART_PERMIT[ 0] & ~reg_be))
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv for bug: (|(UART_PERMIT[ 0] & ~reg_be))
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_core.sv
+Review Agent invoked
+Agentic analysis completed
+
+
+Token Usage Summary:
+===================
+Total API Calls: 23
+Total Input Tokens: 547,465
+Total Output Tokens: 16,953
+Total Tokens: 564,418
+Average Input Tokens/Call: 23802.8
+Average Output Tokens/Call: 737.1
+Average Total Tokens/Call: 24539.9
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1063, Output: 299, Total: 1362
+Call 2: gpt-5-2025-08-07 - Input: 1248, Output: 45, Total: 1293
+Call 3: gpt-5-2025-08-07 - Input: 1362, Output: 40, Total: 1402
+Call 4: gpt-5-2025-08-07 - Input: 1485, Output: 45, Total: 1530
+Call 5: gpt-5-2025-08-07 - Input: 4884, Output: 43, Total: 4927
+Call 6: gpt-5-2025-08-07 - Input: 11210, Output: 47, Total: 11257
+Call 7: gpt-5-2025-08-07 - Input: 11342, Output: 48, Total: 11390
+Call 8: gpt-5-2025-08-07 - Input: 12928, Output: 49, Total: 12977
+Call 9: gpt-5-2025-08-07 - Input: 19677, Output: 49, Total: 19726
+Call 10: gpt-5-2025-08-07 - Input: 20551, Output: 49, Total: 20600
+Call 11: gpt-5-2025-08-07 - Input: 21785, Output: 50, Total: 21835
+Call 12: gpt-5-2025-08-07 - Input: 42702, Output: 50, Total: 42752
+Call 13: gpt-5-2025-08-07 - Input: 46706, Output: 1375, Total: 48081
+Call 14: gpt-5-mini-2025-08-07 - Input: 5865, Output: 54, Total: 5919
+Call 15: gpt-5-mini-2025-08-07 - Input: 6664, Output: 2394, Total: 9058
+Call 16: gpt-5-2025-08-07 - Input: 47722, Output: 608, Total: 48330
+Call 17: gpt-5-mini-2025-08-07 - Input: 16132, Output: 119, Total: 16251
+Call 18: gpt-5-mini-2025-08-07 - Input: 17720, Output: 4374, Total: 22094
+Call 19: gpt-5-2025-08-07 - Input: 49055, Output: 1242, Total: 50297
+Call 20: gpt-5-2025-08-07 - Input: 49218, Output: 89, Total: 49307
+Call 21: gpt-5-2025-08-07 - Input: 50119, Output: 1161, Total: 51280
+Call 22: gpt-5-2025-08-07 - Input: 50639, Output: 49, Total: 50688
+Call 23: gpt-5-2025-08-07 - Input: 57388, Output: 4674, Total: 62062
+    
+Token usage summary saved to: results/logs/uart_agentic_11:19:14_token_usage.txt

@@ -1,0 +1,74 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/doc
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/doc/theory_of_operation.md
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/doc/registers.md
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac_reg_top.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac_entropy.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac_staterd.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac_core.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv for kmac with security objective: Side-channel masking and entropy usage correctness
+Running llm cwe details retriever tool on Side-channel masking and entropy usage correctness in cryptographic hardware implementations
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac_errchk.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac_app.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv for kmac with security objective: Misuse of entropy and masking leading to side-channel weakness (CWE-331, CWE-330, CWE-1191)
+Running llm cwe details retriever tool on Misuse of entropy and masking leading to side-channel weakness CWE-331 CWE-330 CWE-1191
+Running llm cwe details retriever tool on CWE-331 Insufficient Entropy
+Running llm cwe details retriever tool on CWE-330 Use of Insufficiently Random Values
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/sha3.sv
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv for bug: assign msg_data_masked[i] = msg_data[i] ^ 
+                                ({MsgWidth{cfg_msg_mask}} & static_mask);
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv for bug: assign msg_data_masked[i] = msg_data[i] ^ 
+                                ({MsgWidth{cfg_msg_mask}} & static_mask);
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv for bug: assign msg_data_masked[i] = msg_data[i] ^ 
+                                ({MsgWidth{cfg_msg_mask}} & static_mask);
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv for bug: msg_data_masked[i] = msg_data[i] ^ ({MsgWidth{cfg_msg_mask}} & static_mask)
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac.sv for kmac with security objective: Message masking randomness uses proper entropy (map to CWE-330/331 if violated)
+Running llm cwe details retriever tool on Message masking randomness uses proper entropy (map to CWE-330/331 if violated)
+Running llm cwe details retriever tool on CWE-330 Use of Insufficiently Random Values
+Running llm cwe details retriever tool on CWE-331 Insufficient Entropy
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/kmac/rtl/kmac_msgfifo.sv
+Review Agent invoked
+Agentic analysis completed
+
+
+Token Usage Summary:
+===================
+Total API Calls: 22
+Total Input Tokens: 1,486,410
+Total Output Tokens: 14,426
+Total Tokens: 1,500,836
+Average Input Tokens/Call: 67564.1
+Average Output Tokens/Call: 655.7
+Average Total Tokens/Call: 68219.8
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 237, Total: 1302
+Call 2: gpt-5-2025-08-07 - Input: 1203, Output: 40, Total: 1243
+Call 3: gpt-5-2025-08-07 - Input: 1349, Output: 45, Total: 1394
+Call 4: gpt-5-2025-08-07 - Input: 7451, Output: 43, Total: 7494
+Call 5: gpt-5-2025-08-07 - Input: 19376, Output: 47, Total: 19423
+Call 6: gpt-5-2025-08-07 - Input: 19570, Output: 184, Total: 19754
+Call 7: gpt-5-2025-08-07 - Input: 60662, Output: 118, Total: 60780
+Call 8: gpt-5-2025-08-07 - Input: 79832, Output: 391, Total: 80223
+Call 9: gpt-5-mini-2025-08-07 - Input: 15323, Output: 53, Total: 15376
+Call 10: gpt-5-mini-2025-08-07 - Input: 16761, Output: 2870, Total: 19631
+Call 11: gpt-5-2025-08-07 - Input: 81620, Output: 311, Total: 81931
+Call 12: gpt-5-2025-08-07 - Input: 90192, Output: 377, Total: 90569
+Call 13: gpt-5-2025-08-07 - Input: 91616, Output: 49, Total: 91665
+Call 14: gpt-5-2025-08-07 - Input: 97455, Output: 68, Total: 97523
+Call 15: gpt-5-2025-08-07 - Input: 97586, Output: 376, Total: 97962
+Call 16: gpt-5-2025-08-07 - Input: 102226, Output: 1015, Total: 103241
+Call 17: gpt-5-2025-08-07 - Input: 112682, Output: 733, Total: 113415
+Call 18: gpt-5-2025-08-07 - Input: 112858, Output: 49, Total: 112907
+Call 19: gpt-5-2025-08-07 - Input: 118380, Output: 1429, Total: 119809
+Call 20: gpt-5-2025-08-07 - Input: 118703, Output: 1300, Total: 120003
+Call 21: gpt-5-2025-08-07 - Input: 118887, Output: 184, Total: 119071
+Call 22: gpt-5-2025-08-07 - Input: 121613, Output: 4507, Total: 126120
+    

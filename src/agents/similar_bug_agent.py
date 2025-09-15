@@ -52,7 +52,7 @@ from settings import *
 from utils.file_tools import read_file_with_line_numbers
 from utils.budget import update_budget
 from utils.logging import log_action_message, log_full_conv_message
-from utils.rate_limit_handler import safe_openai_call
+from utils.rate_limit_handler import safe_llm_call
 
 @tool
 def similar_bug_tool(bug:str, ip_file: str) -> str:
@@ -101,12 +101,13 @@ def similar_bug_tool(bug:str, ip_file: str) -> str:
     return response
 
 def build_similar_bug_graph():
-    if MODEL == "openai":
-        llm = ChatOpenAI(model="gpt-4.1-mini", temperature=TEMP)
-    elif MODEL == "sonnet": 
-        llm = ChatAnthropic(model="claude-3-5-haiku-latest", temperature=TEMP)
-    else:
-        llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
+    llm = ChatAnthropic(model="claude-3-5-haiku-latest", temperature=TEMP)
+    # if MODEL == "openai":
+    #     llm = ChatOpenAI(model="gpt-4.1-mini", temperature=TEMP)
+    # elif MODEL == "sonnet": 
+    #     llm = ChatAnthropic(model="claude-3-5-haiku-latest", temperature=TEMP)
+    # else:
+    #     llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
 
     similar_bug_tools = [similar_bug_tool, read_file_with_line_numbers]
 
@@ -121,7 +122,7 @@ def build_similar_bug_graph():
 
     def similar_bug_agent(state: MessagesState):
         log_full_conv_message(state["messages"][-1].pretty_repr())
-        return {"messages": [safe_openai_call(llm_similar_bug.invoke, [sys_msg_similar_bug_agent] + state["messages"])]}
+        return {"messages": [safe_llm_call(llm_similar_bug.invoke, [sys_msg_similar_bug_agent] + state["messages"])]}
 
     def similar_bug_tools_condition(state) -> Literal["similar_bug_tools", "END"]:
         prev_message = state["messages"][-2]
@@ -182,7 +183,7 @@ def run_similar_bug_agent(
     # Create the message for the agent
     message = [HumanMessage(content=instruction)]
     # Run the agent
-    result = similar_bug_graph.invoke({"messages": message})
+    result = similar_bug_graph.invoke({"messages": message}, {"recursion_limit": 200})
     # # log the run
     # with open('similar_bug_agent_run.log', 'a') as log:
     #     log.write(f"Bug line: {bug}\n")

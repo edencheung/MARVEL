@@ -1,0 +1,4939 @@
+================================ System Message ================================
+
+
+    You are a supervisor agent in a multi-agent system focused on identifying hardware security vulnerabilities in RTL code. 
+    Your objective is to analyze the given SoC and generate a detailed security report.
+
+    You have access to the following tools: ['run_anomaly_detector_agent', 'run_llm_cwe_checker_agent', 'run_similar_bug_agent', 'list_dir', 'read_file', 'read_file_with_line_numbers']. Each tool specializes in a specific task:
+
+    - CWE Agent: Given a Verilog file, a top module, and a security aspect, this agent maps the RTL code to relevant CWEs and detects CWE-related vulnerabilities.
+    - Similar Bug Agent: Accepts a file path and a line number (where a bug was found) to locate similar patterns or recurring bugs throughout the RTL code.
+
+    Instructions for analysis:
+
+    - Read the documentataion to identify security features and register interfaces policies.
+    - Read through the different systemverilog files to probe for issues and use the anomaly agent
+    - If a bug is detected but not localized, use the CWE Agent to further inspect the related security aspect in the surrounding RTL.
+    - After detecting any bugs, use the Similar Bug Agent to scan similar files (of the same or of different IPs) for similar vulnerabilities.
+
+    Output Format:
+
+    - For each identified issue, report:
+    - File name
+    - Line number(s)
+    - Brief description of the issue
+    - Security aspect affected
+    - Tools used to identify the issue
+
+    When your analysis is complete, end your response with "END".
+    
+================================ Human Message =================================
+
+Identify security issues in the uart IP of the OpenTitan SoC, located at /home/eden/Desktop/Code/HACK@CHES/p2/opentitan.
+
+    - All IPs are located in the 'hw/ip' directory.
+    - RTL code for each IP is located in its 'rtl' subdirectory, with source files having the '.sv' extension.
+        - reg_top files contain the register interface for the IP.
+        - control/fsm files contain the control logic for the IP.
+        - core files contain the core logic for the IP.
+    - Documentation files (.md) are located in the 'doc' directories of each IP.
+        - theory_of_operation explains the properties of the IP and its security features.
+        - registers.md files contain the register interface and its read/write access policies.
+    - Ignore '.core' files; they are used by build tools and are not relevant for security analysis.
+
+    Focus on the uart IP and make sure to analyze it thoroughly.
+
+    First, identify the relevant security properties and read/write policies of the register interfaces from the documentation. 
+    Then, use all available tools to perform a comprehensive security analysis on the RTL code.
+    
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_F0rAnZT2Snu02mTVvYsd1VQf)
+ Call ID: call_F0rAnZT2Snu02mTVvYsd1VQf
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip:
+README.md BUILD
+
+Directories in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip:
+pattgen csrng aon_timer prim_generic keymgr_dpe uart keymgr i2c dma spi_host otp_ctrl rom_ctrl spi_device edn usbdev adc_ctrl trial1 kmac flash_ctrl otp_macro rv_dm mbx rv_timer prim_xilinx prim prim_xilinx_ultrascale aes lc_ctrl hmac rv_core_ibex sram_ctrl entropy_src racl_ctrl sysrst_ctrl tlul soc_dbg_ctrl otbn ascon
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_JWqhY2gEal9LTJGPoFk64t0c)
+ Call ID: call_JWqhY2gEal9LTJGPoFk64t0c
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart:
+uart.core README.md BUILD defs.bzl
+
+Directories in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart:
+data dv rtl lint doc
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_Ifxxsli2XxjeT2lbxKa2TC04)
+ Call ID: call_Ifxxsli2XxjeT2lbxKa2TC04
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/doc
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/doc:
+registers.md interfaces.md checklist.md block_diagram.svg programmers_guide.md theory_of_operation.md
+
+Directories in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/doc:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_mWMepIkNnrE0hEl9TL470u5t)
+ Call ID: call_mWMepIkNnrE0hEl9TL470u5t
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/doc/theory_of_operation.md
+================================= Tool Message =================================
+Name: read_file
+
+# Theory of Operation
+
+## Block Diagram
+
+![UART Block Diagram](../doc/block_diagram.svg)
+
+## Design Details
+
+### Serial interface (both directions)
+
+The TX/RX serial lines are high when idle. Data starts with a START bit (high
+idle state deasserts, **1**-->**0**) followed by 8 data bits. The least
+significant bit is sent first. If the parity feature is turned on then an odd or
+even parity bit follows after the data bits. Finally a STOP (**1**) bit
+completes one byte of data transfer.
+
+```wavejson
+{
+  signal: [
+    { name: 'Baud Clock',     wave: 'p............'                                                        },
+    { name: 'tx',             wave: '10333333331..', data: [ "lsb", "", "", "", "", "", "", "msb" ]        },
+    { name: 'Baud Clock',     wave: 'p............'                                                        },
+    { name: 'tx (w/ parity)', wave: '103333333341.', data: [ "lsb", "", "", "", "", "", "", "msb", "par" ] },
+  ],
+  head: {
+    text: 'Serial Transmission Frame',
+  },
+  foot: {
+    text: 'start bit ("0") at cycle -1, stop bit ("1") at cycle 8, or after parity bit',
+    tock: -2
+  },
+  foot: {
+    text: [
+      'tspan',
+        ['tspan', 'start bit '],
+        ['tspan', {class:'info h4'}, '0'],
+        ['tspan', ' at cycle -1, stop bit '],
+        ['tspan', {class:'info h4'}, '1'],
+        ['tspan', ' at cycle 8, or at cycle 9 after parity bit'],
+      ],
+    tock: -2,
+  }
+}
+```
+
+### Transmission
+
+A write to [`WDATA`](registers.md#wdata) enqueues a data byte into the 32 byte deep write FIFO, which
+triggers the transmit module to start UART TX serial data transfer. The TX
+module dequeues the byte from the FIFO and shifts it bit by bit out to the UART
+TX pin on positive edges of the baud clock.
+
+If TX is not enabled, written DATA into FIFO will be stacked up and sent out
+when TX is enabled.
+
+When the FIFO becomes empty as part of transmission, a TX FIFO done interrupt will be raised when the final byte has finished transmitting.
+This is separate from the TX FIFO water mark interrupt.
+
+
+### Reception
+
+The RX module oversamples the RX input pin at 16x the requested
+baud clock. When the input is detected low the receiver will check
+half a bit-time later (i.e. 8 cycles of the oversample clock) that the
+line is still low before detecting the START bit. If the line has
+returned high the glitch is ignored. After it detects the START bit,
+the RX module samples at the center of each bit-time and gathers
+incoming serial bits into a character buffer. If the STOP bit is
+detected as high and the optional parity bit is correct the data byte
+is pushed into a 32 byte deep RX FIFO. The data can be read out by
+reading [`RDATA`](registers.md#rdata) register.
+
+This behaviour of the receiver can be used to compute the approximate
+baud clock frequency error that can be tolerated between the
+transmitter at the other end of the cable and the receiver. The
+initial sample point is aligned with the center of the START bit. The
+receiver will then sample every 16 cycles of the 16 x baud clock, the
+diagram below shows the number of ticks after the centering that each
+bit is captured. Because of the frequency difference between the
+transmitter and receiver the actual sample point will drift compared to
+the ideal center of the bit. In order to correctly receive the STOP
+bit it must be sampled between the "early" and "late" points shown
+on the diagram, which are half a bit-time or 8 ticks of the 16x baud
+clock before or after the center. If the transmitter is considered
+"ideal" then the local clock must thus differ by no more than plus or
+minus 8 ticks in 144 or approximately +/- 5.5%. If parity is enabled
+the stop bit will be a bit time later, so this becomes 8/160 or about
++/- 5%.
+
+```wavejson
+{
+  signal: [
+    { name: 'Sample', wave: '', node: '..P............', period: "2" },
+    {},
+    { name: 'rx',
+      wave: '1.0.3.3.3.3.3.3.3.3.1.0.3',
+      node: '...A................C.D..',
+      cdata: [ "idle", "start", "+16", "+32", "+48", "+64", "+80",
+                "+96", "+112", "+128", "+144", "next start" ] },
+  ],
+    "edge"   : ["P-|>A center", "P-|>C early", "P-|>D late"],
+  head: {
+    text: 'Receiver sampling window',
+  },
+}
+```
+
+In practice, the transmitter and receiver will both differ from the
+ideal baud rate. Since the worst case difference for reception is 5%,
+the uart can be expected to work if both sides are within +/- 2.5% of
+the ideal baud rate.
+
+### Setting the baud rate
+
+The baud rate is set by writing to the [`CTRL.NCO`](registers.md#ctrl) register field. This should be
+set using the equation below, where `f_pclk` is the system clock frequency
+provided to the UART, and `f_baud` is the desired baud rate (in bits per second).
+
+$$ NCO = 16 \times {{2^{$bits(NCO)} \times f\_{baud}} \over {f\_{pclk}}} $$
+
+The formula above depends on the NCO CSR width.
+The logic creates a x16 tick when the NCO counter overflows.
+So, the computed baud rate from NCO value is below.
+
+$$ f\_{baud} = {{1 \over 16} \times {NCO \over {2^{$bits(NCO)}}} \times {f\_{pclk}}} $$
+
+Note that the NCO result from the above formula can be a fraction but
+the NCO register only accepts an integer value. This will create an
+error if the baud rate is not divisible by the fixed clock frequency. As
+discussed in the previous section the error rate between the receiver
+and remote transmitter should be lower than `8 / 144` to latch a
+correct character value when parity is not used and lower than `8 /
+160` when parity is used. In the expectation that the device the other
+side of the line behaves similarly, this requires each side have a
+baud rate that is matched to within +/- 2.5% of the ideal baud
+rate. The contribution to this error if NCO is rounded down to an
+integer (which will make the actual baud rate always lower or equal to
+the requested rate) can be computed from:
+
+$$ Error = {{(NCO - INT(NCO))} \over {NCO}} percent $$
+
+In this case if the resulting value of NCO is greater than $$ {1 \over
+0.025} = 40 $$ then this will always be less than the 2.5% error
+target.
+
+For NCO less than 40 the error in baud rate may or may not be
+acceptable and should be carefully checked and rounding to the nearest
+integer may achieve better results. If the computed value is close to
+an integer so that the error in the target range then the baud rate
+can be supported, however if it is too far off an integer then the
+baud rate cannot be supported. This check is needed when
+
+$$ {{baud} < {{40 * f\_{pclk}} \over {2^{$bits(NCO)+4}}}} \qquad OR \qquad
+{{f\_{pclk}} > {{{2^{$bits(NCO)+4}} * {baud}} \over {40}}} $$
+
+Using rounded frequencies and common baud rates, this implies that
+care is needed for 9600 baud and below if the system clock is over
+250MHz, with 4800 baud and below if the system clock is over 125MHz,
+2400 baud and below if the system clock is over 62MHz, and 1200 baud
+and below if the system clock is over 31MHz.
+
+
+### Interrupts
+
+UART module has a few interrupts including general data flow interrupts
+and unexpected event interrupts.
+
+#### tx_watermark / tx_empty / rx_watermark
+If the TX FIFO level becomes smaller than the TX water mark level (configurable via [`FIFO_CTRL.RXILVL`](registers.md#fifo_ctrl) and [`FIFO_CTRL.TXILVL`](registers.md#fifo_ctrl)), the `tx_watermark` interrupt is raised to inform SW.
+If the TX FIFO is empty, the `tx_empty` interrupt is raised to inform SW.
+If the RX FIFO level becomes greater than or equal to RX water mark level (configurable via [`FIFO_CTRL.RXILVL`](registers.md#fifo_ctrl) and [`FIFO_CTRL.TXILVL`](registers.md#fifo_ctrl)), the `rx_watermark` interrupt is raised to inform SW.
+
+Note that the watermark interrupts and the empty interrupt are level-based status interrupts.
+They will stay asserted for as long as the FIFO levels are in violation of the configured level and cannot be cleared by writing to the status register.
+This also means that `tx_watermark` and `tx_empty` start off in an asserted state (reset high).
+
+#### tx_done
+If TX FIFO becomes empty as part of transmit, the interrupt `tx_done` is asserted once the final byte has been transmitted.
+The transmitted contents may be garbage at this point as old FIFO contents will likely be transmitted.
+
+#### rx_overflow
+If RX FIFO receives an additional write request when its FIFO is full,
+the interrupt `rx_overflow` is asserted and the character is dropped.
+
+#### rx_break_err
+The `rx_break_err` interrupt is triggered if a break condition has
+been detected. A break condition is defined as the RX pin being
+continuously low for more than a programmable number of
+character-times (via [`CTRL.RXBLVL`](registers.md#ctrl), either 2, 4, 8, or 16). A
+character time is 10 bit-times if parity is disabled (START + 8 data +
+STOP) or 11 bit-times if parity is enabled (START + 8 data + parity +
+STOP). If the UART is connected to an external connector this would
+typically indicate the cable has been disconnected (or there is a
+break in the wire). If the UART is connected to another part on the
+same board it would typically indicate the other part has reset or
+rebooted. (If the open connector or resetting peer part causes the RX
+input to not be actively driven, then a pulldown resistor is needed to
+ensure a break and a pullup resistor will ensure the line looks idle
+and no break is generated.)  Note that only one interrupt is generated
+per break -- the line must return high for at least half a bit-time
+before an additional break interrupt is generated. The current break
+status can be read from the [`STATUS.BREAK`](registers.md#status) bit. If STATUS.BREAK is set
+but [`INTR_STATE.BREAK`](registers.md#intr_state) is clear then the line break has already caused
+an interrupt that has been cleared but the line break is still going
+on. If [`STATUS.BREAK`](registers.md#status) is clear but [`INTR_STATE.BREAK`](registers.md#intr_state) is set then
+there has been a line break for which software has not cleared the
+interrupt but the line is now back to normal.
+
+#### rx_frame_err
+The `rx_frame_err` interrupt is triggered if the RX module receives the `START`
+bit (**0**) and a series of data bits but did not detect the `STOP` bit
+(**1**). This can happen because of noise affecting the line or if the
+transmitter clock is fast or slow compared to the receiver. In a real frame
+error the stop bit will be present just at an incorrect time so the line will
+continue to signal both high and low. The start of a line break (described
+above) matches a frame error with all data bits zero and one frame error
+interrupt will be raised. If the line stays zero until the break error occurs,
+the frame error will be set at every char-time. Frame errors will continue to
+be reported after a break error.
+
+```wavejson
+{
+  signal: [
+    { name: 'Baud Clock',        wave: 'p............'                                                 },
+    { name: 'rx',                wave: '10333333330..', data: [ "lsb", "", "", "", "", "", "", "msb" ] },
+    {},
+    { name: 'intr_rx_frame_err', wave: '0..........1.'},
+  ],
+  head: {
+    text: 'Serial Receive with Framing Error',
+  },
+  foot: {
+    text: [
+      'tspan',
+        ['tspan', 'start bit '],
+        ['tspan', {class:'info h4'}, '0'],
+        ['tspan', ' at cycle -1, stop bit '],
+        ['tspan', {class:'error h4'}, '1'],
+        ['tspan', ' missing at cycle 8'],
+      ],
+    tock: -2,
+  }
+}
+```
+
+The effects of the line being low for certain periods are summarized
+in the table:
+
+|Line low (bit-times) | Frame Err? | Break? | Comment |
+|---------------------|------------|--------|---------|
+|<10                  | If STOP=0  | No     | Normal operation |
+|10 (with parity)     | No         | No     | Normal zero data with STOP=1 |
+|10 (no parity)       | Yes        | No     | Frame error since STOP=0 |
+|11 - RXBLVL*char     | Yes        | No     | Break less than detect level |
+|\>RXBLVL*char        | Yes        | Once   | Frame error signalled at every char-time, break at RXBLVL char-times|
+
+#### rx_timeout
+The `rx_timeout` interrupt is triggered when the RX FIFO has data sitting in it
+without software reading it for a programmable number of bit times (using the
+baud rate clock as reference, programmable via [`TIMEOUT_CTRL`](registers.md#timeout_ctrl)). This is used to
+alert software that it has data still waiting in the FIFO that has not been
+handled yet. The timeout counter is reset whenever the FIFO depth is changed or
+an `rx_timeout` event occurs. If the RX FIFO is full and new character is
+received, it won't reset the timeout value. The software is responsible for
+keeping the RX FIFO in the level below the watermark. The actual timeout time
+can vary based on the reset of the timeout timer and the start of the
+transaction. For instance, if the software resets the timeout timer by reading a
+character from the RX FIFO and right after it there is a baud clock tick and the
+start of a new RX transaction from the host, the timeout time is reduced by 1
+and half baud clock periods.
+
+#### rx_parity_err
+The `rx_parity_err` interrupt is triggered if parity is enabled and
+the RX parity bit does not match the expected polarity as programmed
+in [`CTRL.PARITY_ODD`](registers.md#ctrl--parity_odd).
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file (call_RFD6wh9hpPMLBBuyGdtsAsaf)
+ Call ID: call_RFD6wh9hpPMLBBuyGdtsAsaf
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/doc/registers.md
+================================= Tool Message =================================
+Name: read_file
+
+# Registers
+
+<!-- BEGIN CMDGEN util/regtool.py -d ./hw/ip/uart/data/uart.hjson -->
+## Summary
+
+| Name                                 | Offset   |   Length | Description                                                        |
+|:-------------------------------------|:---------|---------:|:-------------------------------------------------------------------|
+| uart.[`INTR_STATE`](#intr_state)     | 0x0      |        4 | Interrupt State Register                                           |
+| uart.[`INTR_ENABLE`](#intr_enable)   | 0x4      |        4 | Interrupt Enable Register                                          |
+| uart.[`INTR_TEST`](#intr_test)       | 0x8      |        4 | Interrupt Test Register                                            |
+| uart.[`ALERT_TEST`](#alert_test)     | 0xc      |        4 | Alert Test Register                                                |
+| uart.[`CTRL`](#ctrl)                 | 0x10     |        4 | UART control register                                              |
+| uart.[`STATUS`](#status)             | 0x14     |        4 | UART live status register                                          |
+| uart.[`RDATA`](#rdata)               | 0x18     |        4 | UART read data                                                     |
+| uart.[`WDATA`](#wdata)               | 0x1c     |        4 | UART write data                                                    |
+| uart.[`FIFO_CTRL`](#fifo_ctrl)       | 0x20     |        4 | UART FIFO control register                                         |
+| uart.[`FIFO_STATUS`](#fifo_status)   | 0x24     |        4 | UART FIFO status register                                          |
+| uart.[`OVRD`](#ovrd)                 | 0x28     |        4 | TX pin override control. Gives direct SW control over TX pin state |
+| uart.[`VAL`](#val)                   | 0x2c     |        4 | UART oversampled values                                            |
+| uart.[`TIMEOUT_CTRL`](#timeout_ctrl) | 0x30     |        4 | UART RX timeout control                                            |
+
+## INTR_STATE
+Interrupt State Register
+- Offset: `0x0`
+- Reset default: `0x101`
+- Reset mask: `0x1ff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "tx_watermark", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "rx_watermark", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "tx_done", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "rx_overflow", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "rx_frame_err", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "rx_break_err", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "rx_timeout", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "rx_parity_err", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"name": "tx_empty", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 23}], "config": {"lanes": 1, "fontsize": 10, "vspace": 150}}
+```
+
+|  Bits  |  Type  |  Reset  | Name          | Description                                                                                                    |
+|:------:|:------:|:-------:|:--------------|:---------------------------------------------------------------------------------------------------------------|
+|  31:9  |        |         |               | Reserved                                                                                                       |
+|   8    |   ro   |   0x1   | tx_empty      | raised if the transmit FIFO is empty.                                                                          |
+|   7    |  rw1c  |   0x0   | rx_parity_err | raised if the receiver has detected a parity error.                                                            |
+|   6    |  rw1c  |   0x0   | rx_timeout    | raised if RX FIFO has characters remaining in the FIFO without being retrieved for the programmed time period. |
+|   5    |  rw1c  |   0x0   | rx_break_err  | raised if break condition has been detected on receive.                                                        |
+|   4    |  rw1c  |   0x0   | rx_frame_err  | raised if a framing error has been detected on receive.                                                        |
+|   3    |  rw1c  |   0x0   | rx_overflow   | raised if the receive FIFO has overflowed.                                                                     |
+|   2    |  rw1c  |   0x0   | tx_done       | raised if the transmit FIFO has emptied and no transmit is ongoing.                                            |
+|   1    |   ro   |   0x0   | rx_watermark  | raised if the receive FIFO is past the high-water mark.                                                        |
+|   0    |   ro   |   0x1   | tx_watermark  | raised if the transmit FIFO is past the high-water mark.                                                       |
+
+## INTR_ENABLE
+Interrupt Enable Register
+- Offset: `0x4`
+- Reset default: `0x0`
+- Reset mask: `0x1ff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "tx_watermark", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rx_watermark", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "tx_done", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rx_overflow", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rx_frame_err", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rx_break_err", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rx_timeout", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rx_parity_err", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "tx_empty", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 23}], "config": {"lanes": 1, "fontsize": 10, "vspace": 150}}
+```
+
+|  Bits  |  Type  |  Reset  | Name          | Description                                                             |
+|:------:|:------:|:-------:|:--------------|:------------------------------------------------------------------------|
+|  31:9  |        |         |               | Reserved                                                                |
+|   8    |   rw   |   0x0   | tx_empty      | Enable interrupt when [`INTR_STATE.tx_empty`](#intr_state) is set.      |
+|   7    |   rw   |   0x0   | rx_parity_err | Enable interrupt when [`INTR_STATE.rx_parity_err`](#intr_state) is set. |
+|   6    |   rw   |   0x0   | rx_timeout    | Enable interrupt when [`INTR_STATE.rx_timeout`](#intr_state) is set.    |
+|   5    |   rw   |   0x0   | rx_break_err  | Enable interrupt when [`INTR_STATE.rx_break_err`](#intr_state) is set.  |
+|   4    |   rw   |   0x0   | rx_frame_err  | Enable interrupt when [`INTR_STATE.rx_frame_err`](#intr_state) is set.  |
+|   3    |   rw   |   0x0   | rx_overflow   | Enable interrupt when [`INTR_STATE.rx_overflow`](#intr_state) is set.   |
+|   2    |   rw   |   0x0   | tx_done       | Enable interrupt when [`INTR_STATE.tx_done`](#intr_state) is set.       |
+|   1    |   rw   |   0x0   | rx_watermark  | Enable interrupt when [`INTR_STATE.rx_watermark`](#intr_state) is set.  |
+|   0    |   rw   |   0x0   | tx_watermark  | Enable interrupt when [`INTR_STATE.tx_watermark`](#intr_state) is set.  |
+
+## INTR_TEST
+Interrupt Test Register
+- Offset: `0x8`
+- Reset default: `0x0`
+- Reset mask: `0x1ff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "tx_watermark", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "rx_watermark", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "tx_done", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "rx_overflow", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "rx_frame_err", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "rx_break_err", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "rx_timeout", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "rx_parity_err", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "tx_empty", "bits": 1, "attr": ["wo"], "rotate": -90}, {"bits": 23}], "config": {"lanes": 1, "fontsize": 10, "vspace": 150}}
+```
+
+|  Bits  |  Type  |  Reset  | Name          | Description                                                      |
+|:------:|:------:|:-------:|:--------------|:-----------------------------------------------------------------|
+|  31:9  |        |         |               | Reserved                                                         |
+|   8    |   wo   |   0x0   | tx_empty      | Write 1 to force [`INTR_STATE.tx_empty`](#intr_state) to 1.      |
+|   7    |   wo   |   0x0   | rx_parity_err | Write 1 to force [`INTR_STATE.rx_parity_err`](#intr_state) to 1. |
+|   6    |   wo   |   0x0   | rx_timeout    | Write 1 to force [`INTR_STATE.rx_timeout`](#intr_state) to 1.    |
+|   5    |   wo   |   0x0   | rx_break_err  | Write 1 to force [`INTR_STATE.rx_break_err`](#intr_state) to 1.  |
+|   4    |   wo   |   0x0   | rx_frame_err  | Write 1 to force [`INTR_STATE.rx_frame_err`](#intr_state) to 1.  |
+|   3    |   wo   |   0x0   | rx_overflow   | Write 1 to force [`INTR_STATE.rx_overflow`](#intr_state) to 1.   |
+|   2    |   wo   |   0x0   | tx_done       | Write 1 to force [`INTR_STATE.tx_done`](#intr_state) to 1.       |
+|   1    |   wo   |   0x0   | rx_watermark  | Write 1 to force [`INTR_STATE.rx_watermark`](#intr_state) to 1.  |
+|   0    |   wo   |   0x0   | tx_watermark  | Write 1 to force [`INTR_STATE.tx_watermark`](#intr_state) to 1.  |
+
+## ALERT_TEST
+Alert Test Register
+- Offset: `0xc`
+- Reset default: `0x0`
+- Reset mask: `0x1`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "fatal_fault", "bits": 1, "attr": ["wo"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 130}}
+```
+
+|  Bits  |  Type  |  Reset  | Name        | Description                                      |
+|:------:|:------:|:-------:|:------------|:-------------------------------------------------|
+|  31:1  |        |         |             | Reserved                                         |
+|   0    |   wo   |   0x0   | fatal_fault | Write 1 to trigger one alert event of this kind. |
+
+## CTRL
+UART control register
+- Offset: `0x10`
+- Reset default: `0x0`
+- Reset mask: `0xffff03f7`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "TX", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "RX", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "NF", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 1}, {"name": "SLPBK", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "LLPBK", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "PARITY_EN", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "PARITY_ODD", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "RXBLVL", "bits": 2, "attr": ["rw"], "rotate": -90}, {"bits": 6}, {"name": "NCO", "bits": 16, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 120}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                            |
+|:------:|:------:|:-------:|:--------------------------------|
+| 31:16  |   rw   |   0x0   | [NCO](#ctrl--nco)               |
+| 15:10  |        |         | Reserved                        |
+|  9:8   |   rw   |   0x0   | [RXBLVL](#ctrl--rxblvl)         |
+|   7    |   rw   |   0x0   | [PARITY_ODD](#ctrl--parity_odd) |
+|   6    |   rw   |   0x0   | [PARITY_EN](#ctrl--parity_en)   |
+|   5    |   rw   |   0x0   | [LLPBK](#ctrl--llpbk)           |
+|   4    |   rw   |   0x0   | [SLPBK](#ctrl--slpbk)           |
+|   3    |        |         | Reserved                        |
+|   2    |   rw   |   0x0   | [NF](#ctrl--nf)                 |
+|   1    |   rw   |   0x0   | [RX](#ctrl--rx)                 |
+|   0    |   rw   |   0x0   | [TX](#ctrl--tx)                 |
+
+### CTRL . NCO
+BAUD clock rate control.
+
+### CTRL . RXBLVL
+Trigger level for RX break detection. Sets the number of character
+times the line must be low to detect a break.
+
+| Value   | Name    | Description   |
+|:--------|:--------|:--------------|
+| 0x0     | break2  | 2 characters  |
+| 0x1     | break4  | 4 characters  |
+| 0x2     | break8  | 8 characters  |
+| 0x3     | break16 | 16 characters |
+
+
+### CTRL . PARITY_ODD
+If PARITY_EN is true, this determines the type, 1 for odd parity, 0 for even.
+
+### CTRL . PARITY_EN
+If true, parity is enabled in both RX and TX directions.
+
+### CTRL . LLPBK
+Line loopback enable.
+
+If this bit is turned on, incoming bits are forwarded to TX for testing purpose.
+See Block Diagram. Note that the internal design sees RX value as 1 always if line
+loopback is enabled.
+
+### CTRL . SLPBK
+System loopback enable.
+
+If this bit is turned on, any outgoing bits to TX are received through RX.
+See Block Diagram. Note that the TX line goes 1 if System loopback is enabled.
+
+### CTRL . NF
+RX noise filter enable.
+If the noise filter is enabled, RX line goes through the 3-tap
+repetition code. It ignores single IP clock period noise.
+
+### CTRL . RX
+RX enable
+
+### CTRL . TX
+TX enable
+
+## STATUS
+UART live status register
+- Offset: `0x14`
+- Reset default: `0x3c`
+- Reset mask: `0x3f`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "TXFULL", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "RXFULL", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "TXEMPTY", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "TXIDLE", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "RXIDLE", "bits": 1, "attr": ["ro"], "rotate": -90}, {"name": "RXEMPTY", "bits": 1, "attr": ["ro"], "rotate": -90}, {"bits": 26}], "config": {"lanes": 1, "fontsize": 10, "vspace": 90}}
+```
+
+|  Bits  |  Type  |  Reset  | Name    | Description                                         |
+|:------:|:------:|:-------:|:--------|:----------------------------------------------------|
+|  31:6  |        |         |         | Reserved                                            |
+|   5    |   ro   |   0x1   | RXEMPTY | RX FIFO is empty                                    |
+|   4    |   ro   |   0x1   | RXIDLE  | RX is idle                                          |
+|   3    |   ro   |   0x1   | TXIDLE  | TX FIFO is empty and all bits have been transmitted |
+|   2    |   ro   |   0x1   | TXEMPTY | TX FIFO is empty                                    |
+|   1    |   ro   |    x    | RXFULL  | RX buffer is full                                   |
+|   0    |   ro   |    x    | TXFULL  | TX buffer is full                                   |
+
+## RDATA
+UART read data
+- Offset: `0x18`
+- Reset default: `0x0`
+- Reset mask: `0xff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "RDATA", "bits": 8, "attr": ["ro"], "rotate": 0}, {"bits": 24}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+|  31:8  |        |         |        | Reserved      |
+|  7:0   |   ro   |    x    | RDATA  |               |
+
+## WDATA
+UART write data
+- Offset: `0x1c`
+- Reset default: `0x0`
+- Reset mask: `0xff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "WDATA", "bits": 8, "attr": ["wo"], "rotate": 0}, {"bits": 24}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description   |
+|:------:|:------:|:-------:|:-------|:--------------|
+|  31:8  |        |         |        | Reserved      |
+|  7:0   |   wo   |   0x0   | WDATA  |               |
+
+## FIFO_CTRL
+UART FIFO control register
+- Offset: `0x20`
+- Reset default: `0x0`
+- Reset mask: `0xff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "RXRST", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "TXRST", "bits": 1, "attr": ["wo"], "rotate": -90}, {"name": "RXILVL", "bits": 3, "attr": ["rw"], "rotate": -90}, {"name": "TXILVL", "bits": 3, "attr": ["rw"], "rotate": -90}, {"bits": 24}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name                         |
+|:------:|:------:|:-------:|:-----------------------------|
+|  31:8  |        |         | Reserved                     |
+|  7:5   |   rw   |   0x0   | [TXILVL](#fifo_ctrl--txilvl) |
+|  4:2   |   rw   |   0x0   | [RXILVL](#fifo_ctrl--rxilvl) |
+|   1    |   wo   |   0x0   | [TXRST](#fifo_ctrl--txrst)   |
+|   0    |   wo   |   0x0   | [RXRST](#fifo_ctrl--rxrst)   |
+
+### FIFO_CTRL . TXILVL
+Trigger level for TX interrupts. If the FIFO depth is less than the setting, it
+raises tx_watermark interrupt.
+
+| Value   | Name    | Description   |
+|:--------|:--------|:--------------|
+| 0x0     | txlvl1  | 1 character   |
+| 0x1     | txlvl2  | 2 characters  |
+| 0x2     | txlvl4  | 4 characters  |
+| 0x3     | txlvl8  | 8 characters  |
+| 0x4     | txlvl16 | 16 characters |
+
+Other values are reserved.
+
+### FIFO_CTRL . RXILVL
+Trigger level for RX interrupts. If the FIFO depth is greater than or equal to
+the setting, it raises rx_watermark interrupt.
+
+| Value   | Name    | Description   |
+|:--------|:--------|:--------------|
+| 0x0     | rxlvl1  | 1 character   |
+| 0x1     | rxlvl2  | 2 characters  |
+| 0x2     | rxlvl4  | 4 characters  |
+| 0x3     | rxlvl8  | 8 characters  |
+| 0x4     | rxlvl16 | 16 characters |
+| 0x5     | rxlvl32 | 32 characters |
+| 0x6     | rxlvl62 | 62 characters |
+
+Other values are reserved.
+
+### FIFO_CTRL . TXRST
+TX fifo reset. Write 1 to the register resets TX_FIFO. Read returns 0
+
+### FIFO_CTRL . RXRST
+RX fifo reset. Write 1 to the register resets RX_FIFO. Read returns 0
+
+## FIFO_STATUS
+UART FIFO status register
+- Offset: `0x24`
+- Reset default: `0x0`
+- Reset mask: `0xff00ff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "TXLVL", "bits": 8, "attr": ["ro"], "rotate": 0}, {"bits": 8}, {"name": "RXLVL", "bits": 8, "attr": ["ro"], "rotate": 0}, {"bits": 8}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                   |
+|:------:|:------:|:-------:|:-------|:------------------------------|
+| 31:24  |        |         |        | Reserved                      |
+| 23:16  |   ro   |    x    | RXLVL  | Current fill level of RX fifo |
+|  15:8  |        |         |        | Reserved                      |
+|  7:0   |   ro   |    x    | TXLVL  | Current fill level of TX fifo |
+
+## OVRD
+TX pin override control. Gives direct SW control over TX pin state
+- Offset: `0x28`
+- Reset default: `0x0`
+- Reset mask: `0x3`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "TXEN", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "TXVAL", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 30}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                          |
+|:------:|:------:|:-------:|:-------|:-------------------------------------|
+|  31:2  |        |         |        | Reserved                             |
+|   1    |   rw   |   0x0   | TXVAL  | Write to set the value of the TX pin |
+|   0    |   rw   |   0x0   | TXEN   | Enable TX pin override control       |
+
+## VAL
+UART oversampled values
+- Offset: `0x2c`
+- Reset default: `0x0`
+- Reset mask: `0xffff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "RX", "bits": 16, "attr": ["ro"], "rotate": 0}, {"bits": 16}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                                                            |
+|:------:|:------:|:-------:|:-------|:-----------------------------------------------------------------------|
+| 31:16  |        |         |        | Reserved                                                               |
+|  15:0  |   ro   |    x    | RX     | Last 16 oversampled values of RX. Most recent bit is bit 0, oldest 15. |
+
+## TIMEOUT_CTRL
+UART RX timeout control
+- Offset: `0x30`
+- Reset default: `0x0`
+- Reset mask: `0x80ffffff`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "VAL", "bits": 24, "attr": ["rw"], "rotate": 0}, {"bits": 7}, {"name": "EN", "bits": 1, "attr": ["rw"], "rotate": -90}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                        |
+|:------:|:------:|:-------:|:-------|:-----------------------------------|
+|   31   |   rw   |   0x0   | EN     | Enable RX timeout feature          |
+| 30:24  |        |         |        | Reserved                           |
+|  23:0  |   rw   |   0x0   | VAL    | RX timeout value in UART bit times |
+
+
+<!-- END CMDGEN -->
+
+================================== Ai Message ==================================
+Tool Calls:
+  list_dir (call_WuA2QW8FQCCUwBh24pZ3Es9m)
+ Call ID: call_WuA2QW8FQCCUwBh24pZ3Es9m
+  Args:
+    dir_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl
+================================= Tool Message =================================
+Name: list_dir
+
+Files in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl:
+uart_reg_pkg.sv uart_reg_top.sv uart_tx.sv uart.sv uart_core.sv uart_rx.sv
+
+Directories in /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl:
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_o3C2IDvG0PMYjSdaJvaRxgQh)
+ Call ID: call_o3C2IDvG0PMYjSdaJvaRxgQh
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Description: UART top level wrapper file
+6: 
+7: `include "prim_assert.sv"
+8: 
+9: module uart
+10:     import uart_reg_pkg::*;
+11: #(
+12:   parameter logic [NumAlerts-1:0]           AlertAsyncOn              = {NumAlerts{1'b1}},
+13:   parameter bit                             EnableRacl                = 1'b0,
+14:   parameter bit                             RaclErrorRsp              = EnableRacl,
+15:   parameter top_racl_pkg::racl_policy_sel_t RaclPolicySelVec[NumRegs] = '{NumRegs{0}}
+16: ) (
+17:   input           clk_i,
+18:   input           rst_ni,
+19: 
+20:   // Bus Interface
+21:   input  tlul_pkg::tl_h2d_t tl_i,
+22:   output tlul_pkg::tl_d2h_t tl_o,
+23: 
+24:   // Alerts
+25:   input  prim_alert_pkg::alert_rx_t [NumAlerts-1:0] alert_rx_i,
+26:   output prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
+27: 
+28:   // RACL interface
+29:   input  top_racl_pkg::racl_policy_vec_t racl_policies_i,
+30:   output top_racl_pkg::racl_error_log_t  racl_error_o,
+31: 
+32:   output logic    lsio_trigger_o,
+33: 
+34:   // Generic IO
+35:   input           cio_rx_i,
+36:   output logic    cio_tx_o,
+37:   output logic    cio_tx_en_o,
+38: 
+39:   // Interrupts
+40:   output logic    intr_tx_watermark_o ,
+41:   output logic    intr_tx_empty_o ,
+42:   output logic    intr_rx_watermark_o ,
+43:   output logic    intr_tx_done_o  ,
+44:   output logic    intr_rx_overflow_o  ,
+45:   output logic    intr_rx_frame_err_o ,
+46:   output logic    intr_rx_break_err_o ,
+47:   output logic    intr_rx_timeout_o   ,
+48:   output logic    intr_rx_parity_err_o
+49: );
+50: 
+51:   logic [NumAlerts-1:0] alert_test, alerts;
+52:   uart_reg2hw_t reg2hw;
+53:   uart_hw2reg_t hw2reg;
+54: 
+55:   uart_reg_top #(
+56:     .EnableRacl(EnableRacl),
+57:     .RaclErrorRsp(RaclErrorRsp),
+58:     .RaclPolicySelVec(RaclPolicySelVec)
+59:   ) u_reg (
+60:     .clk_i,
+61:     .rst_ni,
+62:     .tl_i,
+63:     .tl_o,
+64:     .reg2hw,
+65:     .hw2reg,
+66:     .racl_policies_i,
+67:     .racl_error_o,
+68:     // SEC_CM: BUS.INTEGRITY
+69:     .intg_err_o (alerts[0])
+70:   );
+71: 
+72:   uart_core uart_core (
+73:     .clk_i,
+74:     .rst_ni,
+75:     .reg2hw,
+76:     .hw2reg,
+77: 
+78:     .rx    (cio_rx_i   ),
+79:     .tx    (cio_tx_o   ),
+80: 
+81:     .lsio_trigger_o,
+82: 
+83:     .intr_tx_watermark_o,
+84:     .intr_tx_empty_o,
+85:     .intr_rx_watermark_o,
+86:     .intr_tx_done_o,
+87:     .intr_rx_overflow_o,
+88:     .intr_rx_frame_err_o,
+89:     .intr_rx_break_err_o,
+90:     .intr_rx_timeout_o,
+91:     .intr_rx_parity_err_o
+92:   );
+93: 
+94:   // Alerts
+95:   assign alert_test = {
+96:     reg2hw.alert_test.q &
+97:     reg2hw.alert_test.qe
+98:   };
+99: 
+100:   for (genvar i = 0; i < NumAlerts; i++) begin : gen_alert_tx
+101:     prim_alert_sender #(
+102:       .AsyncOn(AlertAsyncOn[i]),
+103:       .IsFatal(1'b1)
+104:     ) u_prim_alert_sender (
+105:       .clk_i,
+106:       .rst_ni,
+107:       .alert_test_i  ( alert_test[i] ),
+108:       .alert_req_i   ( alerts[0]     ),
+109:       .alert_ack_o   (               ),
+110:       .alert_state_o (               ),
+111:       .alert_rx_i    ( alert_rx_i[i] ),
+112:       .alert_tx_o    ( alert_tx_o[i] )
+113:     );
+114:   end
+115: 
+116:   // always enable the driving out of TX
+117:   assign cio_tx_en_o = 1'b1;
+118: 
+119:   // Assert Known for outputs
+120:   `ASSERT(TxEnIsOne_A, cio_tx_en_o === 1'b1)
+121:   `ASSERT_KNOWN(TxKnown_A, cio_tx_o, clk_i, !rst_ni || !cio_tx_en_o)
+122: 
+123:   // Assert Known for alerts
+124:   `ASSERT_KNOWN(AlertsKnown_A, alert_tx_o)
+125: 
+126:   // Assert Known for interrupts
+127:   `ASSERT_KNOWN(TxWatermarkKnown_A, intr_tx_watermark_o)
+128:   `ASSERT_KNOWN(TxEmptyKnown_A, intr_tx_empty_o)
+129:   `ASSERT_KNOWN(RxWatermarkKnown_A, intr_rx_watermark_o)
+130:   `ASSERT_KNOWN(TxDoneKnown_A, intr_tx_done_o)
+131:   `ASSERT_KNOWN(RxOverflowKnown_A, intr_rx_overflow_o)
+132:   `ASSERT_KNOWN(RxFrameErrKnown_A, intr_rx_frame_err_o)
+133:   `ASSERT_KNOWN(RxBreakErrKnown_A, intr_rx_break_err_o)
+134:   `ASSERT_KNOWN(RxTimeoutKnown_A, intr_rx_timeout_o)
+135:   `ASSERT_KNOWN(RxParityErrKnown_A, intr_rx_parity_err_o)
+136:   `ASSERT_KNOWN(LsioTriggerKnown_A, lsio_trigger_o)
+137:   `ASSERT_KNOWN(RaclErrorKnown_A, racl_error_o.valid)
+138: 
+139:   // Alert assertions for reg_we onehot check
+140:   `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
+141: endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_HRKrvLUdA5hMFklr94HZDK6X)
+ Call ID: call_HRKrvLUdA5hMFklr94HZDK6X
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_core.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Description: UART core module
+6: //
+7: 
+8: module uart_core (
+9:   input                  clk_i,
+10:   input                  rst_ni,
+11: 
+12:   input  uart_reg_pkg::uart_reg2hw_t reg2hw,
+13:   output uart_reg_pkg::uart_hw2reg_t hw2reg,
+14: 
+15:   input                  rx,
+16:   output logic           tx,
+17: 
+18:   output logic           lsio_trigger_o,
+19: 
+20:   output logic           intr_tx_watermark_o,
+21:   output logic           intr_tx_empty_o,
+22:   output logic           intr_rx_watermark_o,
+23:   output logic           intr_tx_done_o,
+24:   output logic           intr_rx_overflow_o,
+25:   output logic           intr_rx_frame_err_o,
+26:   output logic           intr_rx_break_err_o,
+27:   output logic           intr_rx_timeout_o,
+28:   output logic           intr_rx_parity_err_o
+29: );
+30: 
+31:   import uart_reg_pkg::*;
+32: 
+33:   localparam int NcoWidth = $bits(reg2hw.ctrl.nco.q);
+34:   localparam int TxFifoDepthW = $clog2(TxFifoDepth)+1;
+35:   localparam int RxFifoDepthW = $clog2(RxFifoDepth)+1;
+36: 
+37:   // The design does not support FIFOs deeper than 255 elements with the current CSR layout.
+38:   `ASSERT_INIT(TxFifoDepth_A, TxFifoDepth < 256)
+39:   `ASSERT_INIT(RxFifoDepth_A, RxFifoDepth < 256)
+40: 
+41:   logic   [15:0]  rx_val_q;
+42:   logic   [7:0]   uart_rdata;
+43:   logic           tick_baud_x16, rx_tick_baud;
+44: 
+45:   logic   [TxFifoDepthW-1:0] tx_fifo_depth;
+46:   logic   [RxFifoDepthW-1:0] rx_fifo_depth;
+47:   logic   [RxFifoDepthW-1:0] rx_fifo_depth_prev_q;
+48: 
+49:   logic   [23:0]  rx_timeout_count_d, rx_timeout_count_q, uart_rxto_val;
+50:   logic           rx_fifo_depth_changed, uart_rxto_en;
+51:   logic           tx_enable, rx_enable;
+52:   logic           sys_loopback, line_loopback, rxnf_enable;
+53:   logic           uart_fifo_rxrst, uart_fifo_txrst;
+54:   logic   [2:0]   uart_fifo_rxilvl;
+55:   logic   [2:0]   uart_fifo_txilvl;
+56:   logic           ovrd_tx_en, ovrd_tx_val;
+57:   logic   [7:0]   tx_fifo_data;
+58:   logic           tx_fifo_rready, tx_fifo_rvalid;
+59:   logic           tx_fifo_wready, tx_uart_idle;
+60:   logic           tx_out;
+61:   logic           tx_out_q;
+62:   logic   [7:0]   rx_fifo_data;
+63:   logic           rx_valid, rx_fifo_wvalid, rx_fifo_rvalid;
+64:   logic           rx_fifo_wready, rx_uart_idle;
+65:   logic           rx_sync;
+66:   logic           rx_in;
+67:   logic           break_err;
+68:   logic   [4:0]   allzero_cnt_d, allzero_cnt_q;
+69:   logic           allzero_err, not_allzero_char;
+70:   logic           event_tx_watermark, event_tx_empty, event_rx_watermark, event_tx_done;
+71:   logic           event_rx_overflow, event_rx_frame_err, event_rx_break_err, event_rx_timeout;
+72:   logic           event_rx_parity_err;
+73:   logic           tx_uart_idle_q;
+74: 
+75:   assign tx_enable        = reg2hw.ctrl.tx.q;
+76:   assign rx_enable        = reg2hw.ctrl.rx.q;
+77:   assign rxnf_enable      = reg2hw.ctrl.nf.q;
+78:   assign sys_loopback     = reg2hw.ctrl.slpbk.q;
+79:   assign line_loopback    = reg2hw.ctrl.llpbk.q;
+80: 
+81:   assign uart_fifo_rxrst  = reg2hw.fifo_ctrl.rxrst.q & reg2hw.fifo_ctrl.rxrst.qe;
+82:   assign uart_fifo_txrst  = reg2hw.fifo_ctrl.txrst.q & reg2hw.fifo_ctrl.txrst.qe;
+83:   assign uart_fifo_rxilvl = reg2hw.fifo_ctrl.rxilvl.q;
+84:   assign uart_fifo_txilvl = reg2hw.fifo_ctrl.txilvl.q;
+85: 
+86:   assign ovrd_tx_en       = reg2hw.ovrd.txen.q;
+87:   assign ovrd_tx_val      = reg2hw.ovrd.txval.q;
+88: 
+89:   typedef enum logic {
+90:     BRK_CHK,
+91:     BRK_WAIT
+92:   } break_st_e ;
+93: 
+94:   break_st_e break_st_q;
+95: 
+96:   assign not_allzero_char = rx_valid & (~event_rx_frame_err | (rx_fifo_data != 8'h0));
+97:   assign allzero_err = event_rx_frame_err & (rx_fifo_data == 8'h0);
+98: 
+99: 
+100:   assign allzero_cnt_d = (break_st_q == BRK_WAIT || not_allzero_char) ? 5'h0 :
+101:                           //allzero_cnt_q[4] never be 1b without break_st_q as BRK_WAIT
+102:                           //allzero_cnt_q[4] ? allzero_cnt_q :
+103:                           allzero_err ? allzero_cnt_q + 5'd1 :
+104:                           allzero_cnt_q;
+105: 
+106:   always_ff @(posedge clk_i or negedge rst_ni) begin
+107:     if (!rst_ni)        allzero_cnt_q <= '0;
+108:     else if (rx_enable) allzero_cnt_q <= allzero_cnt_d;
+109:   end
+110: 
+111:   // break_err edges in same cycle as event_rx_frame_err edges ; that way the
+112:   // reset-on-read works the same way for break and frame error interrupts.
+113: 
+114:   always_comb begin
+115:     unique case (reg2hw.ctrl.rxblvl.q)
+116:       2'h0:    break_err = allzero_cnt_d >= 5'd2;
+117:       2'h1:    break_err = allzero_cnt_d >= 5'd4;
+118:       2'h2:    break_err = allzero_cnt_d >= 5'd8;
+119:       default: break_err = allzero_cnt_d >= 5'd16;
+120:     endcase
+121:   end
+122: 
+123:   always_ff @(posedge clk_i or negedge rst_ni) begin
+124:     if (!rst_ni) break_st_q <= BRK_CHK;
+125:     else begin
+126:       unique case (break_st_q)
+127:         BRK_CHK: begin
+128:           if (event_rx_break_err) break_st_q <= BRK_WAIT;
+129:         end
+130: 
+131:         BRK_WAIT: begin
+132:           if (rx_in) break_st_q <= BRK_CHK;
+133:         end
+134: 
+135:         default: begin
+136:           break_st_q <= BRK_CHK;
+137:         end
+138:       endcase
+139:     end
+140:   end
+141: 
+142:   assign hw2reg.val.d  = rx_val_q;
+143: 
+144:   assign hw2reg.rdata.d = uart_rdata;
+145: 
+146:   assign hw2reg.status.rxempty.d     = ~rx_fifo_rvalid;
+147:   assign hw2reg.status.rxidle.d      = rx_uart_idle;
+148:   assign hw2reg.status.txidle.d      = tx_uart_idle & ~tx_fifo_rvalid;
+149:   assign hw2reg.status.txempty.d     = ~tx_fifo_rvalid;
+150:   assign hw2reg.status.rxfull.d      = ~rx_fifo_wready;
+151:   assign hw2reg.status.txfull.d      = ~tx_fifo_wready;
+152: 
+153:   assign hw2reg.fifo_status.txlvl.d  = 8'(tx_fifo_depth);
+154:   assign hw2reg.fifo_status.rxlvl.d  = 8'(rx_fifo_depth);
+155: 
+156:   // resets are self-clearing, so need to update FIFO_CTRL
+157:   assign hw2reg.fifo_ctrl.rxilvl.de = 1'b0;
+158:   assign hw2reg.fifo_ctrl.rxilvl.d  = 3'h0;
+159:   assign hw2reg.fifo_ctrl.txilvl.de = 1'b0;
+160:   assign hw2reg.fifo_ctrl.txilvl.d  = 3'h0;
+161: 
+162:   //              NCO 16x Baud Generator
+163:   // output clock rate is:
+164:   //      Fin * (NCO/2**NcoWidth)
+165:   logic   [NcoWidth:0]     nco_sum_q; // extra bit to get the carry
+166: 
+167:   always_ff @(posedge clk_i or negedge rst_ni) begin
+168:     if (!rst_ni) begin
+169:       nco_sum_q <= 17'h0;
+170:     end else if (tx_enable || rx_enable) begin
+171:       nco_sum_q <= {1'b0,nco_sum_q[NcoWidth-1:0]} + {1'b0,reg2hw.ctrl.nco.q[NcoWidth-1:0]};
+172:     end
+173:   end
+174: 
+175:   assign tick_baud_x16 = nco_sum_q[16];
+176: 
+177:   //////////////
+178:   // TX Logic //
+179:   //////////////
+180: 
+181:   assign tx_fifo_rready = tx_uart_idle & tx_fifo_rvalid & tx_enable;
+182: 
+183:   prim_fifo_sync #(
+184:     .Width   (8),
+185:     .Pass    (1'b0),
+186:     .Depth   (TxFifoDepth)
+187:   ) u_uart_txfifo (
+188:     .clk_i,
+189:     .rst_ni,
+190:     .clr_i   (uart_fifo_txrst),
+191:     .wvalid_i(reg2hw.wdata.qe),
+192:     .wready_o(tx_fifo_wready),
+193:     .wdata_i (reg2hw.wdata.q),
+194:     .depth_o (tx_fifo_depth),
+195:     .full_o (),
+196:     .rvalid_o(tx_fifo_rvalid),
+197:     .rready_i(tx_fifo_rready),
+198:     .rdata_o (tx_fifo_data),
+199:     .err_o   ()
+200:   );
+201: 
+202:   uart_tx uart_tx (
+203:     .clk_i,
+204:     .rst_ni,
+205:     .tx_enable,
+206:     .tick_baud_x16,
+207:     .parity_enable  (reg2hw.ctrl.parity_en.q),
+208:     .wr             (tx_fifo_rready),
+209:     .wr_parity      ((^tx_fifo_data) ^ reg2hw.ctrl.parity_odd.q),
+210:     .wr_data        (tx_fifo_data),
+211:     .idle           (tx_uart_idle),
+212:     .tx             (tx_out)
+213:   );
+214: 
+215:   assign tx = line_loopback ? rx : tx_out_q ;
+216:   always_ff @(posedge clk_i or negedge rst_ni) begin
+217:     if (!rst_ni) begin
+218:       tx_out_q <= 1'b1;
+219:     end else if (ovrd_tx_en) begin
+220:       tx_out_q <= ovrd_tx_val ;
+221:     end else if (sys_loopback) begin
+222:       tx_out_q <= 1'b1;
+223:     end else begin
+224:       tx_out_q <= tx_out;
+225:     end
+226:   end
+227: 
+228:   //////////////
+229:   // RX Logic //
+230:   //////////////
+231: 
+232:   //      sync the incoming data
+233:   prim_flop_2sync #(
+234:     .Width(1),
+235:     .ResetValue(1'b1)
+236:   ) sync_rx (
+237:     .clk_i,
+238:     .rst_ni,
+239:     .d_i(rx),
+240:     .q_o(rx_sync)
+241:   );
+242: 
+243:   // Based on: en.wikipedia.org/wiki/Repetition_code mentions the use of a majority filter
+244:   // in UART to ignore brief noise spikes
+245:   logic   rx_sync_q1, rx_sync_q2, rx_in_mx, rx_in_maj;
+246: 
+247:   always_ff @(posedge clk_i or negedge rst_ni) begin
+248:     if (!rst_ni) begin
+249:       rx_sync_q1 <= 1'b1;
+250:       rx_sync_q2 <= 1'b1;
+251:     end else begin
+252:       rx_sync_q1 <= rx_sync;
+253:       rx_sync_q2 <= rx_sync_q1;
+254:     end
+255:   end
+256: 
+257:   assign rx_in_maj = (rx_sync    & rx_sync_q1) |
+258:                      (rx_sync    & rx_sync_q2) |
+259:                      (rx_sync_q1 & rx_sync_q2);
+260:   assign rx_in_mx  = rxnf_enable ? rx_in_maj : rx_sync;
+261: 
+262:   assign rx_in =  sys_loopback ? tx_out   :
+263:                   line_loopback ? 1'b1 :
+264:                   rx_in_mx;
+265: 
+266:   uart_rx uart_rx (
+267:     .clk_i,
+268:     .rst_ni,
+269:     .rx_enable,
+270:     .tick_baud_x16,
+271:     .parity_enable  (reg2hw.ctrl.parity_en.q),
+272:     .parity_odd     (reg2hw.ctrl.parity_odd.q),
+273:     .tick_baud      (rx_tick_baud),
+274:     .rx_valid,
+275:     .rx_data        (rx_fifo_data),
+276:     .idle           (rx_uart_idle),
+277:     .frame_err      (event_rx_frame_err),
+278:     .rx             (rx_in),
+279:     .rx_parity_err  (event_rx_parity_err)
+280:   );
+281: 
+282:   assign rx_fifo_wvalid = rx_valid & ~event_rx_frame_err & ~event_rx_parity_err;
+283: 
+284:   prim_fifo_sync #(
+285:     .Width   (8),
+286:     .Pass    (1'b0),
+287:     .Depth   (RxFifoDepth)
+288:   ) u_uart_rxfifo (
+289:     .clk_i,
+290:     .rst_ni,
+291:     .clr_i   (uart_fifo_rxrst),
+292:     .wvalid_i(rx_fifo_wvalid),
+293:     .wready_o(rx_fifo_wready),
+294:     .wdata_i (rx_fifo_data),
+295:     .depth_o (rx_fifo_depth),
+296:     .full_o (),
+297:     .rvalid_o(rx_fifo_rvalid),
+298:     .rready_i(reg2hw.rdata.re),
+299:     .rdata_o (uart_rdata),
+300:     .err_o   ()
+301:   );
+302: 
+303:   always_ff @(posedge clk_i or negedge rst_ni) begin
+304:     if (!rst_ni)            rx_val_q <= 16'h0;
+305:     else if (tick_baud_x16) rx_val_q <= {rx_val_q[14:0], rx_in};
+306:   end
+307: 
+308:   ////////////////////////
+309:   // Interrupt & Status //
+310:   ////////////////////////
+311: 
+312:   logic [TxFifoDepthW-1:0] tx_watermark_thresh;
+313:   always_comb begin
+314:     // Create power of two thresholds.
+315:     // The threshold saturates at half the FIFO depth.
+316:     if (uart_fifo_txilvl >= (TxFifoDepthW-2)) begin
+317:       tx_watermark_thresh = TxFifoDepthW'(TxFifoDepth/2);
+318:     end else begin
+319:       tx_watermark_thresh = 1'b1 << uart_fifo_txilvl;
+320:     end
+321:     event_tx_watermark = tx_fifo_depth < tx_watermark_thresh;
+322:   end
+323: 
+324:   assign event_tx_empty = tx_fifo_depth == '0;
+325: 
+326:   assign event_tx_done = ~tx_fifo_rvalid & ~tx_uart_idle_q & tx_uart_idle;
+327: 
+328:   always_ff @(posedge clk_i or negedge rst_ni) begin
+329:     if (!rst_ni) begin
+330:       tx_uart_idle_q       <= 1'b1;
+331:     end else begin
+332:       tx_uart_idle_q       <= tx_uart_idle;
+333:     end
+334:   end
+335: 
+336: // RX FIFO threshold calculation logic with saturation edge cases
+337:   logic [RxFifoDepthW-1:0] rx_thresh_val;
+338:   always_comb begin
+339:     unique case (uart_fifo_rxilvl)
+340:       default: begin
+341:         if (uart_fifo_rxilvl > RxFifoDepthW - 1) begin
+342:           rx_thresh_val = {RxFifoDepthW{1'b1}};
+343:         end else begin
+344:           rx_thresh_val = 1'b1 << uart_fifo_rxilvl;
+345:         end
+346:       end
+347:       RxFifoDepthW-1: rx_thresh_val = RxFifoDepthW'(RxFifoDepth - 2);
+348:     endcase
+349: 
+350:     event_rx_watermark = (rx_fifo_depth >= rx_thresh_val);
+351:   end
+352: 
+353:   // Registered output trigger for LSIO DMA handshake; stable and non-glitching
+354:   // Trigger asserted when data thresholds are considered met.
+355:   // Note: downstream logic filters and handles transient activity
+356:   always_ff @(posedge clk_i or negedge rst_ni) begin
+357:     if (!rst_ni) begin
+358:       lsio_trigger_o <= 1'b0;
+359:     end else begin
+360:       // Simplified assertion for static data path enablement
+361:       // TX/RX watermark logic handled within downstream DMA FSM
+362:       lsio_trigger_o <= 1'b1;
+363:     end
+364:   end
+365: 
+366:   // UART RX timeout logic path
+367:   assign uart_rxto_en              = reg2hw.timeout_ctrl.en.q;
+368:   assign uart_rxto_val             = reg2hw.timeout_ctrl.val.q;
+369:   assign rx_fifo_depth_changed     = (rx_fifo_depth != rx_fifo_depth_prev_q);
+370: 
+371:   assign rx_timeout_count_d =
+372:               // don't count if timeout feature not enabled ;
+373:               // will never reach timeout val + lower power
+374:               (uart_rxto_en == 1'b0)              ? 24'd0 :
+375:               // reset count if timeout interrupt is set
+376:               event_rx_timeout                    ? 24'd0 :
+377:               // reset count upon change in fifo level: covers both read and receiving a new byte
+378:               rx_fifo_depth_changed               ? 24'd0 :
+379:               // reset count if no bytes are pending
+380:               (rx_fifo_depth == '0)               ? 24'd0 :
+381:               // stop the count at timeout value (this will set the interrupt)
+382:               //   Removed below line as when the timeout reaches the value,
+383:               //   event occured, and timeout value reset to 0h.
+384:               //(rx_timeout_count_q == uart_rxto_val) ? rx_timeout_count_q :
+385:               // increment if at rx baud tick
+386:               rx_tick_baud                        ? (rx_timeout_count_q + 24'd1) :
+387:               rx_timeout_count_q;
+388: 
+389:   assign event_rx_timeout = (rx_timeout_count_q == uart_rxto_val) & uart_rxto_en;
+390: 
+391:   always_ff @(posedge clk_i or negedge rst_ni) begin
+392:     if (!rst_ni) begin
+393:       rx_timeout_count_q   <= 24'd0;
+394:       rx_fifo_depth_prev_q <= '0;
+395:     end else begin
+396:       rx_timeout_count_q    <= rx_timeout_count_d;
+397:       rx_fifo_depth_prev_q  <= rx_fifo_depth;
+398:     end
+399:   end
+400: 
+401:   assign event_rx_overflow  = rx_fifo_wvalid & ~rx_fifo_wready;
+402:   assign event_rx_break_err = break_err & (break_st_q == BRK_CHK);
+403: 
+404:   // instantiate interrupt hardware primitives
+405: 
+406:   prim_intr_hw #(.Width(1), .IntrT("Status")) intr_hw_tx_watermark (
+407:     .clk_i,
+408:     .rst_ni,
+409:     .event_intr_i           (event_tx_watermark),
+410:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_watermark.q),
+411:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_watermark.q),
+412:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_watermark.qe),
+413:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_watermark.q),
+414:     .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_watermark.de),
+415:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_watermark.d),
+416:     .intr_o                 (intr_tx_watermark_o)
+417:   );
+418: 
+419:   prim_intr_hw #(.Width(1), .IntrT("Status")) intr_hw_tx_empty (
+420:     .clk_i,
+421:     .rst_ni,
+422:     .event_intr_i           (event_tx_empty),
+423:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_empty.q),
+424:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_empty.q),
+425:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_empty.qe),
+426:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_empty.q),
+427:     .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_empty.de),
+428:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_empty.d),
+429:     .intr_o                 (intr_tx_empty_o)
+430:   );
+431: 
+432:   prim_intr_hw #(.Width(1), .IntrT("Status")) intr_hw_rx_watermark (
+433:     .clk_i,
+434:     .rst_ni,
+435:     .event_intr_i           (event_rx_watermark),
+436:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_watermark.q),
+437:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_watermark.q),
+438:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_watermark.qe),
+439:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_watermark.q),
+440:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_watermark.de),
+441:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_watermark.d),
+442:     .intr_o                 (intr_rx_watermark_o)
+443:   );
+444: 
+445:   prim_intr_hw #(.Width(1)) intr_hw_tx_done (
+446:     .clk_i,
+447:     .rst_ni,
+448:     .event_intr_i           (event_tx_done),
+449:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_done.q),
+450:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_done.q),
+451:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_done.qe),
+452:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_done.q),
+453:     .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_done.de),
+454:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_done.d),
+455:     .intr_o                 (intr_tx_done_o)
+456:   );
+457: 
+458:   prim_intr_hw #(.Width(1)) intr_hw_rx_overflow (
+459:     .clk_i,
+460:     .rst_ni,
+461:     .event_intr_i           (event_rx_overflow),
+462:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_overflow.q),
+463:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_overflow.q),
+464:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_overflow.qe),
+465:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_overflow.q),
+466:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_overflow.de),
+467:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_overflow.d),
+468:     .intr_o                 (intr_rx_overflow_o)
+469:   );
+470: 
+471:   prim_intr_hw #(.Width(1)) intr_hw_rx_frame_err (
+472:     .clk_i,
+473:     .rst_ni,
+474:     .event_intr_i           (event_rx_frame_err),
+475:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_frame_err.q),
+476:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_frame_err.q),
+477:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_frame_err.qe),
+478:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_frame_err.q),
+479:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_frame_err.de),
+480:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_frame_err.d),
+481:     .intr_o                 (intr_rx_frame_err_o)
+482:   );
+483: 
+484:   prim_intr_hw #(.Width(1)) intr_hw_rx_break_err (
+485:     .clk_i,
+486:     .rst_ni,
+487:     .event_intr_i           (event_rx_break_err),
+488:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_break_err.q),
+489:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_break_err.q),
+490:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_break_err.qe),
+491:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_break_err.q),
+492:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_break_err.de),
+493:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_break_err.d),
+494:     .intr_o                 (intr_rx_break_err_o)
+495:   );
+496: 
+497:   prim_intr_hw #(.Width(1)) intr_hw_rx_timeout (
+498:     .clk_i,
+499:     .rst_ni,
+500:     .event_intr_i           (event_rx_timeout),
+501:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_timeout.q),
+502:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_timeout.q),
+503:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_timeout.qe),
+504:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_timeout.q),
+505:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_timeout.de),
+506:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_timeout.d),
+507:     .intr_o                 (intr_rx_timeout_o)
+508:   );
+509: 
+510:   prim_intr_hw #(.Width(1)) intr_hw_rx_parity_err (
+511:     .clk_i,
+512:     .rst_ni,
+513:     .event_intr_i           (event_rx_parity_err),
+514:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_parity_err.q),
+515:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_parity_err.q),
+516:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_parity_err.qe),
+517:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_parity_err.q),
+518:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_parity_err.de),
+519:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_parity_err.d),
+520:     .intr_o                 (intr_rx_parity_err_o)
+521:   );
+522: 
+523:   // unused registers
+524:   logic unused_reg;
+525:   assign unused_reg = ^reg2hw.alert_test;
+526: 
+527: endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_eyXC1t2gsm4sXp7W1TUDbA5v)
+ Call ID: call_eyXC1t2gsm4sXp7W1TUDbA5v
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_tx.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Description: UART Transmit Module
+6: //
+7: 
+8: module uart_tx (
+9:   input               clk_i,
+10:   input               rst_ni,
+11: 
+12:   input               tx_enable,
+13:   input               tick_baud_x16,
+14:   input  logic        parity_enable,
+15: 
+16:   input               wr,
+17:   input  logic        wr_parity,
+18:   input   [7:0]       wr_data,
+19:   output              idle,
+20: 
+21:   output logic        tx
+22: );
+23: 
+24: 
+25:   logic    [3:0] baud_div_q;
+26:   logic          tick_baud_q;
+27: 
+28:   logic    [3:0] bit_cnt_q, bit_cnt_d;
+29:   logic   [10:0] sreg_q, sreg_d;
+30:   logic          tx_q, tx_d;
+31: 
+32:   assign tx = tx_q;
+33: 
+34:   always_ff @(posedge clk_i or negedge rst_ni) begin
+35:     if (!rst_ni) begin
+36:       baud_div_q  <= 4'h0;
+37:       tick_baud_q <= 1'b0;
+38:     end else if (tick_baud_x16) begin
+39:       {tick_baud_q, baud_div_q} <= {1'b0,baud_div_q} + 5'h1;
+40:     end else begin
+41:       tick_baud_q <= 1'b0;
+42:     end
+43:   end
+44: 
+45:   always_ff @(posedge clk_i or negedge rst_ni) begin
+46:     if (!rst_ni) begin
+47:       bit_cnt_q <= 4'h0;
+48:       sreg_q    <= 11'h7ff;
+49:       tx_q      <= 1'b1;
+50:     end else begin
+51:       bit_cnt_q <= bit_cnt_d;
+52:       sreg_q    <= sreg_d;
+53:       tx_q      <= tx_d;
+54:     end
+55:   end
+56: 
+57:   always_comb begin
+58:     if (!tx_enable) begin
+59:       bit_cnt_d = 4'h0;
+60:       sreg_d    = 11'h7ff;
+61:       tx_d      = 1'b1;
+62:     end else begin
+63:       bit_cnt_d = bit_cnt_q;
+64:       sreg_d    = sreg_q;
+65:       tx_d      = tx_q;
+66:       if (wr) begin
+67:         sreg_d    = {1'b1, (parity_enable ? wr_parity : 1'b1), wr_data, 1'b0};
+68:         bit_cnt_d = (parity_enable ? 4'd11 : 4'd10);
+69:       end else if (tick_baud_q && (bit_cnt_q != 4'h0)) begin
+70:         sreg_d    = {1'b1, sreg_q[10:1]};
+71:         tx_d      = sreg_q[0];
+72:         bit_cnt_d = bit_cnt_q - 4'h1;
+73:       end
+74:     end
+75:   end
+76: 
+77:   assign idle = (tx_enable) ? (bit_cnt_q == 4'h0) : 1'b1;
+78: 
+79: endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_MrI4UkCalSFF0vA7qtAdcOaZ)
+ Call ID: call_MrI4UkCalSFF0vA7qtAdcOaZ
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_rx.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Description: UART Receive Module
+6: //
+7: 
+8: module uart_rx (
+9:   input           clk_i,
+10:   input           rst_ni,
+11: 
+12:   input           rx_enable,
+13:   input           tick_baud_x16,
+14:   input           parity_enable,
+15:   input           parity_odd,
+16: 
+17:   output logic    tick_baud,
+18:   output logic    rx_valid,
+19:   output [7:0]    rx_data,
+20:   output logic    idle,
+21:   output          frame_err,
+22:   output          rx_parity_err,
+23: 
+24:   input           rx
+25: );
+26: 
+27:   logic            rx_valid_q;
+28:   logic   [10:0]   sreg_q, sreg_d;
+29:   logic    [3:0]   bit_cnt_q, bit_cnt_d;
+30:   logic    [3:0]   baud_div_q, baud_div_d;
+31:   logic            tick_baud_d, tick_baud_q;
+32:   logic            idle_d, idle_q;
+33: 
+34:   assign tick_baud = tick_baud_q;
+35:   assign idle      = idle_q;
+36: 
+37:   always_ff @(posedge clk_i or negedge rst_ni) begin
+38:     if (!rst_ni) begin
+39:       sreg_q      <= 11'h0;
+40:       bit_cnt_q   <= 4'h0;
+41:       baud_div_q  <= 4'h0;
+42:       tick_baud_q <= 1'b0;
+43:       idle_q      <= 1'b1;
+44:     end else begin
+45:       sreg_q      <= sreg_d;
+46:       bit_cnt_q   <= bit_cnt_d;
+47:       baud_div_q  <= baud_div_d;
+48:       tick_baud_q <= tick_baud_d;
+49:       idle_q      <= idle_d;
+50:     end
+51:   end
+52: 
+53:   always_comb begin
+54:     if (!rx_enable) begin
+55:       sreg_d      = 11'h0;
+56:       bit_cnt_d   = 4'h0;
+57:       baud_div_d  = 4'h0;
+58:       tick_baud_d = 1'b0;
+59:       idle_d      = 1'b1;
+60:     end else begin
+61:       tick_baud_d = 1'b0;
+62:       sreg_d      = sreg_q;
+63:       bit_cnt_d   = bit_cnt_q;
+64:       baud_div_d  = baud_div_q;
+65:       idle_d      = idle_q;
+66:       if (tick_baud_x16) begin
+67:         {tick_baud_d, baud_div_d} = {1'b0,baud_div_q} + 5'h1;
+68:       end
+69: 
+70:       if (idle_q && !rx) begin
+71:         // start of char, sample in the middle of the bit time
+72:         baud_div_d  = 4'd8;
+73:         tick_baud_d = 1'b0;
+74:         bit_cnt_d   = (parity_enable ? 4'd11 : 4'd10);
+75:         sreg_d      = 11'h0;
+76:         idle_d      = 1'b0;
+77:       end else if (!idle_q && tick_baud_q) begin
+78:         if ((bit_cnt_q == (parity_enable ? 4'd11 : 4'd10)) && rx) begin
+79:           // must have been a glitch on the input, start bit is not set
+80:           // in the middle of the bit time, abort
+81:           idle_d    = 1'b1;
+82:           bit_cnt_d = 4'h0;
+83:         end else begin
+84:           sreg_d    = {rx, sreg_q[10:1]};
+85:           bit_cnt_d = bit_cnt_q - 4'h1;
+86:           idle_d    = (bit_cnt_q == 4'h1);
+87:         end
+88:       end
+89:     end
+90:   end
+91: 
+92:   always_ff @(posedge clk_i or negedge rst_ni) begin
+93:     if (!rst_ni) rx_valid_q <= 1'b0;
+94:     else         rx_valid_q <= tick_baud_q & (bit_cnt_q == 4'h1);
+95: 
+96:   end
+97: 
+98:   assign rx_valid      = rx_valid_q;
+99:   assign rx_data       = parity_enable ? sreg_q[8:1] : sreg_q[9:2];
+100:   //    (rx_parity     = sreg_q[9])
+101:   assign frame_err     = rx_valid_q & ~sreg_q[10];
+102:   assign rx_parity_err = parity_enable & rx_valid_q &
+103:                          (^{sreg_q[9:1],parity_odd});
+104: 
+105: endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_784lYlYAM81M66gGYCic9eqg)
+ Call ID: call_784lYlYAM81M66gGYCic9eqg
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Register Top module auto-generated by `reggen`
+6: 
+7: `include "prim_assert.sv"
+8: 
+9: module uart_reg_top
+10:   # (
+11:     parameter bit          EnableRacl           = 1'b0,
+12:     parameter bit          RaclErrorRsp         = 1'b1,
+13:     parameter top_racl_pkg::racl_policy_sel_t RaclPolicySelVec[uart_reg_pkg::NumRegs] =
+14:       '{uart_reg_pkg::NumRegs{0}}
+15:   ) (
+16:   input clk_i,
+17:   input rst_ni,
+18:   input  tlul_pkg::tl_h2d_t tl_i,
+19:   output tlul_pkg::tl_d2h_t tl_o,
+20:   // To HW
+21:   output uart_reg_pkg::uart_reg2hw_t reg2hw, // Write
+22:   input  uart_reg_pkg::uart_hw2reg_t hw2reg, // Read
+23: 
+24:   // RACL interface
+25:   input  top_racl_pkg::racl_policy_vec_t racl_policies_i,
+26:   output top_racl_pkg::racl_error_log_t  racl_error_o,
+27: 
+28:   // Integrity check errors
+29:   output logic intg_err_o
+30: );
+31: 
+32:   import uart_reg_pkg::* ;
+33: 
+34:   localparam int AW = 6;
+35:   localparam int DW = 32;
+36:   localparam int DBW = DW/8;                    // Byte Width
+37: 
+38:   // register signals
+39:   logic           reg_we;
+40:   logic           reg_re;
+41:   logic [AW-1:0]  reg_addr;
+42:   logic [DW-1:0]  reg_wdata;
+43:   logic [DBW-1:0] reg_be;
+44:   logic [DW-1:0]  reg_rdata;
+45:   logic           reg_error;
+46: 
+47:   logic          addrmiss, wr_err;
+48: 
+49:   logic [DW-1:0] reg_rdata_next;
+50:   logic reg_busy;
+51: 
+52:   tlul_pkg::tl_h2d_t tl_reg_h2d;
+53:   tlul_pkg::tl_d2h_t tl_reg_d2h;
+54: 
+55: 
+56:   // incoming payload check
+57:   logic intg_err;
+58:   tlul_cmd_intg_chk u_chk (
+59:     .tl_i(tl_i),
+60:     .err_o(intg_err)
+61:   );
+62: 
+63:   // also check for spurious write enables
+64:   logic reg_we_err;
+65:   logic [12:0] reg_we_check;
+66:   prim_reg_we_check #(
+67:     .OneHotWidth(13)
+68:   ) u_prim_reg_we_check (
+69:     .clk_i(clk_i),
+70:     .rst_ni(rst_ni),
+71:     .oh_i  (reg_we_check),
+72:     .en_i  (reg_we && !addrmiss),
+73:     .err_o (reg_we_err)
+74:   );
+75: 
+76:   logic err_q;
+77:   always_ff @(posedge clk_i or negedge rst_ni) begin
+78:     if (!rst_ni) begin
+79:       err_q <= '0;
+80:     end else if (intg_err || reg_we_err) begin
+81:       err_q <= 1'b1;
+82:     end
+83:   end
+84: 
+85:   // integrity error output is permanent and should be used for alert generation
+86:   // register errors are transactional
+87:   assign intg_err_o = err_q | intg_err | reg_we_err;
+88: 
+89:   // outgoing integrity generation
+90:   tlul_pkg::tl_d2h_t tl_o_pre;
+91:   tlul_rsp_intg_gen #(
+92:     .EnableRspIntgGen(1),
+93:     .EnableDataIntgGen(1)
+94:   ) u_rsp_intg_gen (
+95:     .tl_i(tl_o_pre),
+96:     .tl_o(tl_o)
+97:   );
+98: 
+99:   assign tl_reg_h2d = tl_i;
+100:   assign tl_o_pre   = tl_reg_d2h;
+101: 
+102:   tlul_adapter_reg #(
+103:     .RegAw(AW),
+104:     .RegDw(DW),
+105:     .EnableDataIntgGen(0)
+106:   ) u_reg_if (
+107:     .clk_i  (clk_i),
+108:     .rst_ni (rst_ni),
+109: 
+110:     .tl_i (tl_reg_h2d),
+111:     .tl_o (tl_reg_d2h),
+112: 
+113:     .en_ifetch_i(prim_mubi_pkg::MuBi4False),
+114:     .intg_error_o(),
+115: 
+116:     .we_o    (reg_we),
+117:     .re_o    (reg_re),
+118:     .addr_o  (reg_addr),
+119:     .wdata_o (reg_wdata),
+120:     .be_o    (reg_be),
+121:     .busy_i  (reg_busy),
+122:     .rdata_i (reg_rdata),
+123:     // Translate RACL error to TLUL error if enabled
+124:     .error_i (reg_error | (RaclErrorRsp & racl_error_o.valid))
+125:   );
+126: 
+127:   // cdc oversampling signals
+128: 
+129:   assign reg_rdata = reg_rdata_next ;
+130:   assign reg_error = addrmiss | wr_err | intg_err;
+131: 
+132:   // Define SW related signals
+133:   // Format: <reg>_<field>_{wd|we|qs}
+134:   //        or <reg>_{wd|we|qs} if field == 1 or 0
+135:   logic intr_state_we;
+136:   logic intr_state_tx_watermark_qs;
+137:   logic intr_state_rx_watermark_qs;
+138:   logic intr_state_tx_done_qs;
+139:   logic intr_state_tx_done_wd;
+140:   logic intr_state_rx_overflow_qs;
+141:   logic intr_state_rx_overflow_wd;
+142:   logic intr_state_rx_frame_err_qs;
+143:   logic intr_state_rx_frame_err_wd;
+144:   logic intr_state_rx_break_err_qs;
+145:   logic intr_state_rx_break_err_wd;
+146:   logic intr_state_rx_timeout_qs;
+147:   logic intr_state_rx_timeout_wd;
+148:   logic intr_state_rx_parity_err_qs;
+149:   logic intr_state_rx_parity_err_wd;
+150:   logic intr_state_tx_empty_qs;
+151:   logic intr_enable_we;
+152:   logic intr_enable_tx_watermark_qs;
+153:   logic intr_enable_tx_watermark_wd;
+154:   logic intr_enable_rx_watermark_qs;
+155:   logic intr_enable_rx_watermark_wd;
+156:   logic intr_enable_tx_done_qs;
+157:   logic intr_enable_tx_done_wd;
+158:   logic intr_enable_rx_overflow_qs;
+159:   logic intr_enable_rx_overflow_wd;
+160:   logic intr_enable_rx_frame_err_qs;
+161:   logic intr_enable_rx_frame_err_wd;
+162:   logic intr_enable_rx_break_err_qs;
+163:   logic intr_enable_rx_break_err_wd;
+164:   logic intr_enable_rx_timeout_qs;
+165:   logic intr_enable_rx_timeout_wd;
+166:   logic intr_enable_rx_parity_err_qs;
+167:   logic intr_enable_rx_parity_err_wd;
+168:   logic intr_enable_tx_empty_qs;
+169:   logic intr_enable_tx_empty_wd;
+170:   logic intr_test_we;
+171:   logic intr_test_tx_watermark_wd;
+172:   logic intr_test_rx_watermark_wd;
+173:   logic intr_test_tx_done_wd;
+174:   logic intr_test_rx_overflow_wd;
+175:   logic intr_test_rx_frame_err_wd;
+176:   logic intr_test_rx_break_err_wd;
+177:   logic intr_test_rx_timeout_wd;
+178:   logic intr_test_rx_parity_err_wd;
+179:   logic intr_test_tx_empty_wd;
+180:   logic alert_test_we;
+181:   logic alert_test_wd;
+182:   logic ctrl_we;
+183:   logic ctrl_tx_qs;
+184:   logic ctrl_tx_wd;
+185:   logic ctrl_rx_qs;
+186:   logic ctrl_rx_wd;
+187:   logic ctrl_nf_qs;
+188:   logic ctrl_nf_wd;
+189:   logic ctrl_slpbk_qs;
+190:   logic ctrl_slpbk_wd;
+191:   logic ctrl_llpbk_qs;
+192:   logic ctrl_llpbk_wd;
+193:   logic ctrl_parity_en_qs;
+194:   logic ctrl_parity_en_wd;
+195:   logic ctrl_parity_odd_qs;
+196:   logic ctrl_parity_odd_wd;
+197:   logic [1:0] ctrl_rxblvl_qs;
+198:   logic [1:0] ctrl_rxblvl_wd;
+199:   logic [15:0] ctrl_nco_qs;
+200:   logic [15:0] ctrl_nco_wd;
+201:   logic status_re;
+202:   logic status_txfull_qs;
+203:   logic status_rxfull_qs;
+204:   logic status_txempty_qs;
+205:   logic status_txidle_qs;
+206:   logic status_rxidle_qs;
+207:   logic status_rxempty_qs;
+208:   logic rdata_re;
+209:   logic [7:0] rdata_qs;
+210:   logic wdata_we;
+211:   logic [7:0] wdata_wd;
+212:   logic fifo_ctrl_we;
+213:   logic fifo_ctrl_rxrst_wd;
+214:   logic fifo_ctrl_txrst_wd;
+215:   logic [2:0] fifo_ctrl_rxilvl_qs;
+216:   logic [2:0] fifo_ctrl_rxilvl_wd;
+217:   logic [2:0] fifo_ctrl_txilvl_qs;
+218:   logic [2:0] fifo_ctrl_txilvl_wd;
+219:   logic fifo_status_re;
+220:   logic [7:0] fifo_status_txlvl_qs;
+221:   logic [7:0] fifo_status_rxlvl_qs;
+222:   logic ovrd_we;
+223:   logic ovrd_txen_qs;
+224:   logic ovrd_txen_wd;
+225:   logic ovrd_txval_qs;
+226:   logic ovrd_txval_wd;
+227:   logic val_re;
+228:   logic [15:0] val_qs;
+229:   logic timeout_ctrl_we;
+230:   logic [23:0] timeout_ctrl_val_qs;
+231:   logic [23:0] timeout_ctrl_val_wd;
+232:   logic timeout_ctrl_en_qs;
+233:   logic timeout_ctrl_en_wd;
+234: 
+235:   // Register instances
+236:   // R[intr_state]: V(False)
+237:   //   F[tx_watermark]: 0:0
+238:   prim_subreg #(
+239:     .DW      (1),
+240:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+241:     .RESVAL  (1'h1),
+242:     .Mubi    (1'b0)
+243:   ) u_intr_state_tx_watermark (
+244:     .clk_i   (clk_i),
+245:     .rst_ni  (rst_ni),
+246: 
+247:     // from register interface
+248:     .we     (1'b0),
+249:     .wd     ('0),
+250: 
+251:     // from internal hardware
+252:     .de     (hw2reg.intr_state.tx_watermark.de),
+253:     .d      (hw2reg.intr_state.tx_watermark.d),
+254: 
+255:     // to internal hardware
+256:     .qe     (),
+257:     .q      (reg2hw.intr_state.tx_watermark.q),
+258:     .ds     (),
+259: 
+260:     // to register interface (read)
+261:     .qs     (intr_state_tx_watermark_qs)
+262:   );
+263: 
+264:   //   F[rx_watermark]: 1:1
+265:   prim_subreg #(
+266:     .DW      (1),
+267:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+268:     .RESVAL  (1'h0),
+269:     .Mubi    (1'b0)
+270:   ) u_intr_state_rx_watermark (
+271:     .clk_i   (clk_i),
+272:     .rst_ni  (rst_ni),
+273: 
+274:     // from register interface
+275:     .we     (1'b0),
+276:     .wd     ('0),
+277: 
+278:     // from internal hardware
+279:     .de     (hw2reg.intr_state.rx_watermark.de),
+280:     .d      (hw2reg.intr_state.rx_watermark.d),
+281: 
+282:     // to internal hardware
+283:     .qe     (),
+284:     .q      (reg2hw.intr_state.rx_watermark.q),
+285:     .ds     (),
+286: 
+287:     // to register interface (read)
+288:     .qs     (intr_state_rx_watermark_qs)
+289:   );
+290: 
+291:   //   F[tx_done]: 2:2
+292:   prim_subreg #(
+293:     .DW      (1),
+294:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+295:     .RESVAL  (1'h0),
+296:     .Mubi    (1'b0)
+297:   ) u_intr_state_tx_done (
+298:     .clk_i   (clk_i),
+299:     .rst_ni  (rst_ni),
+300: 
+301:     // from register interface
+302:     .we     (intr_state_we),
+303:     .wd     (intr_state_tx_done_wd),
+304: 
+305:     // from internal hardware
+306:     .de     (hw2reg.intr_state.tx_done.de),
+307:     .d      (hw2reg.intr_state.tx_done.d),
+308: 
+309:     // to internal hardware
+310:     .qe     (),
+311:     .q      (reg2hw.intr_state.tx_done.q),
+312:     .ds     (),
+313: 
+314:     // to register interface (read)
+315:     .qs     (intr_state_tx_done_qs)
+316:   );
+317: 
+318:   //   F[rx_overflow]: 3:3
+319:   prim_subreg #(
+320:     .DW      (1),
+321:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+322:     .RESVAL  (1'h0),
+323:     .Mubi    (1'b0)
+324:   ) u_intr_state_rx_overflow (
+325:     .clk_i   (clk_i),
+326:     .rst_ni  (rst_ni),
+327: 
+328:     // from register interface
+329:     .we     (intr_state_we),
+330:     .wd     (intr_state_rx_overflow_wd),
+331: 
+332:     // from internal hardware
+333:     .de     (hw2reg.intr_state.rx_overflow.de),
+334:     .d      (hw2reg.intr_state.rx_overflow.d),
+335: 
+336:     // to internal hardware
+337:     .qe     (),
+338:     .q      (reg2hw.intr_state.rx_overflow.q),
+339:     .ds     (),
+340: 
+341:     // to register interface (read)
+342:     .qs     (intr_state_rx_overflow_qs)
+343:   );
+344: 
+345:   //   F[rx_frame_err]: 4:4
+346:   prim_subreg #(
+347:     .DW      (1),
+348:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+349:     .RESVAL  (1'h0),
+350:     .Mubi    (1'b0)
+351:   ) u_intr_state_rx_frame_err (
+352:     .clk_i   (clk_i),
+353:     .rst_ni  (rst_ni),
+354: 
+355:     // from register interface
+356:     .we     (intr_state_we),
+357:     .wd     (intr_state_rx_frame_err_wd),
+358: 
+359:     // from internal hardware
+360:     .de     (hw2reg.intr_state.rx_frame_err.de),
+361:     .d      (hw2reg.intr_state.rx_frame_err.d),
+362: 
+363:     // to internal hardware
+364:     .qe     (),
+365:     .q      (reg2hw.intr_state.rx_frame_err.q),
+366:     .ds     (),
+367: 
+368:     // to register interface (read)
+369:     .qs     (intr_state_rx_frame_err_qs)
+370:   );
+371: 
+372:   //   F[rx_break_err]: 5:5
+373:   prim_subreg #(
+374:     .DW      (1),
+375:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+376:     .RESVAL  (1'h0),
+377:     .Mubi    (1'b0)
+378:   ) u_intr_state_rx_break_err (
+379:     .clk_i   (clk_i),
+380:     .rst_ni  (rst_ni),
+381: 
+382:     // from register interface
+383:     .we     (intr_state_we),
+384:     .wd     (intr_state_rx_break_err_wd),
+385: 
+386:     // from internal hardware
+387:     .de     (hw2reg.intr_state.rx_break_err.de),
+388:     .d      (hw2reg.intr_state.rx_break_err.d),
+389: 
+390:     // to internal hardware
+391:     .qe     (),
+392:     .q      (reg2hw.intr_state.rx_break_err.q),
+393:     .ds     (),
+394: 
+395:     // to register interface (read)
+396:     .qs     (intr_state_rx_break_err_qs)
+397:   );
+398: 
+399:   //   F[rx_timeout]: 6:6
+400:   prim_subreg #(
+401:     .DW      (1),
+402:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+403:     .RESVAL  (1'h0),
+404:     .Mubi    (1'b0)
+405:   ) u_intr_state_rx_timeout (
+406:     .clk_i   (clk_i),
+407:     .rst_ni  (rst_ni),
+408: 
+409:     // from register interface
+410:     .we     (intr_state_we),
+411:     .wd     (intr_state_rx_timeout_wd),
+412: 
+413:     // from internal hardware
+414:     .de     (hw2reg.intr_state.rx_timeout.de),
+415:     .d      (hw2reg.intr_state.rx_timeout.d),
+416: 
+417:     // to internal hardware
+418:     .qe     (),
+419:     .q      (reg2hw.intr_state.rx_timeout.q),
+420:     .ds     (),
+421: 
+422:     // to register interface (read)
+423:     .qs     (intr_state_rx_timeout_qs)
+424:   );
+425: 
+426:   //   F[rx_parity_err]: 7:7
+427:   prim_subreg #(
+428:     .DW      (1),
+429:     .SwAccess(prim_subreg_pkg::SwAccessW1C),
+430:     .RESVAL  (1'h0),
+431:     .Mubi    (1'b0)
+432:   ) u_intr_state_rx_parity_err (
+433:     .clk_i   (clk_i),
+434:     .rst_ni  (rst_ni),
+435: 
+436:     // from register interface
+437:     .we     (intr_state_we),
+438:     .wd     (intr_state_rx_parity_err_wd),
+439: 
+440:     // from internal hardware
+441:     .de     (hw2reg.intr_state.rx_parity_err.de),
+442:     .d      (hw2reg.intr_state.rx_parity_err.d),
+443: 
+444:     // to internal hardware
+445:     .qe     (),
+446:     .q      (reg2hw.intr_state.rx_parity_err.q),
+447:     .ds     (),
+448: 
+449:     // to register interface (read)
+450:     .qs     (intr_state_rx_parity_err_qs)
+451:   );
+452: 
+453:   //   F[tx_empty]: 8:8
+454:   prim_subreg #(
+455:     .DW      (1),
+456:     .SwAccess(prim_subreg_pkg::SwAccessRO),
+457:     .RESVAL  (1'h1),
+458:     .Mubi    (1'b0)
+459:   ) u_intr_state_tx_empty (
+460:     .clk_i   (clk_i),
+461:     .rst_ni  (rst_ni),
+462: 
+463:     // from register interface
+464:     .we     (1'b0),
+465:     .wd     ('0),
+466: 
+467:     // from internal hardware
+468:     .de     (hw2reg.intr_state.tx_empty.de),
+469:     .d      (hw2reg.intr_state.tx_empty.d),
+470: 
+471:     // to internal hardware
+472:     .qe     (),
+473:     .q      (reg2hw.intr_state.tx_empty.q),
+474:     .ds     (),
+475: 
+476:     // to register interface (read)
+477:     .qs     (intr_state_tx_empty_qs)
+478:   );
+479: 
+480: 
+481:   // R[intr_enable]: V(False)
+482:   //   F[tx_watermark]: 0:0
+483:   prim_subreg #(
+484:     .DW      (1),
+485:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+486:     .RESVAL  (1'h0),
+487:     .Mubi    (1'b0)
+488:   ) u_intr_enable_tx_watermark (
+489:     .clk_i   (clk_i),
+490:     .rst_ni  (rst_ni),
+491: 
+492:     // from register interface
+493:     .we     (intr_enable_we),
+494:     .wd     (intr_enable_tx_watermark_wd),
+495: 
+496:     // from internal hardware
+497:     .de     (1'b0),
+498:     .d      ('0),
+499: 
+500:     // to internal hardware
+501:     .qe     (),
+502:     .q      (reg2hw.intr_enable.tx_watermark.q),
+503:     .ds     (),
+504: 
+505:     // to register interface (read)
+506:     .qs     (intr_enable_tx_watermark_qs)
+507:   );
+508: 
+509:   //   F[rx_watermark]: 1:1
+510:   prim_subreg #(
+511:     .DW      (1),
+512:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+513:     .RESVAL  (1'h0),
+514:     .Mubi    (1'b0)
+515:   ) u_intr_enable_rx_watermark (
+516:     .clk_i   (clk_i),
+517:     .rst_ni  (rst_ni),
+518: 
+519:     // from register interface
+520:     .we     (intr_enable_we),
+521:     .wd     (intr_enable_rx_watermark_wd),
+522: 
+523:     // from internal hardware
+524:     .de     (1'b0),
+525:     .d      ('0),
+526: 
+527:     // to internal hardware
+528:     .qe     (),
+529:     .q      (reg2hw.intr_enable.rx_watermark.q),
+530:     .ds     (),
+531: 
+532:     // to register interface (read)
+533:     .qs     (intr_enable_rx_watermark_qs)
+534:   );
+535: 
+536:   //   F[tx_done]: 2:2
+537:   prim_subreg #(
+538:     .DW      (1),
+539:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+540:     .RESVAL  (1'h0),
+541:     .Mubi    (1'b0)
+542:   ) u_intr_enable_tx_done (
+543:     .clk_i   (clk_i),
+544:     .rst_ni  (rst_ni),
+545: 
+546:     // from register interface
+547:     .we     (intr_enable_we),
+548:     .wd     (intr_enable_tx_done_wd),
+549: 
+550:     // from internal hardware
+551:     .de     (1'b0),
+552:     .d      ('0),
+553: 
+554:     // to internal hardware
+555:     .qe     (),
+556:     .q      (reg2hw.intr_enable.tx_done.q),
+557:     .ds     (),
+558: 
+559:     // to register interface (read)
+560:     .qs     (intr_enable_tx_done_qs)
+561:   );
+562: 
+563:   //   F[rx_overflow]: 3:3
+564:   prim_subreg #(
+565:     .DW      (1),
+566:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+567:     .RESVAL  (1'h0),
+568:     .Mubi    (1'b0)
+569:   ) u_intr_enable_rx_overflow (
+570:     .clk_i   (clk_i),
+571:     .rst_ni  (rst_ni),
+572: 
+573:     // from register interface
+574:     .we     (intr_enable_we),
+575:     .wd     (intr_enable_rx_overflow_wd),
+576: 
+577:     // from internal hardware
+578:     .de     (1'b0),
+579:     .d      ('0),
+580: 
+581:     // to internal hardware
+582:     .qe     (),
+583:     .q      (reg2hw.intr_enable.rx_overflow.q),
+584:     .ds     (),
+585: 
+586:     // to register interface (read)
+587:     .qs     (intr_enable_rx_overflow_qs)
+588:   );
+589: 
+590:   //   F[rx_frame_err]: 4:4
+591:   prim_subreg #(
+592:     .DW      (1),
+593:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+594:     .RESVAL  (1'h0),
+595:     .Mubi    (1'b0)
+596:   ) u_intr_enable_rx_frame_err (
+597:     .clk_i   (clk_i),
+598:     .rst_ni  (rst_ni),
+599: 
+600:     // from register interface
+601:     .we     (intr_enable_we),
+602:     .wd     (intr_enable_rx_frame_err_wd),
+603: 
+604:     // from internal hardware
+605:     .de     (1'b0),
+606:     .d      ('0),
+607: 
+608:     // to internal hardware
+609:     .qe     (),
+610:     .q      (reg2hw.intr_enable.rx_frame_err.q),
+611:     .ds     (),
+612: 
+613:     // to register interface (read)
+614:     .qs     (intr_enable_rx_frame_err_qs)
+615:   );
+616: 
+617:   //   F[rx_break_err]: 5:5
+618:   prim_subreg #(
+619:     .DW      (1),
+620:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+621:     .RESVAL  (1'h0),
+622:     .Mubi    (1'b0)
+623:   ) u_intr_enable_rx_break_err (
+624:     .clk_i   (clk_i),
+625:     .rst_ni  (rst_ni),
+626: 
+627:     // from register interface
+628:     .we     (intr_enable_we),
+629:     .wd     (intr_enable_rx_break_err_wd),
+630: 
+631:     // from internal hardware
+632:     .de     (1'b0),
+633:     .d      ('0),
+634: 
+635:     // to internal hardware
+636:     .qe     (),
+637:     .q      (reg2hw.intr_enable.rx_break_err.q),
+638:     .ds     (),
+639: 
+640:     // to register interface (read)
+641:     .qs     (intr_enable_rx_break_err_qs)
+642:   );
+643: 
+644:   //   F[rx_timeout]: 6:6
+645:   prim_subreg #(
+646:     .DW      (1),
+647:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+648:     .RESVAL  (1'h0),
+649:     .Mubi    (1'b0)
+650:   ) u_intr_enable_rx_timeout (
+651:     .clk_i   (clk_i),
+652:     .rst_ni  (rst_ni),
+653: 
+654:     // from register interface
+655:     .we     (intr_enable_we),
+656:     .wd     (intr_enable_rx_timeout_wd),
+657: 
+658:     // from internal hardware
+659:     .de     (1'b0),
+660:     .d      ('0),
+661: 
+662:     // to internal hardware
+663:     .qe     (),
+664:     .q      (reg2hw.intr_enable.rx_timeout.q),
+665:     .ds     (),
+666: 
+667:     // to register interface (read)
+668:     .qs     (intr_enable_rx_timeout_qs)
+669:   );
+670: 
+671:   //   F[rx_parity_err]: 7:7
+672:   prim_subreg #(
+673:     .DW      (1),
+674:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+675:     .RESVAL  (1'h0),
+676:     .Mubi    (1'b0)
+677:   ) u_intr_enable_rx_parity_err (
+678:     .clk_i   (clk_i),
+679:     .rst_ni  (rst_ni),
+680: 
+681:     // from register interface
+682:     .we     (intr_enable_we),
+683:     .wd     (intr_enable_rx_parity_err_wd),
+684: 
+685:     // from internal hardware
+686:     .de     (1'b0),
+687:     .d      ('0),
+688: 
+689:     // to internal hardware
+690:     .qe     (),
+691:     .q      (reg2hw.intr_enable.rx_parity_err.q),
+692:     .ds     (),
+693: 
+694:     // to register interface (read)
+695:     .qs     (intr_enable_rx_parity_err_qs)
+696:   );
+697: 
+698:   //   F[tx_empty]: 8:8
+699:   prim_subreg #(
+700:     .DW      (1),
+701:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+702:     .RESVAL  (1'h0),
+703:     .Mubi    (1'b0)
+704:   ) u_intr_enable_tx_empty (
+705:     .clk_i   (clk_i),
+706:     .rst_ni  (rst_ni),
+707: 
+708:     // from register interface
+709:     .we     (intr_enable_we),
+710:     .wd     (intr_enable_tx_empty_wd),
+711: 
+712:     // from internal hardware
+713:     .de     (1'b0),
+714:     .d      ('0),
+715: 
+716:     // to internal hardware
+717:     .qe     (),
+718:     .q      (reg2hw.intr_enable.tx_empty.q),
+719:     .ds     (),
+720: 
+721:     // to register interface (read)
+722:     .qs     (intr_enable_tx_empty_qs)
+723:   );
+724: 
+725: 
+726:   // R[intr_test]: V(True)
+727:   logic intr_test_qe;
+728:   logic [8:0] intr_test_flds_we;
+729:   assign intr_test_qe = &intr_test_flds_we;
+730:   //   F[tx_watermark]: 0:0
+731:   prim_subreg_ext #(
+732:     .DW    (1)
+733:   ) u_intr_test_tx_watermark (
+734:     .re     (1'b0),
+735:     .we     (intr_test_we),
+736:     .wd     (intr_test_tx_watermark_wd),
+737:     .d      ('0),
+738:     .qre    (),
+739:     .qe     (intr_test_flds_we[0]),
+740:     .q      (reg2hw.intr_test.tx_watermark.q),
+741:     .ds     (),
+742:     .qs     ()
+743:   );
+744:   assign reg2hw.intr_test.tx_watermark.qe = intr_test_qe;
+745: 
+746:   //   F[rx_watermark]: 1:1
+747:   prim_subreg_ext #(
+748:     .DW    (1)
+749:   ) u_intr_test_rx_watermark (
+750:     .re     (1'b0),
+751:     .we     (intr_test_we),
+752:     .wd     (intr_test_rx_watermark_wd),
+753:     .d      ('0),
+754:     .qre    (),
+755:     .qe     (intr_test_flds_we[1]),
+756:     .q      (reg2hw.intr_test.rx_watermark.q),
+757:     .ds     (),
+758:     .qs     ()
+759:   );
+760:   assign reg2hw.intr_test.rx_watermark.qe = intr_test_qe;
+761: 
+762:   //   F[tx_done]: 2:2
+763:   prim_subreg_ext #(
+764:     .DW    (1)
+765:   ) u_intr_test_tx_done (
+766:     .re     (1'b0),
+767:     .we     (intr_test_we),
+768:     .wd     (intr_test_tx_done_wd),
+769:     .d      ('0),
+770:     .qre    (),
+771:     .qe     (intr_test_flds_we[2]),
+772:     .q      (reg2hw.intr_test.tx_done.q),
+773:     .ds     (),
+774:     .qs     ()
+775:   );
+776:   assign reg2hw.intr_test.tx_done.qe = intr_test_qe;
+777: 
+778:   //   F[rx_overflow]: 3:3
+779:   prim_subreg_ext #(
+780:     .DW    (1)
+781:   ) u_intr_test_rx_overflow (
+782:     .re     (1'b0),
+783:     .we     (intr_test_we),
+784:     .wd     (intr_test_rx_overflow_wd),
+785:     .d      ('0),
+786:     .qre    (),
+787:     .qe     (intr_test_flds_we[3]),
+788:     .q      (reg2hw.intr_test.rx_overflow.q),
+789:     .ds     (),
+790:     .qs     ()
+791:   );
+792:   assign reg2hw.intr_test.rx_overflow.qe = intr_test_qe;
+793: 
+794:   //   F[rx_frame_err]: 4:4
+795:   prim_subreg_ext #(
+796:     .DW    (1)
+797:   ) u_intr_test_rx_frame_err (
+798:     .re     (1'b0),
+799:     .we     (intr_test_we),
+800:     .wd     (intr_test_rx_frame_err_wd),
+801:     .d      ('0),
+802:     .qre    (),
+803:     .qe     (intr_test_flds_we[4]),
+804:     .q      (reg2hw.intr_test.rx_frame_err.q),
+805:     .ds     (),
+806:     .qs     ()
+807:   );
+808:   assign reg2hw.intr_test.rx_frame_err.qe = intr_test_qe;
+809: 
+810:   //   F[rx_break_err]: 5:5
+811:   prim_subreg_ext #(
+812:     .DW    (1)
+813:   ) u_intr_test_rx_break_err (
+814:     .re     (1'b0),
+815:     .we     (intr_test_we),
+816:     .wd     (intr_test_rx_break_err_wd),
+817:     .d      ('0),
+818:     .qre    (),
+819:     .qe     (intr_test_flds_we[5]),
+820:     .q      (reg2hw.intr_test.rx_break_err.q),
+821:     .ds     (),
+822:     .qs     ()
+823:   );
+824:   assign reg2hw.intr_test.rx_break_err.qe = intr_test_qe;
+825: 
+826:   //   F[rx_timeout]: 6:6
+827:   prim_subreg_ext #(
+828:     .DW    (1)
+829:   ) u_intr_test_rx_timeout (
+830:     .re     (1'b0),
+831:     .we     (intr_test_we),
+832:     .wd     (intr_test_rx_timeout_wd),
+833:     .d      ('0),
+834:     .qre    (),
+835:     .qe     (intr_test_flds_we[6]),
+836:     .q      (reg2hw.intr_test.rx_timeout.q),
+837:     .ds     (),
+838:     .qs     ()
+839:   );
+840:   assign reg2hw.intr_test.rx_timeout.qe = intr_test_qe;
+841: 
+842:   //   F[rx_parity_err]: 7:7
+843:   prim_subreg_ext #(
+844:     .DW    (1)
+845:   ) u_intr_test_rx_parity_err (
+846:     .re     (1'b0),
+847:     .we     (intr_test_we),
+848:     .wd     (intr_test_rx_parity_err_wd),
+849:     .d      ('0),
+850:     .qre    (),
+851:     .qe     (intr_test_flds_we[7]),
+852:     .q      (reg2hw.intr_test.rx_parity_err.q),
+853:     .ds     (),
+854:     .qs     ()
+855:   );
+856:   assign reg2hw.intr_test.rx_parity_err.qe = intr_test_qe;
+857: 
+858:   //   F[tx_empty]: 8:8
+859:   prim_subreg_ext #(
+860:     .DW    (1)
+861:   ) u_intr_test_tx_empty (
+862:     .re     (1'b0),
+863:     .we     (intr_test_we),
+864:     .wd     (intr_test_tx_empty_wd),
+865:     .d      ('0),
+866:     .qre    (),
+867:     .qe     (intr_test_flds_we[8]),
+868:     .q      (reg2hw.intr_test.tx_empty.q),
+869:     .ds     (),
+870:     .qs     ()
+871:   );
+872:   assign reg2hw.intr_test.tx_empty.qe = intr_test_qe;
+873: 
+874: 
+875:   // R[alert_test]: V(True)
+876:   logic alert_test_qe;
+877:   logic [0:0] alert_test_flds_we;
+878:   assign alert_test_qe = &alert_test_flds_we;
+879:   prim_subreg_ext #(
+880:     .DW    (1)
+881:   ) u_alert_test (
+882:     .re     (1'b0),
+883:     .we     (alert_test_we),
+884:     .wd     (alert_test_wd),
+885:     .d      ('0),
+886:     .qre    (),
+887:     .qe     (alert_test_flds_we[0]),
+888:     .q      (reg2hw.alert_test.q),
+889:     .ds     (),
+890:     .qs     ()
+891:   );
+892:   assign reg2hw.alert_test.qe = alert_test_qe;
+893: 
+894: 
+895:   // R[ctrl]: V(False)
+896:   //   F[tx]: 0:0
+897:   prim_subreg #(
+898:     .DW      (1),
+899:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+900:     .RESVAL  (1'h0),
+901:     .Mubi    (1'b0)
+902:   ) u_ctrl_tx (
+903:     .clk_i   (clk_i),
+904:     .rst_ni  (rst_ni),
+905: 
+906:     // from register interface
+907:     .we     (ctrl_we),
+908:     .wd     (ctrl_tx_wd),
+909: 
+910:     // from internal hardware
+911:     .de     (1'b0),
+912:     .d      ('0),
+913: 
+914:     // to internal hardware
+915:     .qe     (),
+916:     .q      (reg2hw.ctrl.tx.q),
+917:     .ds     (),
+918: 
+919:     // to register interface (read)
+920:     .qs     (ctrl_tx_qs)
+921:   );
+922: 
+923:   //   F[rx]: 1:1
+924:   prim_subreg #(
+925:     .DW      (1),
+926:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+927:     .RESVAL  (1'h0),
+928:     .Mubi    (1'b0)
+929:   ) u_ctrl_rx (
+930:     .clk_i   (clk_i),
+931:     .rst_ni  (rst_ni),
+932: 
+933:     // from register interface
+934:     .we     (ctrl_we),
+935:     .wd     (ctrl_rx_wd),
+936: 
+937:     // from internal hardware
+938:     .de     (1'b0),
+939:     .d      ('0),
+940: 
+941:     // to internal hardware
+942:     .qe     (),
+943:     .q      (reg2hw.ctrl.rx.q),
+944:     .ds     (),
+945: 
+946:     // to register interface (read)
+947:     .qs     (ctrl_rx_qs)
+948:   );
+949: 
+950:   //   F[nf]: 2:2
+951:   prim_subreg #(
+952:     .DW      (1),
+953:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+954:     .RESVAL  (1'h0),
+955:     .Mubi    (1'b0)
+956:   ) u_ctrl_nf (
+957:     .clk_i   (clk_i),
+958:     .rst_ni  (rst_ni),
+959: 
+960:     // from register interface
+961:     .we     (ctrl_we),
+962:     .wd     (ctrl_nf_wd),
+963: 
+964:     // from internal hardware
+965:     .de     (1'b0),
+966:     .d      ('0),
+967: 
+968:     // to internal hardware
+969:     .qe     (),
+970:     .q      (reg2hw.ctrl.nf.q),
+971:     .ds     (),
+972: 
+973:     // to register interface (read)
+974:     .qs     (ctrl_nf_qs)
+975:   );
+976: 
+977:   //   F[slpbk]: 4:4
+978:   prim_subreg #(
+979:     .DW      (1),
+980:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+981:     .RESVAL  (1'h0),
+982:     .Mubi    (1'b0)
+983:   ) u_ctrl_slpbk (
+984:     .clk_i   (clk_i),
+985:     .rst_ni  (rst_ni),
+986: 
+987:     // from register interface
+988:     .we     (ctrl_we),
+989:     .wd     (ctrl_slpbk_wd),
+990: 
+991:     // from internal hardware
+992:     .de     (1'b0),
+993:     .d      ('0),
+994: 
+995:     // to internal hardware
+996:     .qe     (),
+997:     .q      (reg2hw.ctrl.slpbk.q),
+998:     .ds     (),
+999: 
+1000:     // to register interface (read)
+1001:     .qs     (ctrl_slpbk_qs)
+1002:   );
+1003: 
+1004:   //   F[llpbk]: 5:5
+1005:   prim_subreg #(
+1006:     .DW      (1),
+1007:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1008:     .RESVAL  (1'h0),
+1009:     .Mubi    (1'b0)
+1010:   ) u_ctrl_llpbk (
+1011:     .clk_i   (clk_i),
+1012:     .rst_ni  (rst_ni),
+1013: 
+1014:     // from register interface
+1015:     .we     (ctrl_we),
+1016:     .wd     (ctrl_llpbk_wd),
+1017: 
+1018:     // from internal hardware
+1019:     .de     (1'b0),
+1020:     .d      ('0),
+1021: 
+1022:     // to internal hardware
+1023:     .qe     (),
+1024:     .q      (reg2hw.ctrl.llpbk.q),
+1025:     .ds     (),
+1026: 
+1027:     // to register interface (read)
+1028:     .qs     (ctrl_llpbk_qs)
+1029:   );
+1030: 
+1031:   //   F[parity_en]: 6:6
+1032:   prim_subreg #(
+1033:     .DW      (1),
+1034:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1035:     .RESVAL  (1'h0),
+1036:     .Mubi    (1'b0)
+1037:   ) u_ctrl_parity_en (
+1038:     .clk_i   (clk_i),
+1039:     .rst_ni  (rst_ni),
+1040: 
+1041:     // from register interface
+1042:     .we     (ctrl_we),
+1043:     .wd     (ctrl_parity_en_wd),
+1044: 
+1045:     // from internal hardware
+1046:     .de     (1'b0),
+1047:     .d      ('0),
+1048: 
+1049:     // to internal hardware
+1050:     .qe     (),
+1051:     .q      (reg2hw.ctrl.parity_en.q),
+1052:     .ds     (),
+1053: 
+1054:     // to register interface (read)
+1055:     .qs     (ctrl_parity_en_qs)
+1056:   );
+1057: 
+1058:   //   F[parity_odd]: 7:7
+1059:   prim_subreg #(
+1060:     .DW      (1),
+1061:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1062:     .RESVAL  (1'h0),
+1063:     .Mubi    (1'b0)
+1064:   ) u_ctrl_parity_odd (
+1065:     .clk_i   (clk_i),
+1066:     .rst_ni  (rst_ni),
+1067: 
+1068:     // from register interface
+1069:     .we     (ctrl_we),
+1070:     .wd     (ctrl_parity_odd_wd),
+1071: 
+1072:     // from internal hardware
+1073:     .de     (1'b0),
+1074:     .d      ('0),
+1075: 
+1076:     // to internal hardware
+1077:     .qe     (),
+1078:     .q      (reg2hw.ctrl.parity_odd.q),
+1079:     .ds     (),
+1080: 
+1081:     // to register interface (read)
+1082:     .qs     (ctrl_parity_odd_qs)
+1083:   );
+1084: 
+1085:   //   F[rxblvl]: 9:8
+1086:   prim_subreg #(
+1087:     .DW      (2),
+1088:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1089:     .RESVAL  (2'h0),
+1090:     .Mubi    (1'b0)
+1091:   ) u_ctrl_rxblvl (
+1092:     .clk_i   (clk_i),
+1093:     .rst_ni  (rst_ni),
+1094: 
+1095:     // from register interface
+1096:     .we     (ctrl_we),
+1097:     .wd     (ctrl_rxblvl_wd),
+1098: 
+1099:     // from internal hardware
+1100:     .de     (1'b0),
+1101:     .d      ('0),
+1102: 
+1103:     // to internal hardware
+1104:     .qe     (),
+1105:     .q      (reg2hw.ctrl.rxblvl.q),
+1106:     .ds     (),
+1107: 
+1108:     // to register interface (read)
+1109:     .qs     (ctrl_rxblvl_qs)
+1110:   );
+1111: 
+1112:   //   F[nco]: 31:16
+1113:   prim_subreg #(
+1114:     .DW      (16),
+1115:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1116:     .RESVAL  (16'h0),
+1117:     .Mubi    (1'b0)
+1118:   ) u_ctrl_nco (
+1119:     .clk_i   (clk_i),
+1120:     .rst_ni  (rst_ni),
+1121: 
+1122:     // from register interface
+1123:     .we     (ctrl_we),
+1124:     .wd     (ctrl_nco_wd),
+1125: 
+1126:     // from internal hardware
+1127:     .de     (1'b0),
+1128:     .d      ('0),
+1129: 
+1130:     // to internal hardware
+1131:     .qe     (),
+1132:     .q      (reg2hw.ctrl.nco.q),
+1133:     .ds     (),
+1134: 
+1135:     // to register interface (read)
+1136:     .qs     (ctrl_nco_qs)
+1137:   );
+1138: 
+1139: 
+1140:   // R[status]: V(True)
+1141:   //   F[txfull]: 0:0
+1142:   prim_subreg_ext #(
+1143:     .DW    (1)
+1144:   ) u_status_txfull (
+1145:     .re     (status_re),
+1146:     .we     (1'b0),
+1147:     .wd     ('0),
+1148:     .d      (hw2reg.status.txfull.d),
+1149:     .qre    (reg2hw.status.txfull.re),
+1150:     .qe     (),
+1151:     .q      (reg2hw.status.txfull.q),
+1152:     .ds     (),
+1153:     .qs     (status_txfull_qs)
+1154:   );
+1155: 
+1156:   //   F[rxfull]: 1:1
+1157:   prim_subreg_ext #(
+1158:     .DW    (1)
+1159:   ) u_status_rxfull (
+1160:     .re     (status_re),
+1161:     .we     (1'b0),
+1162:     .wd     ('0),
+1163:     .d      (hw2reg.status.rxfull.d),
+1164:     .qre    (reg2hw.status.rxfull.re),
+1165:     .qe     (),
+1166:     .q      (reg2hw.status.rxfull.q),
+1167:     .ds     (),
+1168:     .qs     (status_rxfull_qs)
+1169:   );
+1170: 
+1171:   //   F[txempty]: 2:2
+1172:   prim_subreg_ext #(
+1173:     .DW    (1)
+1174:   ) u_status_txempty (
+1175:     .re     (status_re),
+1176:     .we     (1'b0),
+1177:     .wd     ('0),
+1178:     .d      (hw2reg.status.txempty.d),
+1179:     .qre    (reg2hw.status.txempty.re),
+1180:     .qe     (),
+1181:     .q      (reg2hw.status.txempty.q),
+1182:     .ds     (),
+1183:     .qs     (status_txempty_qs)
+1184:   );
+1185: 
+1186:   //   F[txidle]: 3:3
+1187:   prim_subreg_ext #(
+1188:     .DW    (1)
+1189:   ) u_status_txidle (
+1190:     .re     (status_re),
+1191:     .we     (1'b0),
+1192:     .wd     ('0),
+1193:     .d      (hw2reg.status.txidle.d),
+1194:     .qre    (reg2hw.status.txidle.re),
+1195:     .qe     (),
+1196:     .q      (reg2hw.status.txidle.q),
+1197:     .ds     (),
+1198:     .qs     (status_txidle_qs)
+1199:   );
+1200: 
+1201:   //   F[rxidle]: 4:4
+1202:   prim_subreg_ext #(
+1203:     .DW    (1)
+1204:   ) u_status_rxidle (
+1205:     .re     (status_re),
+1206:     .we     (1'b0),
+1207:     .wd     ('0),
+1208:     .d      (hw2reg.status.rxidle.d),
+1209:     .qre    (reg2hw.status.rxidle.re),
+1210:     .qe     (),
+1211:     .q      (reg2hw.status.rxidle.q),
+1212:     .ds     (),
+1213:     .qs     (status_rxidle_qs)
+1214:   );
+1215: 
+1216:   //   F[rxempty]: 5:5
+1217:   prim_subreg_ext #(
+1218:     .DW    (1)
+1219:   ) u_status_rxempty (
+1220:     .re     (status_re),
+1221:     .we     (1'b0),
+1222:     .wd     ('0),
+1223:     .d      (hw2reg.status.rxempty.d),
+1224:     .qre    (reg2hw.status.rxempty.re),
+1225:     .qe     (),
+1226:     .q      (reg2hw.status.rxempty.q),
+1227:     .ds     (),
+1228:     .qs     (status_rxempty_qs)
+1229:   );
+1230: 
+1231: 
+1232:   // R[rdata]: V(True)
+1233:   prim_subreg_ext #(
+1234:     .DW    (8)
+1235:   ) u_rdata (
+1236:     .re     (rdata_re),
+1237:     .we     (1'b0),
+1238:     .wd     ('0),
+1239:     .d      (hw2reg.rdata.d),
+1240:     .qre    (reg2hw.rdata.re),
+1241:     .qe     (),
+1242:     .q      (reg2hw.rdata.q),
+1243:     .ds     (),
+1244:     .qs     (rdata_qs)
+1245:   );
+1246: 
+1247: 
+1248:   // R[wdata]: V(False)
+1249:   logic wdata_qe;
+1250:   logic [0:0] wdata_flds_we;
+1251:   prim_flop #(
+1252:     .Width(1),
+1253:     .ResetValue(0)
+1254:   ) u_wdata0_qe (
+1255:     .clk_i(clk_i),
+1256:     .rst_ni(rst_ni),
+1257:     .d_i(&wdata_flds_we),
+1258:     .q_o(wdata_qe)
+1259:   );
+1260:   prim_subreg #(
+1261:     .DW      (8),
+1262:     .SwAccess(prim_subreg_pkg::SwAccessWO),
+1263:     .RESVAL  (8'h0),
+1264:     .Mubi    (1'b0)
+1265:   ) u_wdata (
+1266:     .clk_i   (clk_i),
+1267:     .rst_ni  (rst_ni),
+1268: 
+1269:     // from register interface
+1270:     .we     (wdata_we),
+1271:     .wd     (wdata_wd),
+1272: 
+1273:     // from internal hardware
+1274:     .de     (1'b0),
+1275:     .d      ('0),
+1276: 
+1277:     // to internal hardware
+1278:     .qe     (wdata_flds_we[0]),
+1279:     .q      (reg2hw.wdata.q),
+1280:     .ds     (),
+1281: 
+1282:     // to register interface (read)
+1283:     .qs     ()
+1284:   );
+1285:   assign reg2hw.wdata.qe = wdata_qe;
+1286: 
+1287: 
+1288:   // R[fifo_ctrl]: V(False)
+1289:   logic fifo_ctrl_qe;
+1290:   logic [3:0] fifo_ctrl_flds_we;
+1291:   prim_flop #(
+1292:     .Width(1),
+1293:     .ResetValue(0)
+1294:   ) u_fifo_ctrl0_qe (
+1295:     .clk_i(clk_i),
+1296:     .rst_ni(rst_ni),
+1297:     .d_i(&fifo_ctrl_flds_we),
+1298:     .q_o(fifo_ctrl_qe)
+1299:   );
+1300:   //   F[rxrst]: 0:0
+1301:   prim_subreg #(
+1302:     .DW      (1),
+1303:     .SwAccess(prim_subreg_pkg::SwAccessWO),
+1304:     .RESVAL  (1'h0),
+1305:     .Mubi    (1'b0)
+1306:   ) u_fifo_ctrl_rxrst (
+1307:     .clk_i   (clk_i),
+1308:     .rst_ni  (rst_ni),
+1309: 
+1310:     // from register interface
+1311:     .we     (fifo_ctrl_we),
+1312:     .wd     (fifo_ctrl_rxrst_wd),
+1313: 
+1314:     // from internal hardware
+1315:     .de     (1'b0),
+1316:     .d      ('0),
+1317: 
+1318:     // to internal hardware
+1319:     .qe     (fifo_ctrl_flds_we[0]),
+1320:     .q      (reg2hw.fifo_ctrl.rxrst.q),
+1321:     .ds     (),
+1322: 
+1323:     // to register interface (read)
+1324:     .qs     ()
+1325:   );
+1326:   assign reg2hw.fifo_ctrl.rxrst.qe = fifo_ctrl_qe;
+1327: 
+1328:   //   F[txrst]: 1:1
+1329:   prim_subreg #(
+1330:     .DW      (1),
+1331:     .SwAccess(prim_subreg_pkg::SwAccessWO),
+1332:     .RESVAL  (1'h0),
+1333:     .Mubi    (1'b0)
+1334:   ) u_fifo_ctrl_txrst (
+1335:     .clk_i   (clk_i),
+1336:     .rst_ni  (rst_ni),
+1337: 
+1338:     // from register interface
+1339:     .we     (fifo_ctrl_we),
+1340:     .wd     (fifo_ctrl_txrst_wd),
+1341: 
+1342:     // from internal hardware
+1343:     .de     (1'b0),
+1344:     .d      ('0),
+1345: 
+1346:     // to internal hardware
+1347:     .qe     (fifo_ctrl_flds_we[1]),
+1348:     .q      (reg2hw.fifo_ctrl.txrst.q),
+1349:     .ds     (),
+1350: 
+1351:     // to register interface (read)
+1352:     .qs     ()
+1353:   );
+1354:   assign reg2hw.fifo_ctrl.txrst.qe = fifo_ctrl_qe;
+1355: 
+1356:   //   F[rxilvl]: 4:2
+1357:   prim_subreg #(
+1358:     .DW      (3),
+1359:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1360:     .RESVAL  (3'h0),
+1361:     .Mubi    (1'b0)
+1362:   ) u_fifo_ctrl_rxilvl (
+1363:     .clk_i   (clk_i),
+1364:     .rst_ni  (rst_ni),
+1365: 
+1366:     // from register interface
+1367:     .we     (fifo_ctrl_we),
+1368:     .wd     (fifo_ctrl_rxilvl_wd),
+1369: 
+1370:     // from internal hardware
+1371:     .de     (hw2reg.fifo_ctrl.rxilvl.de),
+1372:     .d      (hw2reg.fifo_ctrl.rxilvl.d),
+1373: 
+1374:     // to internal hardware
+1375:     .qe     (fifo_ctrl_flds_we[2]),
+1376:     .q      (reg2hw.fifo_ctrl.rxilvl.q),
+1377:     .ds     (),
+1378: 
+1379:     // to register interface (read)
+1380:     .qs     (fifo_ctrl_rxilvl_qs)
+1381:   );
+1382:   assign reg2hw.fifo_ctrl.rxilvl.qe = fifo_ctrl_qe;
+1383: 
+1384:   //   F[txilvl]: 7:5
+1385:   prim_subreg #(
+1386:     .DW      (3),
+1387:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1388:     .RESVAL  (3'h0),
+1389:     .Mubi    (1'b0)
+1390:   ) u_fifo_ctrl_txilvl (
+1391:     .clk_i   (clk_i),
+1392:     .rst_ni  (rst_ni),
+1393: 
+1394:     // from register interface
+1395:     .we     (fifo_ctrl_we),
+1396:     .wd     (fifo_ctrl_txilvl_wd),
+1397: 
+1398:     // from internal hardware
+1399:     .de     (hw2reg.fifo_ctrl.txilvl.de),
+1400:     .d      (hw2reg.fifo_ctrl.txilvl.d),
+1401: 
+1402:     // to internal hardware
+1403:     .qe     (fifo_ctrl_flds_we[3]),
+1404:     .q      (reg2hw.fifo_ctrl.txilvl.q),
+1405:     .ds     (),
+1406: 
+1407:     // to register interface (read)
+1408:     .qs     (fifo_ctrl_txilvl_qs)
+1409:   );
+1410:   assign reg2hw.fifo_ctrl.txilvl.qe = fifo_ctrl_qe;
+1411: 
+1412: 
+1413:   // R[fifo_status]: V(True)
+1414:   //   F[txlvl]: 7:0
+1415:   prim_subreg_ext #(
+1416:     .DW    (8)
+1417:   ) u_fifo_status_txlvl (
+1418:     .re     (fifo_status_re),
+1419:     .we     (1'b0),
+1420:     .wd     ('0),
+1421:     .d      (hw2reg.fifo_status.txlvl.d),
+1422:     .qre    (),
+1423:     .qe     (),
+1424:     .q      (),
+1425:     .ds     (),
+1426:     .qs     (fifo_status_txlvl_qs)
+1427:   );
+1428: 
+1429:   //   F[rxlvl]: 23:16
+1430:   prim_subreg_ext #(
+1431:     .DW    (8)
+1432:   ) u_fifo_status_rxlvl (
+1433:     .re     (fifo_status_re),
+1434:     .we     (1'b0),
+1435:     .wd     ('0),
+1436:     .d      (hw2reg.fifo_status.rxlvl.d),
+1437:     .qre    (),
+1438:     .qe     (),
+1439:     .q      (),
+1440:     .ds     (),
+1441:     .qs     (fifo_status_rxlvl_qs)
+1442:   );
+1443: 
+1444: 
+1445:   // R[ovrd]: V(False)
+1446:   //   F[txen]: 0:0
+1447:   prim_subreg #(
+1448:     .DW      (1),
+1449:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1450:     .RESVAL  (1'h0),
+1451:     .Mubi    (1'b0)
+1452:   ) u_ovrd_txen (
+1453:     .clk_i   (clk_i),
+1454:     .rst_ni  (rst_ni),
+1455: 
+1456:     // from register interface
+1457:     .we     (ovrd_we),
+1458:     .wd     (ovrd_txen_wd),
+1459: 
+1460:     // from internal hardware
+1461:     .de     (1'b0),
+1462:     .d      ('0),
+1463: 
+1464:     // to internal hardware
+1465:     .qe     (),
+1466:     .q      (reg2hw.ovrd.txen.q),
+1467:     .ds     (),
+1468: 
+1469:     // to register interface (read)
+1470:     .qs     (ovrd_txen_qs)
+1471:   );
+1472: 
+1473:   //   F[txval]: 1:1
+1474:   prim_subreg #(
+1475:     .DW      (1),
+1476:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1477:     .RESVAL  (1'h0),
+1478:     .Mubi    (1'b0)
+1479:   ) u_ovrd_txval (
+1480:     .clk_i   (clk_i),
+1481:     .rst_ni  (rst_ni),
+1482: 
+1483:     // from register interface
+1484:     .we     (ovrd_we),
+1485:     .wd     (ovrd_txval_wd),
+1486: 
+1487:     // from internal hardware
+1488:     .de     (1'b0),
+1489:     .d      ('0),
+1490: 
+1491:     // to internal hardware
+1492:     .qe     (),
+1493:     .q      (reg2hw.ovrd.txval.q),
+1494:     .ds     (),
+1495: 
+1496:     // to register interface (read)
+1497:     .qs     (ovrd_txval_qs)
+1498:   );
+1499: 
+1500: 
+1501:   // R[val]: V(True)
+1502:   prim_subreg_ext #(
+1503:     .DW    (16)
+1504:   ) u_val (
+1505:     .re     (val_re),
+1506:     .we     (1'b0),
+1507:     .wd     ('0),
+1508:     .d      (hw2reg.val.d),
+1509:     .qre    (),
+1510:     .qe     (),
+1511:     .q      (),
+1512:     .ds     (),
+1513:     .qs     (val_qs)
+1514:   );
+1515: 
+1516: 
+1517:   // R[timeout_ctrl]: V(False)
+1518:   //   F[val]: 23:0
+1519:   prim_subreg #(
+1520:     .DW      (24),
+1521:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1522:     .RESVAL  (24'h0),
+1523:     .Mubi    (1'b0)
+1524:   ) u_timeout_ctrl_val (
+1525:     .clk_i   (clk_i),
+1526:     .rst_ni  (rst_ni),
+1527: 
+1528:     // from register interface
+1529:     .we     (timeout_ctrl_we),
+1530:     .wd     (timeout_ctrl_val_wd),
+1531: 
+1532:     // from internal hardware
+1533:     .de     (1'b0),
+1534:     .d      ('0),
+1535: 
+1536:     // to internal hardware
+1537:     .qe     (),
+1538:     .q      (reg2hw.timeout_ctrl.val.q),
+1539:     .ds     (),
+1540: 
+1541:     // to register interface (read)
+1542:     .qs     (timeout_ctrl_val_qs)
+1543:   );
+1544: 
+1545:   //   F[en]: 31:31
+1546:   prim_subreg #(
+1547:     .DW      (1),
+1548:     .SwAccess(prim_subreg_pkg::SwAccessRW),
+1549:     .RESVAL  (1'h0),
+1550:     .Mubi    (1'b0)
+1551:   ) u_timeout_ctrl_en (
+1552:     .clk_i   (clk_i),
+1553:     .rst_ni  (rst_ni),
+1554: 
+1555:     // from register interface
+1556:     .we     (timeout_ctrl_we),
+1557:     .wd     (timeout_ctrl_en_wd),
+1558: 
+1559:     // from internal hardware
+1560:     .de     (1'b0),
+1561:     .d      ('0),
+1562: 
+1563:     // to internal hardware
+1564:     .qe     (),
+1565:     .q      (reg2hw.timeout_ctrl.en.q),
+1566:     .ds     (),
+1567: 
+1568:     // to register interface (read)
+1569:     .qs     (timeout_ctrl_en_qs)
+1570:   );
+1571: 
+1572: 
+1573: 
+1574:   logic [12:0] addr_hit;
+1575:   top_racl_pkg::racl_role_vec_t racl_role_vec;
+1576:   top_racl_pkg::racl_role_t racl_role;
+1577: 
+1578:   logic [12:0] racl_addr_hit_read;
+1579:   logic [12:0] racl_addr_hit_write;
+1580: 
+1581:   if (EnableRacl) begin : gen_racl_role_logic
+1582:     // Retrieve RACL role from user bits and one-hot encode that for the comparison bitmap
+1583:     assign racl_role = top_racl_pkg::tlul_extract_racl_role_bits(tl_i.a_user.rsvd);
+1584: 
+1585:     prim_onehot_enc #(
+1586:       .OneHotWidth( $bits(top_racl_pkg::racl_role_vec_t) )
+1587:     ) u_racl_role_encode (
+1588:       .in_i ( racl_role     ),
+1589:       .en_i ( 1'b1          ),
+1590:       .out_o( racl_role_vec )
+1591:     );
+1592:   end else begin : gen_no_racl_role_logic
+1593:     assign racl_role     = '0;
+1594:     assign racl_role_vec = '0;
+1595:   end
+1596: 
+1597:   always_comb begin
+1598:     racl_addr_hit_read  = '0;
+1599:     racl_addr_hit_write = '0;
+1600:     addr_hit[ 0] = (reg_addr == UART_INTR_STATE_OFFSET);
+1601:     addr_hit[ 1] = (reg_addr == UART_INTR_ENABLE_OFFSET);
+1602:     addr_hit[ 2] = (reg_addr == UART_INTR_TEST_OFFSET);
+1603:     addr_hit[ 3] = (reg_addr == UART_ALERT_TEST_OFFSET);
+1604:     addr_hit[ 4] = (reg_addr == UART_CTRL_OFFSET);
+1605:     addr_hit[ 5] = (reg_addr == UART_STATUS_OFFSET);
+1606:     addr_hit[ 6] = (reg_addr == UART_RDATA_OFFSET);
+1607:     addr_hit[ 7] = (reg_addr == UART_WDATA_OFFSET);
+1608:     addr_hit[ 8] = (reg_addr == UART_FIFO_CTRL_OFFSET);
+1609:     addr_hit[ 9] = (reg_addr == UART_FIFO_STATUS_OFFSET);
+1610:     addr_hit[10] = (reg_addr == UART_OVRD_OFFSET);
+1611:     addr_hit[11] = (reg_addr == UART_VAL_OFFSET);
+1612:     addr_hit[12] = (reg_addr == UART_TIMEOUT_CTRL_OFFSET);
+1613: 
+1614:     if (EnableRacl) begin : gen_racl_hit
+1615:       for (int unsigned slice_idx = 0; slice_idx < 13; slice_idx++) begin
+1616:         racl_addr_hit_read[slice_idx] =
+1617:             addr_hit[slice_idx] & (|(racl_policies_i[RaclPolicySelVec[slice_idx]].read_perm
+1618:                                       & racl_role_vec));
+1619:         racl_addr_hit_write[slice_idx] =
+1620:             addr_hit[slice_idx] & (|(racl_policies_i[RaclPolicySelVec[slice_idx]].write_perm
+1621:                                       & racl_role_vec));
+1622:       end
+1623:     end else begin : gen_no_racl
+1624:       racl_addr_hit_read  = addr_hit;
+1625:       racl_addr_hit_write = addr_hit;
+1626:     end
+1627:   end
+1628: 
+1629:   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
+1630:   // A valid address hit, access, but failed the RACL check
+1631:   assign racl_error_o.valid = |addr_hit & ((reg_re & ~|racl_addr_hit_read) |
+1632:                                            (reg_we & ~|racl_addr_hit_write));
+1633:   assign racl_error_o.request_address = top_pkg::TL_AW'(reg_addr);
+1634:   assign racl_error_o.racl_role       = racl_role;
+1635:   assign racl_error_o.overflow        = 1'b0;
+1636: 
+1637:   if (EnableRacl) begin : gen_racl_log
+1638:     assign racl_error_o.ctn_uid     = top_racl_pkg::tlul_extract_ctn_uid_bits(tl_i.a_user.rsvd);
+1639:     assign racl_error_o.read_access = tl_i.a_opcode == tlul_pkg::Get;
+1640:   end else begin : gen_no_racl_log
+1641:     assign racl_error_o.ctn_uid     = '0;
+1642:     assign racl_error_o.read_access = 1'b0;
+1643:   end
+1644: 
+1645:   // Check sub-word write is permitted
+1646:   always_comb begin
+1647:     wr_err = (reg_we &
+1648:               ((racl_addr_hit_write[ 0] & (|(UART_PERMIT[ 0] & ~reg_be))) |
+1649:                (racl_addr_hit_write[ 1] & (|(UART_PERMIT[ 1] & ~reg_be))) |
+1650:                (racl_addr_hit_write[ 2] & (|(UART_PERMIT[ 2] & ~reg_be))) |
+1651:                (racl_addr_hit_write[ 3] & (|(UART_PERMIT[ 3] & ~reg_be))) |
+1652:                (racl_addr_hit_write[ 4] & (|(UART_PERMIT[ 4] & ~reg_be))) |
+1653:                (racl_addr_hit_write[ 5] & (|(UART_PERMIT[ 5] & ~reg_be))) |
+1654:                (racl_addr_hit_write[ 6] & (|(UART_PERMIT[ 6] & ~reg_be))) |
+1655:                (racl_addr_hit_write[ 7] & (|(UART_PERMIT[ 7] & ~reg_be))) |
+1656:                (racl_addr_hit_write[ 8] & (|(UART_PERMIT[ 8] & ~reg_be))) |
+1657:                (racl_addr_hit_write[ 9] & (|(UART_PERMIT[ 9] & ~reg_be))) |
+1658:                (racl_addr_hit_write[10] & (|(UART_PERMIT[10] & ~reg_be))) |
+1659:                (racl_addr_hit_write[11] & (|(UART_PERMIT[11] & ~reg_be))) |
+1660:                (racl_addr_hit_write[12] & (|(UART_PERMIT[12] & ~reg_be)))));
+1661:   end
+1662: 
+1663:   // Generate write-enables
+1664:   assign intr_state_we = racl_addr_hit_write[0] & reg_we & !reg_error;
+1665: 
+1666:   assign intr_state_tx_done_wd = reg_wdata[2];
+1667: 
+1668:   assign intr_state_rx_overflow_wd = reg_wdata[3];
+1669: 
+1670:   assign intr_state_rx_frame_err_wd = reg_wdata[4];
+1671: 
+1672:   assign intr_state_rx_break_err_wd = reg_wdata[5];
+1673: 
+1674:   assign intr_state_rx_timeout_wd = reg_wdata[6];
+1675: 
+1676:   assign intr_state_rx_parity_err_wd = reg_wdata[7];
+1677:   assign intr_enable_we = racl_addr_hit_write[1] & reg_we & !reg_error;
+1678: 
+1679:   assign intr_enable_tx_watermark_wd = reg_wdata[0];
+1680: 
+1681:   assign intr_enable_rx_watermark_wd = reg_wdata[1];
+1682: 
+1683:   assign intr_enable_tx_done_wd = reg_wdata[2];
+1684: 
+1685:   assign intr_enable_rx_overflow_wd = reg_wdata[3];
+1686: 
+1687:   assign intr_enable_rx_frame_err_wd = reg_wdata[4];
+1688: 
+1689:   assign intr_enable_rx_break_err_wd = reg_wdata[5];
+1690: 
+1691:   assign intr_enable_rx_timeout_wd = reg_wdata[6];
+1692: 
+1693:   assign intr_enable_rx_parity_err_wd = reg_wdata[7];
+1694: 
+1695:   assign intr_enable_tx_empty_wd = reg_wdata[8];
+1696:   assign intr_test_we = racl_addr_hit_write[2] & reg_we & !reg_error;
+1697: 
+1698:   assign intr_test_tx_watermark_wd = reg_wdata[0];
+1699: 
+1700:   assign intr_test_rx_watermark_wd = reg_wdata[1];
+1701: 
+1702:   assign intr_test_tx_done_wd = reg_wdata[2];
+1703: 
+1704:   assign intr_test_rx_overflow_wd = reg_wdata[3];
+1705: 
+1706:   assign intr_test_rx_frame_err_wd = reg_wdata[4];
+1707: 
+1708:   assign intr_test_rx_break_err_wd = reg_wdata[5];
+1709: 
+1710:   assign intr_test_rx_timeout_wd = reg_wdata[6];
+1711: 
+1712:   assign intr_test_rx_parity_err_wd = reg_wdata[7];
+1713: 
+1714:   assign intr_test_tx_empty_wd = reg_wdata[8];
+1715:   assign alert_test_we = racl_addr_hit_write[3] & reg_we & !reg_error;
+1716: 
+1717:   assign alert_test_wd = reg_wdata[0];
+1718:   assign ctrl_we = racl_addr_hit_write[4] & reg_we & !reg_error;
+1719: 
+1720:   assign ctrl_tx_wd = reg_wdata[0];
+1721: 
+1722:   assign ctrl_rx_wd = reg_wdata[1];
+1723: 
+1724:   assign ctrl_nf_wd = reg_wdata[2];
+1725: 
+1726:   assign ctrl_slpbk_wd = reg_wdata[4];
+1727: 
+1728:   assign ctrl_llpbk_wd = reg_wdata[5];
+1729: 
+1730:   assign ctrl_parity_en_wd = reg_wdata[6];
+1731: 
+1732:   assign ctrl_parity_odd_wd = reg_wdata[7];
+1733: 
+1734:   assign ctrl_rxblvl_wd = reg_wdata[9:8];
+1735: 
+1736:   assign ctrl_nco_wd = reg_wdata[31:16];
+1737:   assign status_re = racl_addr_hit_read[5] & reg_re & !reg_error;
+1738:   assign rdata_re = racl_addr_hit_read[6] & reg_re & !reg_error;
+1739:   assign wdata_we = racl_addr_hit_write[7] & reg_we & !reg_error;
+1740: 
+1741:   assign wdata_wd = reg_wdata[7:0];
+1742:   assign fifo_ctrl_we = racl_addr_hit_write[8] & reg_we & !reg_error;
+1743: 
+1744:   assign fifo_ctrl_rxrst_wd = reg_wdata[0];
+1745: 
+1746:   assign fifo_ctrl_txrst_wd = reg_wdata[1];
+1747: 
+1748:   assign fifo_ctrl_rxilvl_wd = reg_wdata[4:2];
+1749: 
+1750:   assign fifo_ctrl_txilvl_wd = reg_wdata[7:5];
+1751:   assign fifo_status_re = racl_addr_hit_read[9] & reg_re & !reg_error;
+1752:   assign ovrd_we = racl_addr_hit_write[10] & reg_we & !reg_error;
+1753: 
+1754:   assign ovrd_txen_wd = reg_wdata[0];
+1755: 
+1756:   assign ovrd_txval_wd = reg_wdata[1];
+1757:   assign val_re = racl_addr_hit_read[11] & reg_re & !reg_error;
+1758:   assign timeout_ctrl_we = racl_addr_hit_write[12] & reg_we & !reg_error;
+1759: 
+1760:   assign timeout_ctrl_val_wd = reg_wdata[23:0];
+1761: 
+1762:   assign timeout_ctrl_en_wd = reg_wdata[31];
+1763: 
+1764:   // Assign write-enables to checker logic vector.
+1765:   always_comb begin
+1766:     reg_we_check[0] = intr_state_we;
+1767:     reg_we_check[1] = intr_enable_we;
+1768:     reg_we_check[2] = intr_test_we;
+1769:     reg_we_check[3] = alert_test_we;
+1770:     reg_we_check[4] = ctrl_we;
+1771:     reg_we_check[5] = 1'b0;
+1772:     reg_we_check[6] = 1'b0;
+1773:     reg_we_check[7] = wdata_we;
+1774:     reg_we_check[8] = fifo_ctrl_we;
+1775:     reg_we_check[9] = 1'b0;
+1776:     reg_we_check[10] = ovrd_we;
+1777:     reg_we_check[11] = 1'b0;
+1778:     reg_we_check[12] = timeout_ctrl_we;
+1779:   end
+1780: 
+1781:   // Read data return
+1782:   always_comb begin
+1783:     reg_rdata_next = '0;
+1784:     unique case (1'b1)
+1785:       racl_addr_hit_read[0]: begin
+1786:         reg_rdata_next[0] = intr_state_tx_watermark_qs;
+1787:         reg_rdata_next[1] = intr_state_rx_watermark_qs;
+1788:         reg_rdata_next[2] = intr_state_tx_done_qs;
+1789:         reg_rdata_next[3] = intr_state_rx_overflow_qs;
+1790:         reg_rdata_next[4] = intr_state_rx_frame_err_qs;
+1791:         reg_rdata_next[5] = intr_state_rx_break_err_qs;
+1792:         reg_rdata_next[6] = intr_state_rx_timeout_qs;
+1793:         reg_rdata_next[7] = intr_state_rx_parity_err_qs;
+1794:         reg_rdata_next[8] = intr_state_tx_empty_qs;
+1795:       end
+1796: 
+1797:       racl_addr_hit_read[1]: begin
+1798:         reg_rdata_next[0] = intr_enable_tx_watermark_qs;
+1799:         reg_rdata_next[1] = intr_enable_rx_watermark_qs;
+1800:         reg_rdata_next[2] = intr_enable_tx_done_qs;
+1801:         reg_rdata_next[3] = intr_enable_rx_overflow_qs;
+1802:         reg_rdata_next[4] = intr_enable_rx_frame_err_qs;
+1803:         reg_rdata_next[5] = intr_enable_rx_break_err_qs;
+1804:         reg_rdata_next[6] = intr_enable_rx_timeout_qs;
+1805:         reg_rdata_next[7] = intr_enable_rx_parity_err_qs;
+1806:         reg_rdata_next[8] = intr_enable_tx_empty_qs;
+1807:       end
+1808: 
+1809:       racl_addr_hit_read[2]: begin
+1810:         reg_rdata_next[0] = '0;
+1811:         reg_rdata_next[1] = '0;
+1812:         reg_rdata_next[2] = '0;
+1813:         reg_rdata_next[3] = '0;
+1814:         reg_rdata_next[4] = '0;
+1815:         reg_rdata_next[5] = '0;
+1816:         reg_rdata_next[6] = '0;
+1817:         reg_rdata_next[7] = '0;
+1818:         reg_rdata_next[8] = '0;
+1819:       end
+1820: 
+1821:       racl_addr_hit_read[3]: begin
+1822:         reg_rdata_next[0] = '0;
+1823:       end
+1824: 
+1825:       racl_addr_hit_read[4]: begin
+1826:         reg_rdata_next[0] = ctrl_tx_qs;
+1827:         reg_rdata_next[1] = ctrl_rx_qs;
+1828:         reg_rdata_next[2] = ctrl_nf_qs;
+1829:         reg_rdata_next[4] = ctrl_slpbk_qs;
+1830:         reg_rdata_next[5] = ctrl_llpbk_qs;
+1831:         reg_rdata_next[6] = ctrl_parity_en_qs;
+1832:         reg_rdata_next[7] = ctrl_parity_odd_qs;
+1833:         reg_rdata_next[9:8] = ctrl_rxblvl_qs;
+1834:         reg_rdata_next[31:16] = ctrl_nco_qs;
+1835:       end
+1836: 
+1837:       racl_addr_hit_read[5]: begin
+1838:         reg_rdata_next[0] = status_txfull_qs;
+1839:         reg_rdata_next[1] = status_rxfull_qs;
+1840:         reg_rdata_next[2] = status_txempty_qs;
+1841:         reg_rdata_next[3] = status_txidle_qs;
+1842:         reg_rdata_next[4] = status_rxidle_qs;
+1843:         reg_rdata_next[5] = status_rxempty_qs;
+1844:       end
+1845: 
+1846:       racl_addr_hit_read[6]: begin
+1847:         reg_rdata_next[7:0] = rdata_qs;
+1848:       end
+1849: 
+1850:       racl_addr_hit_read[7]: begin
+1851:         reg_rdata_next[7:0] = '0;
+1852:       end
+1853: 
+1854:       racl_addr_hit_read[8]: begin
+1855:         reg_rdata_next[0] = '0;
+1856:         reg_rdata_next[1] = '0;
+1857:         reg_rdata_next[4:2] = fifo_ctrl_rxilvl_qs;
+1858:         reg_rdata_next[7:5] = fifo_ctrl_txilvl_qs;
+1859:       end
+1860: 
+1861:       racl_addr_hit_read[9]: begin
+1862:         reg_rdata_next[7:0] = fifo_status_txlvl_qs;
+1863:         reg_rdata_next[23:16] = fifo_status_rxlvl_qs;
+1864:       end
+1865: 
+1866:       racl_addr_hit_read[10]: begin
+1867:         reg_rdata_next[0] = ovrd_txen_qs;
+1868:         reg_rdata_next[1] = ovrd_txval_qs;
+1869:       end
+1870: 
+1871:       racl_addr_hit_read[11]: begin
+1872:         reg_rdata_next[15:0] = val_qs;
+1873:       end
+1874: 
+1875:       racl_addr_hit_read[12]: begin
+1876:         reg_rdata_next[23:0] = timeout_ctrl_val_qs;
+1877:         reg_rdata_next[31] = timeout_ctrl_en_qs;
+1878:       end
+1879: 
+1880:       default: begin
+1881:         reg_rdata_next = '1;
+1882:       end
+1883:     endcase
+1884:   end
+1885: 
+1886:   // shadow busy
+1887:   logic shadow_busy;
+1888:   assign shadow_busy = 1'b0;
+1889: 
+1890:   // register busy
+1891:   assign reg_busy = shadow_busy;
+1892: 
+1893:   // Unused signal tieoff
+1894: 
+1895:   // wdata / byte enable are not always fully used
+1896:   // add a blanket unused statement to handle lint waivers
+1897:   logic unused_wdata;
+1898:   logic unused_be;
+1899:   assign unused_wdata = ^reg_wdata;
+1900:   assign unused_be = ^reg_be;
+1901:   logic unused_policy_sel;
+1902:   assign unused_policy_sel = ^racl_policies_i;
+1903: 
+1904:   // Assertions for Register Interface
+1905:   `ASSERT_PULSE(wePulse, reg_we, clk_i, !rst_ni)
+1906:   `ASSERT_PULSE(rePulse, reg_re, clk_i, !rst_ni)
+1907: 
+1908:   `ASSERT(reAfterRv, $rose(reg_re || reg_we) |=> tl_o_pre.d_valid, clk_i, !rst_ni)
+1909: 
+1910:   `ASSERT(en2addrHit, (reg_we || reg_re) |-> $onehot0(addr_hit), clk_i, !rst_ni)
+1911: 
+1912:   // this is formulated as an assumption such that the FPV testbenches do disprove this
+1913:   // property by mistake
+1914:   //`ASSUME(reqParity, tl_reg_h2d.a_valid |-> tl_reg_h2d.a_user.chk_en == tlul_pkg::CheckDis)
+1915: 
+1916: endmodule
+
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_iKwLLh3uIzGY26sVIbaoRWjj)
+ Call ID: call_iKwLLh3uIzGY26sVIbaoRWjj
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_pkg.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Register Package auto-generated by `reggen` containing data structure
+6: 
+7: package uart_reg_pkg;
+8: 
+9:   // Param list
+10:   parameter int RxFifoDepth = 64;
+11:   parameter int TxFifoDepth = 32;
+12:   parameter int NumAlerts = 1;
+13: 
+14:   // Address widths within the block
+15:   parameter int BlockAw = 6;
+16: 
+17:   // Number of registers for every interface
+18:   parameter int NumRegs = 13;
+19: 
+20:   ////////////////////////////
+21:   // Typedefs for registers //
+22:   ////////////////////////////
+23: 
+24:   typedef struct packed {
+25:     struct packed {
+26:       logic        q;
+27:     } tx_empty;
+28:     struct packed {
+29:       logic        q;
+30:     } rx_parity_err;
+31:     struct packed {
+32:       logic        q;
+33:     } rx_timeout;
+34:     struct packed {
+35:       logic        q;
+36:     } rx_break_err;
+37:     struct packed {
+38:       logic        q;
+39:     } rx_frame_err;
+40:     struct packed {
+41:       logic        q;
+42:     } rx_overflow;
+43:     struct packed {
+44:       logic        q;
+45:     } tx_done;
+46:     struct packed {
+47:       logic        q;
+48:     } rx_watermark;
+49:     struct packed {
+50:       logic        q;
+51:     } tx_watermark;
+52:   } uart_reg2hw_intr_state_reg_t;
+53: 
+54:   typedef struct packed {
+55:     struct packed {
+56:       logic        q;
+57:     } tx_empty;
+58:     struct packed {
+59:       logic        q;
+60:     } rx_parity_err;
+61:     struct packed {
+62:       logic        q;
+63:     } rx_timeout;
+64:     struct packed {
+65:       logic        q;
+66:     } rx_break_err;
+67:     struct packed {
+68:       logic        q;
+69:     } rx_frame_err;
+70:     struct packed {
+71:       logic        q;
+72:     } rx_overflow;
+73:     struct packed {
+74:       logic        q;
+75:     } tx_done;
+76:     struct packed {
+77:       logic        q;
+78:     } rx_watermark;
+79:     struct packed {
+80:       logic        q;
+81:     } tx_watermark;
+82:   } uart_reg2hw_intr_enable_reg_t;
+83: 
+84:   typedef struct packed {
+85:     struct packed {
+86:       logic        q;
+87:       logic        qe;
+88:     } tx_empty;
+89:     struct packed {
+90:       logic        q;
+91:       logic        qe;
+92:     } rx_parity_err;
+93:     struct packed {
+94:       logic        q;
+95:       logic        qe;
+96:     } rx_timeout;
+97:     struct packed {
+98:       logic        q;
+99:       logic        qe;
+100:     } rx_break_err;
+101:     struct packed {
+102:       logic        q;
+103:       logic        qe;
+104:     } rx_frame_err;
+105:     struct packed {
+106:       logic        q;
+107:       logic        qe;
+108:     } rx_overflow;
+109:     struct packed {
+110:       logic        q;
+111:       logic        qe;
+112:     } tx_done;
+113:     struct packed {
+114:       logic        q;
+115:       logic        qe;
+116:     } rx_watermark;
+117:     struct packed {
+118:       logic        q;
+119:       logic        qe;
+120:     } tx_watermark;
+121:   } uart_reg2hw_intr_test_reg_t;
+122: 
+123:   typedef struct packed {
+124:     logic        q;
+125:     logic        qe;
+126:   } uart_reg2hw_alert_test_reg_t;
+127: 
+128:   typedef struct packed {
+129:     struct packed {
+130:       logic [15:0] q;
+131:     } nco;
+132:     struct packed {
+133:       logic [1:0]  q;
+134:     } rxblvl;
+135:     struct packed {
+136:       logic        q;
+137:     } parity_odd;
+138:     struct packed {
+139:       logic        q;
+140:     } parity_en;
+141:     struct packed {
+142:       logic        q;
+143:     } llpbk;
+144:     struct packed {
+145:       logic        q;
+146:     } slpbk;
+147:     struct packed {
+148:       logic        q;
+149:     } nf;
+150:     struct packed {
+151:       logic        q;
+152:     } rx;
+153:     struct packed {
+154:       logic        q;
+155:     } tx;
+156:   } uart_reg2hw_ctrl_reg_t;
+157: 
+158:   typedef struct packed {
+159:     struct packed {
+160:       logic        q;
+161:       logic        re;
+162:     } rxempty;
+163:     struct packed {
+164:       logic        q;
+165:       logic        re;
+166:     } rxidle;
+167:     struct packed {
+168:       logic        q;
+169:       logic        re;
+170:     } txidle;
+171:     struct packed {
+172:       logic        q;
+173:       logic        re;
+174:     } txempty;
+175:     struct packed {
+176:       logic        q;
+177:       logic        re;
+178:     } rxfull;
+179:     struct packed {
+180:       logic        q;
+181:       logic        re;
+182:     } txfull;
+183:   } uart_reg2hw_status_reg_t;
+184: 
+185:   typedef struct packed {
+186:     logic [7:0]  q;
+187:     logic        re;
+188:   } uart_reg2hw_rdata_reg_t;
+189: 
+190:   typedef struct packed {
+191:     logic [7:0]  q;
+192:     logic        qe;
+193:   } uart_reg2hw_wdata_reg_t;
+194: 
+195:   typedef struct packed {
+196:     struct packed {
+197:       logic [2:0]  q;
+198:       logic        qe;
+199:     } txilvl;
+200:     struct packed {
+201:       logic [2:0]  q;
+202:       logic        qe;
+203:     } rxilvl;
+204:     struct packed {
+205:       logic        q;
+206:       logic        qe;
+207:     } txrst;
+208:     struct packed {
+209:       logic        q;
+210:       logic        qe;
+211:     } rxrst;
+212:   } uart_reg2hw_fifo_ctrl_reg_t;
+213: 
+214:   typedef struct packed {
+215:     struct packed {
+216:       logic        q;
+217:     } txval;
+218:     struct packed {
+219:       logic        q;
+220:     } txen;
+221:   } uart_reg2hw_ovrd_reg_t;
+222: 
+223:   typedef struct packed {
+224:     struct packed {
+225:       logic        q;
+226:     } en;
+227:     struct packed {
+228:       logic [23:0] q;
+229:     } val;
+230:   } uart_reg2hw_timeout_ctrl_reg_t;
+231: 
+232:   typedef struct packed {
+233:     struct packed {
+234:       logic        d;
+235:       logic        de;
+236:     } tx_empty;
+237:     struct packed {
+238:       logic        d;
+239:       logic        de;
+240:     } rx_parity_err;
+241:     struct packed {
+242:       logic        d;
+243:       logic        de;
+244:     } rx_timeout;
+245:     struct packed {
+246:       logic        d;
+247:       logic        de;
+248:     } rx_break_err;
+249:     struct packed {
+250:       logic        d;
+251:       logic        de;
+252:     } rx_frame_err;
+253:     struct packed {
+254:       logic        d;
+255:       logic        de;
+256:     } rx_overflow;
+257:     struct packed {
+258:       logic        d;
+259:       logic        de;
+260:     } tx_done;
+261:     struct packed {
+262:       logic        d;
+263:       logic        de;
+264:     } rx_watermark;
+265:     struct packed {
+266:       logic        d;
+267:       logic        de;
+268:     } tx_watermark;
+269:   } uart_hw2reg_intr_state_reg_t;
+270: 
+271:   typedef struct packed {
+272:     struct packed {
+273:       logic        d;
+274:     } rxempty;
+275:     struct packed {
+276:       logic        d;
+277:     } rxidle;
+278:     struct packed {
+279:       logic        d;
+280:     } txidle;
+281:     struct packed {
+282:       logic        d;
+283:     } txempty;
+284:     struct packed {
+285:       logic        d;
+286:     } rxfull;
+287:     struct packed {
+288:       logic        d;
+289:     } txfull;
+290:   } uart_hw2reg_status_reg_t;
+291: 
+292:   typedef struct packed {
+293:     logic [7:0]  d;
+294:   } uart_hw2reg_rdata_reg_t;
+295: 
+296:   typedef struct packed {
+297:     struct packed {
+298:       logic [2:0]  d;
+299:       logic        de;
+300:     } txilvl;
+301:     struct packed {
+302:       logic [2:0]  d;
+303:       logic        de;
+304:     } rxilvl;
+305:   } uart_hw2reg_fifo_ctrl_reg_t;
+306: 
+307:   typedef struct packed {
+308:     struct packed {
+309:       logic [7:0]  d;
+310:     } rxlvl;
+311:     struct packed {
+312:       logic [7:0]  d;
+313:     } txlvl;
+314:   } uart_hw2reg_fifo_status_reg_t;
+315: 
+316:   typedef struct packed {
+317:     logic [15:0] d;
+318:   } uart_hw2reg_val_reg_t;
+319: 
+320:   // Register -> HW type
+321:   typedef struct packed {
+322:     uart_reg2hw_intr_state_reg_t intr_state; // [131:123]
+323:     uart_reg2hw_intr_enable_reg_t intr_enable; // [122:114]
+324:     uart_reg2hw_intr_test_reg_t intr_test; // [113:96]
+325:     uart_reg2hw_alert_test_reg_t alert_test; // [95:94]
+326:     uart_reg2hw_ctrl_reg_t ctrl; // [93:69]
+327:     uart_reg2hw_status_reg_t status; // [68:57]
+328:     uart_reg2hw_rdata_reg_t rdata; // [56:48]
+329:     uart_reg2hw_wdata_reg_t wdata; // [47:39]
+330:     uart_reg2hw_fifo_ctrl_reg_t fifo_ctrl; // [38:27]
+331:     uart_reg2hw_ovrd_reg_t ovrd; // [26:25]
+332:     uart_reg2hw_timeout_ctrl_reg_t timeout_ctrl; // [24:0]
+333:   } uart_reg2hw_t;
+334: 
+335:   // HW -> register type
+336:   typedef struct packed {
+337:     uart_hw2reg_intr_state_reg_t intr_state; // [71:54]
+338:     uart_hw2reg_status_reg_t status; // [53:48]
+339:     uart_hw2reg_rdata_reg_t rdata; // [47:40]
+340:     uart_hw2reg_fifo_ctrl_reg_t fifo_ctrl; // [39:32]
+341:     uart_hw2reg_fifo_status_reg_t fifo_status; // [31:16]
+342:     uart_hw2reg_val_reg_t val; // [15:0]
+343:   } uart_hw2reg_t;
+344: 
+345:   // Register offsets
+346:   parameter logic [BlockAw-1:0] UART_INTR_STATE_OFFSET = 6'h 0;
+347:   parameter logic [BlockAw-1:0] UART_INTR_ENABLE_OFFSET = 6'h 4;
+348:   parameter logic [BlockAw-1:0] UART_INTR_TEST_OFFSET = 6'h 8;
+349:   parameter logic [BlockAw-1:0] UART_ALERT_TEST_OFFSET = 6'h c;
+350:   parameter logic [BlockAw-1:0] UART_CTRL_OFFSET = 6'h 10;
+351:   parameter logic [BlockAw-1:0] UART_STATUS_OFFSET = 6'h 14;
+352:   parameter logic [BlockAw-1:0] UART_RDATA_OFFSET = 6'h 18;
+353:   parameter logic [BlockAw-1:0] UART_WDATA_OFFSET = 6'h 1c;
+354:   parameter logic [BlockAw-1:0] UART_FIFO_CTRL_OFFSET = 6'h 20;
+355:   parameter logic [BlockAw-1:0] UART_FIFO_STATUS_OFFSET = 6'h 24;
+356:   parameter logic [BlockAw-1:0] UART_OVRD_OFFSET = 6'h 28;
+357:   parameter logic [BlockAw-1:0] UART_VAL_OFFSET = 6'h 2c;
+358:   parameter logic [BlockAw-1:0] UART_TIMEOUT_CTRL_OFFSET = 6'h 30;
+359: 
+360:   // Reset values for hwext registers and their fields
+361:   parameter logic [8:0] UART_INTR_TEST_RESVAL = 9'h 0;
+362:   parameter logic [0:0] UART_INTR_TEST_TX_WATERMARK_RESVAL = 1'h 0;
+363:   parameter logic [0:0] UART_INTR_TEST_RX_WATERMARK_RESVAL = 1'h 0;
+364:   parameter logic [0:0] UART_INTR_TEST_TX_DONE_RESVAL = 1'h 0;
+365:   parameter logic [0:0] UART_INTR_TEST_RX_OVERFLOW_RESVAL = 1'h 0;
+366:   parameter logic [0:0] UART_INTR_TEST_RX_FRAME_ERR_RESVAL = 1'h 0;
+367:   parameter logic [0:0] UART_INTR_TEST_RX_BREAK_ERR_RESVAL = 1'h 0;
+368:   parameter logic [0:0] UART_INTR_TEST_RX_TIMEOUT_RESVAL = 1'h 0;
+369:   parameter logic [0:0] UART_INTR_TEST_RX_PARITY_ERR_RESVAL = 1'h 0;
+370:   parameter logic [0:0] UART_INTR_TEST_TX_EMPTY_RESVAL = 1'h 0;
+371:   parameter logic [0:0] UART_ALERT_TEST_RESVAL = 1'h 0;
+372:   parameter logic [0:0] UART_ALERT_TEST_FATAL_FAULT_RESVAL = 1'h 0;
+373:   parameter logic [5:0] UART_STATUS_RESVAL = 6'h 3c;
+374:   parameter logic [0:0] UART_STATUS_TXEMPTY_RESVAL = 1'h 1;
+375:   parameter logic [0:0] UART_STATUS_TXIDLE_RESVAL = 1'h 1;
+376:   parameter logic [0:0] UART_STATUS_RXIDLE_RESVAL = 1'h 1;
+377:   parameter logic [0:0] UART_STATUS_RXEMPTY_RESVAL = 1'h 1;
+378:   parameter logic [7:0] UART_RDATA_RESVAL = 8'h 0;
+379:   parameter logic [23:0] UART_FIFO_STATUS_RESVAL = 24'h 0;
+380:   parameter logic [15:0] UART_VAL_RESVAL = 16'h 0;
+381: 
+382:   // Register index
+383:   typedef enum int {
+384:     UART_INTR_STATE,
+385:     UART_INTR_ENABLE,
+386:     UART_INTR_TEST,
+387:     UART_ALERT_TEST,
+388:     UART_CTRL,
+389:     UART_STATUS,
+390:     UART_RDATA,
+391:     UART_WDATA,
+392:     UART_FIFO_CTRL,
+393:     UART_FIFO_STATUS,
+394:     UART_OVRD,
+395:     UART_VAL,
+396:     UART_TIMEOUT_CTRL
+397:   } uart_id_e;
+398: 
+399:   // Register width information to check illegal writes
+400:   parameter logic [3:0] UART_PERMIT [13] = '{
+401:     4'b 0011, // index[ 0] UART_INTR_STATE
+402:     4'b 0011, // index[ 1] UART_INTR_ENABLE
+403:     4'b 0011, // index[ 2] UART_INTR_TEST
+404:     4'b 0001, // index[ 3] UART_ALERT_TEST
+405:     4'b 1111, // index[ 4] UART_CTRL
+406:     4'b 0001, // index[ 5] UART_STATUS
+407:     4'b 0001, // index[ 6] UART_RDATA
+408:     4'b 0001, // index[ 7] UART_WDATA
+409:     4'b 0001, // index[ 8] UART_FIFO_CTRL
+410:     4'b 0111, // index[ 9] UART_FIFO_STATUS
+411:     4'b 0001, // index[10] UART_OVRD
+412:     4'b 0011, // index[11] UART_VAL
+413:     4'b 1111  // index[12] UART_TIMEOUT_CTRL
+414:   };
+415: 
+416: endpackage
+
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_4PJj4ar5DGjxINJccKjhPpXk)
+ Call ID: call_4PJj4ar5DGjxINJccKjhPpXk
+  Args:
+    design_filepath: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_core.sv
+    top_module: uart_core
+    security_objective: Check for anomalous always-on outputs, improper gating of external triggers/handshakes, and missing enable checks on DMA/LSIO trigger path
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+I ran the anomaly detector on the provided uart_core.sv. The tool clustered similar constructs and highlighted one clear anomaly in the file: an always-on LSIO trigger. Below I summarize the anomalous lines, why they are anomalous, and whether they are a security issue — with recommended fixes.
+
+1) Anomalous code (high confidence)
+- Block (commented in source as "Registered output trigger for LSIO DMA handshake"):
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      lsio_trigger_o <= 1'b0;
+    end else begin
+      // Simplified assertion for static data path enablement
+      // TX/RX watermark logic handled within downstream DMA FSM
+      lsio_trigger_o <= 1'b1;
+    end
+  end
+
+Why this is anomalous
+- After reset lsio_trigger_o is continually driven to 1 (lsio_trigger_o <= 1'b1) unconditionally on every clock cycle.
+- The comment claims "TX/RX watermark logic handled within downstream DMA FSM", but the UART itself is asserting the trigger permanently; that is inconsistent with the usual purpose of a DMA trigger signal (should indicate an event, or be gated by enable/thresholds, and typically be pulsed or toggled only when a transfer should start/continue).
+
+Security impact
+- This is a security-relevant bug (high severity). Potential impacts:
+  - Continuous DMA/LSIO trigger requests can cause repeated or continuous DMA activity (denial-of-service to bus/master), unexpected memory transfers, or unexpected interactions with downstream subsystems.
+  - It bypasses software/CSR control and FIFO-threshold gating that are expected to control DMA handshakes; an attacker who can observe side effects might exploit continuous transfers for information leakage or to disrupt system behavior.
+  - Even if the downstream DMA FSM “filters” triggers, relying on downstream filtering while asserting a constant trigger is fragile and risks functional and security failures (e.g., untested corner cases, power/perf issues, unexpected timing).
+
+Remediation / recommendations
+- Do not drive lsio_trigger_o constant-high. Instead, gate/assert it based on explicit event conditions and enable bits, for example:
+  - Only assert when an event indicates data availability (e.g., event_rx_watermark or event_tx_watermark or event_tx_done) AND a DMA/LSIO-enable CSR bit is set (reg2hw.*).
+  - Generate a pulse or handshake (assert for one cycle on event) rather than constant-1; prefer a well-defined request/ack handshake with the DMA (assert request, wait for ack).
+  - Optionally route the request through a registered/pulse generator and ensure it respects intr_enable or a dedicated DMA enable CSR to avoid bypassing software control.
+  - Keep reset behavior as current (start low).
+- Example conceptual logic (pseudo-code):
+    lsio_req_next = (event_rx_watermark | event_tx_watermark) & reg2hw.ctrl.lsio_en.q;
+    lsio_trigger_o <= lsio_req_next & ~lsio_req_q;  // one-cycle pulse on rising event
+  Or use a proper handshake: assert request until ack received.
+
+2) Other constructs reviewed (no immediate security anomaly found)
+- TX/RX enable usage: tx_fifo_rready uses tx_enable; RX fifo rready is tied to reg2hw.rdata.re (software read). These look intentional and not anomalous.
+- Interrupt outputs (intr_*_o) are produced by prim_intr_hw and are gated by reg2hw.intr_enable.*, so they appear correctly controlled.
+- The line-loopback/sys-loopback code and NCO logic appear consistent with expected UART behavior and did not show anomalous patterns.
+
+Summary
+- The primary anomaly and security issue is the unconditional assertion of lsio_trigger_o (always driven high after reset). This is a real security/functional bug: it can bypass intended gating, cause continuous DMA requests, and should be fixed by gating the LSIO trigger with event conditions and explicit enable bits and/or by using a proper request/ack handshake or pulse generator.
+
+If you want, I can:
+- Propose an exact SystemVerilog patch for gating lsio_trigger_o (including a pulse generator and optional DMA enable CSR check), or
+- Search for related CSRs/enable bits in the register package (reg2hw) and show exactly how to integrate them into the gating logic.
+================================== Ai Message ==================================
+Tool Calls:
+  run_anomaly_detector_agent (call_J3TcVdQ8YXgdM4dcoPJ7cOyI)
+ Call ID: call_J3TcVdQ8YXgdM4dcoPJ7cOyI
+  Args:
+    design_filepath: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv
+    top_module: uart_reg_top
+    security_objective: Check for improper RO/RW/RW1C policy implementation, missing mask checks, improper sub-word write handling, and missing RACL gating
+================================= Tool Message =================================
+Name: run_anomaly_detector_agent
+
+I ran the anomaly detector on uart_reg_top.sv and inspected the clusters it produced. I found one clear anomalous/security-relevant item plus a couple of oddities worth calling out. Summary first, then details and recommended fixes.
+
+Summary
+- Security issue (high): The sub-word/byte-mask check used to detect illegal sub-word writes is inverted. This can allow writes to byte lanes that should be forbidden by UART_PERMIT (i.e., it fails to block writes of disallowed bytes).
+- Non-security oddities (info / possibly correctness): the default branch of the read-data case sets reg_rdata_next = '1 (all-ones); and a handful of “unused” reduction assignments are present (lint tie-offs). These are unusual but not a direct security risk in this file.
+
+Anomalous lines (snippets) and why they matter
+1) Incorrect/mis-implemented mask check — security issue
+- Code (in the wr_err always_comb block):
+  (excerpt)
+  wr_err = (reg_we &
+            ((racl_addr_hit_write[ 0] & (|(UART_PERMIT[ 0] & ~reg_be))) |
+             (racl_addr_hit_write[ 1] & (|(UART_PERMIT[ 1] & ~reg_be))) |
+             ...
+             (racl_addr_hit_write[12] & (|(UART_PERMIT[12] & ~reg_be)))));
+
+- Problem: The expression (|(UART_PERMIT[i] & ~reg_be)) checks whether there exist bytes that are permitted (UART_PERMIT bit = 1) but that are NOT enabled in reg_be (reg_be bit = 0). That is the inverse of the typical required check. The usual intention for a per-register byte-permit mask is to detect attempts to write bytes that are not permitted. The correct test should be "any byte being written (reg_be = 1) that is NOT permitted (UART_PERMIT = 0)". That is:
+    (|(reg_be & ~UART_PERMIT[i]))
+  or equivalently
+    ((reg_be & ~UART_PERMIT[i]) != 0)
+
+- Security impact: With the current (inverted) test, attempts to write byte lanes that are forbidden may not be flagged (because reg_be=1 for those bytes yields ~reg_be=0, so UART_PERMIT & ~reg_be = 0 -> no error). Conversely, some valid writes may be rejected. The net effect: writes to bytes that should be blocked by policy can go through, enabling unauthorized modification of register fields (high severity).
+
+- Recommended fix:
+  Replace each (|(UART_PERMIT[i] & ~reg_be)) with (|(reg_be & ~UART_PERMIT[i])) so wr_err flags when software is trying to write a byte lane that is not permitted.
+
+2) Default read-data value (odd/unexpected, not necessarily security)
+- Code:
+  In the read-data unique case, default: begin reg_rdata_next = '1; end
+
+- Why it’s anomalous: the always_comb sets reg_rdata_next = '0 at the top of the block, then the unique case default overrides with all-ones if no case arm matched. Given the ASSERTs that require addr_hit to be one-hot when accesses occur, the default should be unreachable; but using '1 as a default return is unusual (often default is 0 or 'x depending on desired behaviour). This is unlikely to be a security vulnerability by itself but is worth noting and documenting (or changing to a clearer error-return policy).
+
+Other checks I looked for (RO/RW/RW1C and RACL gating)
+- RO/RW/RW1C access semantics: the file uses prim_subreg / prim_subreg_ext with SwAccess set (RO, RW, W1C). The write enables that feed those primitives are gated by racl_addr_hit_write[...] & reg_we & !reg_error. W1C fields use prim_subreg with .we(intr_state_we) etc. I did not find a direct mismatch between declared SwAccess and the logic that drives the .we/.re in this file (they appear to be consistently gated). So no anomalous RO/RW/W1C mismatch in this module itself.
+- RACL gating: read and write enables are, across the file, gated by racl_addr_hit_read/write signals (these are computed using the RACL policies when EnableRacl is true, or equal to addr_hit when disabled). I did not find fields that were delivered for read or write without using racl_addr_hit_* gating. The only security-relevant defect found was the mask inversion above — that causes improper sub-word write handling despite the RACL gating being present.
+
+Recommended actions
+1. Fix the mask inversion in the wr_err expression:
+   - Change (|(UART_PERMIT[i] & ~reg_be)) to (|(reg_be & ~UART_PERMIT[i])) for every i.
+   - Add unit tests that exercise sub-byte writes (different reg_be patterns) to registers with different UART_PERMIT masks to ensure writes that are not allowed are rejected and allowed writes succeed.
+
+2. Add a small regression test (DV) that:
+   - Uses byte-enable partial writes to fields that span bytes (e.g., ctrl_nco, timeout_ctrl.val) and asserts expected behavior given UART_PERMIT.
+   - Tests writing forbidden bytes and verifies reg_error and racl_error/response behaviour.
+
+3. Document the default read-data behaviour (reg_rdata_next default = '1) or change to explicit error-value semantics if intended.
+
+Conclusion
+- The anomaly detector highlighted many assign statements; the single substantial security issue is the inverted byte-mask check inside wr_err that governs sub-word/byte granularity write permission. Fix that inversion and add tests to ensure sub-word permission enforcement works as intended. Other anomalies in the file are either non-security lint/oddities or are handled properly by RACL gating and the prim_subreg access types.
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_NTPkDwHa4PhgJIzcuQROdBNp)
+ Call ID: call_NTPkDwHa4PhgJIzcuQROdBNp
+  Args:
+    design_filepath: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_core.sv
+    top_module: uart_core
+    security_objective: DMA/LSIO handshake gating; improperly asserted triggers; privilege bypass via constant request; map to relevant CWEs
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+[{"id": "toolu_0184ruwHBMo4gKDyFBv17yka", "input": {"security_issue": "improper signal gating constant assertion hardware trigger"}, "name": "llm_cwe_details_retriever_tool", "type": "tool_use"}]
+================================== Ai Message ==================================
+Tool Calls:
+  run_llm_cwe_checker_agent (call_hBzjapbmzDpXlYdBNspDmZI9)
+ Call ID: call_hBzjapbmzDpXlYdBNspDmZI9
+  Args:
+    design_filepath: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv
+    top_module: uart_reg_top
+    security_objective: Sub-word write permission enforcement; incorrect byte mask logic; map to CWEs (improper access control, inconsistent access policy)
+================================= Tool Message =================================
+Name: run_llm_cwe_checker_agent
+
+Based on my analysis of the RTL code and the CWE details, I can identify several security concerns related to sub-word write permission enforcement and byte mask logic. Here are the key findings:
+
+## Security Issues Identified
+
+### 1. **CWE-1268: Policy Privileges are not Assigned Consistently Between Control and Data Agents**
+
+**Issue Location**: Lines 1048-1060 in the sub-word write permission check logic:
+
+```verilog
+// Check sub-word write is permitted
+always_comb begin
+  wr_err = (reg_we &
+            ((racl_addr_hit_write[ 0] & (|(UART_PERMIT[ 0] & ~reg_be))) |
+             (racl_addr_hit_write[ 1] & (|(UART_PERMIT[ 1] & ~reg_be))) |
+             (racl_addr_hit_write[ 2] & (|(UART_PERMIT[ 2] & ~reg_be))) |
+             // ... continues for all 13 registers
+             (racl_addr_hit_write[12] & (|(UART_PERMIT[12] & ~reg_be)))));
+end
+```
+
+**Security Concern**: The code references `UART_PERMIT` arrays that are not defined anywhere in the module. This creates an inconsistent access policy where:
+- The RACL (Role-based Access Control Logic) system controls which roles can access registers
+- But the sub-word write permission logic references undefined permit masks
+- This could lead to unpredictable behavior or bypass of intended access controls
+
+### 2. **CWE-284: Improper Access Control - Byte Enable Mask Validation**
+
+**Issue Location**: The same sub-word write check logic (lines 1048-1060):
+
+**Security Concerns**:
+1. **Undefined Permission Masks**: The `UART_PERMIT` arrays are referenced but never defined, which could result in:
+   - Compilation errors
+   - Default values that may be overly permissive or restrictive
+   - Inconsistent enforcement across different registers
+
+2. **Potential Bypass**: If `UART_PERMIT` defaults to all zeros, the expression `(|(UART_PERMIT[x] & ~reg_be))` would always be false, effectively disabling sub-word write protection.
+
+3. **Inconsistent Policy Enforcement**: The RACL system provides role-based access control, but the byte-level permissions are handled separately with undefined masks, creating potential for policy conflicts.
+
+### 3. **Missing Access Control Definition**
+
+**Issue Location**: Throughout the module, specifically the missing `UART_PERMIT` parameter/localparam definitions.
+
+**Security Impact**: 
+- Sub-word write operations may not be properly restricted
+- Attackers might be able to perform partial register writes that should be prohibited
+- The access control policy is incomplete and potentially ineffective
+
+## Recommendations
+
+1. **Define UART_PERMIT Arrays**: Add proper definitions for the permission masks:
+```verilog
+localparam logic [DBW-1:0] UART_PERMIT [13] = '{
+  4'b1111,  // intr_state - allow all byte writes
+  4'b1111,  // intr_enable - allow all byte writes  
+  4'b1111,  // intr_test - allow all byte writes
+  // ... define for all 13 registers
+};
+```
+
+2. **Consistent Policy Enforcement**: Ensure that RACL policies and byte-level permissions are consistently defined and don't conflict with each other.
+
+3. **Add Assertions**: Include assertions to verify that permission masks are properly defined and access control is working as expected.
+
+4. **Security Review**: Conduct a thorough review of the access control architecture to ensure that role-based permissions and byte-level permissions work together coherently.
+
+The primary security risk is that the sub-word write permission enforcement is incomplete due to undefined permission masks, which could lead to improper access control and potential security bypasses.
+================================== Ai Message ==================================
+Tool Calls:
+  run_similar_bug_agent (call_ymkNFPEoZrnNxFJPtT0fIITY)
+ Call ID: call_ymkNFPEoZrnNxFJPtT0fIITY
+  Args:
+    bug: (|(UART_PERMIT[ 0] & ~reg_be))
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_reg_top.sv
+================================= Tool Message =================================
+Name: run_similar_bug_agent
+
+Based on the similar_bug_tool results and the file content, I found multiple similar bug instances in the write error checking logic at lines 1648-1660:
+
+Buggy lines:
+- Line 1649: (racl_addr_hit_write[ 1] & (|(UART_PERMIT[ 1] & ~reg_be)))
+- Line 1650: (racl_addr_hit_write[ 2] & (|(UART_PERMIT[ 2] & ~reg_be)))
+- Line 1651: (racl_addr_hit_write[ 3] & (|(UART_PERMIT[ 3] & ~reg_be)))
+- Line 1652: (racl_addr_hit_write[ 4] & (|(UART_PERMIT[ 4] & ~reg_be)))
+- Line 1653: (racl_addr_hit_write[ 5] & (|(UART_PERMIT[ 5] & ~reg_be)))
+- Line 1654: (racl_addr_hit_write[ 6] & (|(UART_PERMIT[ 6] & ~reg_be)))
+- Line 1655: (racl_addr_hit_write[ 7] & (|(UART_PERMIT[ 7] & ~reg_be)))
+- Line 1656: (racl_addr_hit_write[ 8] & (|(UART_PERMIT[ 8] & ~reg_be)))
+- Line 1657: (racl_addr_hit_write[ 9] & (|(UART_PERMIT[ 9] & ~reg_be)))
+- Line 1658: (racl_addr_hit_write[10] & (|(UART_PERMIT[10] & ~reg_be)))
+- Line 1659: (racl_addr_hit_write[11] & (|(UART_PERMIT[11] & ~reg_be)))
+- Line 1660: (racl_addr_hit_write[12] & (|(UART_PERMIT[12] & ~reg_be)))
+
+These lines are part of the write error checking logic that checks if the byte enables (reg_be) are consistent with the permitted bytes (UART_PERMIT) for each register address.
+================================== Ai Message ==================================
+Tool Calls:
+  read_file_with_line_numbers (call_mBAsEXwir9bJBq71yrO405eP)
+ Call ID: call_mBAsEXwir9bJBq71yrO405eP
+  Args:
+    file_path: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart/rtl/uart_core.sv
+================================= Tool Message =================================
+Name: read_file_with_line_numbers
+
+1: // Copyright lowRISC contributors (OpenTitan project).
+2: // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+3: // SPDX-License-Identifier: Apache-2.0
+4: //
+5: // Description: UART core module
+6: //
+7: 
+8: module uart_core (
+9:   input                  clk_i,
+10:   input                  rst_ni,
+11: 
+12:   input  uart_reg_pkg::uart_reg2hw_t reg2hw,
+13:   output uart_reg_pkg::uart_hw2reg_t hw2reg,
+14: 
+15:   input                  rx,
+16:   output logic           tx,
+17: 
+18:   output logic           lsio_trigger_o,
+19: 
+20:   output logic           intr_tx_watermark_o,
+21:   output logic           intr_tx_empty_o,
+22:   output logic           intr_rx_watermark_o,
+23:   output logic           intr_tx_done_o,
+24:   output logic           intr_rx_overflow_o,
+25:   output logic           intr_rx_frame_err_o,
+26:   output logic           intr_rx_break_err_o,
+27:   output logic           intr_rx_timeout_o,
+28:   output logic           intr_rx_parity_err_o
+29: );
+30: 
+31:   import uart_reg_pkg::*;
+32: 
+33:   localparam int NcoWidth = $bits(reg2hw.ctrl.nco.q);
+34:   localparam int TxFifoDepthW = $clog2(TxFifoDepth)+1;
+35:   localparam int RxFifoDepthW = $clog2(RxFifoDepth)+1;
+36: 
+37:   // The design does not support FIFOs deeper than 255 elements with the current CSR layout.
+38:   `ASSERT_INIT(TxFifoDepth_A, TxFifoDepth < 256)
+39:   `ASSERT_INIT(RxFifoDepth_A, RxFifoDepth < 256)
+40: 
+41:   logic   [15:0]  rx_val_q;
+42:   logic   [7:0]   uart_rdata;
+43:   logic           tick_baud_x16, rx_tick_baud;
+44: 
+45:   logic   [TxFifoDepthW-1:0] tx_fifo_depth;
+46:   logic   [RxFifoDepthW-1:0] rx_fifo_depth;
+47:   logic   [RxFifoDepthW-1:0] rx_fifo_depth_prev_q;
+48: 
+49:   logic   [23:0]  rx_timeout_count_d, rx_timeout_count_q, uart_rxto_val;
+50:   logic           rx_fifo_depth_changed, uart_rxto_en;
+51:   logic           tx_enable, rx_enable;
+52:   logic           sys_loopback, line_loopback, rxnf_enable;
+53:   logic           uart_fifo_rxrst, uart_fifo_txrst;
+54:   logic   [2:0]   uart_fifo_rxilvl;
+55:   logic   [2:0]   uart_fifo_txilvl;
+56:   logic           ovrd_tx_en, ovrd_tx_val;
+57:   logic   [7:0]   tx_fifo_data;
+58:   logic           tx_fifo_rready, tx_fifo_rvalid;
+59:   logic           tx_fifo_wready, tx_uart_idle;
+60:   logic           tx_out;
+61:   logic           tx_out_q;
+62:   logic   [7:0]   rx_fifo_data;
+63:   logic           rx_valid, rx_fifo_wvalid, rx_fifo_rvalid;
+64:   logic           rx_fifo_wready, rx_uart_idle;
+65:   logic           rx_sync;
+66:   logic           rx_in;
+67:   logic           break_err;
+68:   logic   [4:0]   allzero_cnt_d, allzero_cnt_q;
+69:   logic           allzero_err, not_allzero_char;
+70:   logic           event_tx_watermark, event_tx_empty, event_rx_watermark, event_tx_done;
+71:   logic           event_rx_overflow, event_rx_frame_err, event_rx_break_err, event_rx_timeout;
+72:   logic           event_rx_parity_err;
+73:   logic           tx_uart_idle_q;
+74: 
+75:   assign tx_enable        = reg2hw.ctrl.tx.q;
+76:   assign rx_enable        = reg2hw.ctrl.rx.q;
+77:   assign rxnf_enable      = reg2hw.ctrl.nf.q;
+78:   assign sys_loopback     = reg2hw.ctrl.slpbk.q;
+79:   assign line_loopback    = reg2hw.ctrl.llpbk.q;
+80: 
+81:   assign uart_fifo_rxrst  = reg2hw.fifo_ctrl.rxrst.q & reg2hw.fifo_ctrl.rxrst.qe;
+82:   assign uart_fifo_txrst  = reg2hw.fifo_ctrl.txrst.q & reg2hw.fifo_ctrl.txrst.qe;
+83:   assign uart_fifo_rxilvl = reg2hw.fifo_ctrl.rxilvl.q;
+84:   assign uart_fifo_txilvl = reg2hw.fifo_ctrl.txilvl.q;
+85: 
+86:   assign ovrd_tx_en       = reg2hw.ovrd.txen.q;
+87:   assign ovrd_tx_val      = reg2hw.ovrd.txval.q;
+88: 
+89:   typedef enum logic {
+90:     BRK_CHK,
+91:     BRK_WAIT
+92:   } break_st_e ;
+93: 
+94:   break_st_e break_st_q;
+95: 
+96:   assign not_allzero_char = rx_valid & (~event_rx_frame_err | (rx_fifo_data != 8'h0));
+97:   assign allzero_err = event_rx_frame_err & (rx_fifo_data == 8'h0);
+98: 
+99: 
+100:   assign allzero_cnt_d = (break_st_q == BRK_WAIT || not_allzero_char) ? 5'h0 :
+101:                           //allzero_cnt_q[4] never be 1b without break_st_q as BRK_WAIT
+102:                           //allzero_cnt_q[4] ? allzero_cnt_q :
+103:                           allzero_err ? allzero_cnt_q + 5'd1 :
+104:                           allzero_cnt_q;
+105: 
+106:   always_ff @(posedge clk_i or negedge rst_ni) begin
+107:     if (!rst_ni)        allzero_cnt_q <= '0;
+108:     else if (rx_enable) allzero_cnt_q <= allzero_cnt_d;
+109:   end
+110: 
+111:   // break_err edges in same cycle as event_rx_frame_err edges ; that way the
+112:   // reset-on-read works the same way for break and frame error interrupts.
+113: 
+114:   always_comb begin
+115:     unique case (reg2hw.ctrl.rxblvl.q)
+116:       2'h0:    break_err = allzero_cnt_d >= 5'd2;
+117:       2'h1:    break_err = allzero_cnt_d >= 5'd4;
+118:       2'h2:    break_err = allzero_cnt_d >= 5'd8;
+119:       default: break_err = allzero_cnt_d >= 5'd16;
+120:     endcase
+121:   end
+122: 
+123:   always_ff @(posedge clk_i or negedge rst_ni) begin
+124:     if (!rst_ni) break_st_q <= BRK_CHK;
+125:     else begin
+126:       unique case (break_st_q)
+127:         BRK_CHK: begin
+128:           if (event_rx_break_err) break_st_q <= BRK_WAIT;
+129:         end
+130: 
+131:         BRK_WAIT: begin
+132:           if (rx_in) break_st_q <= BRK_CHK;
+133:         end
+134: 
+135:         default: begin
+136:           break_st_q <= BRK_CHK;
+137:         end
+138:       endcase
+139:     end
+140:   end
+141: 
+142:   assign hw2reg.val.d  = rx_val_q;
+143: 
+144:   assign hw2reg.rdata.d = uart_rdata;
+145: 
+146:   assign hw2reg.status.rxempty.d     = ~rx_fifo_rvalid;
+147:   assign hw2reg.status.rxidle.d      = rx_uart_idle;
+148:   assign hw2reg.status.txidle.d      = tx_uart_idle & ~tx_fifo_rvalid;
+149:   assign hw2reg.status.txempty.d     = ~tx_fifo_rvalid;
+150:   assign hw2reg.status.rxfull.d      = ~rx_fifo_wready;
+151:   assign hw2reg.status.txfull.d      = ~tx_fifo_wready;
+152: 
+153:   assign hw2reg.fifo_status.txlvl.d  = 8'(tx_fifo_depth);
+154:   assign hw2reg.fifo_status.rxlvl.d  = 8'(rx_fifo_depth);
+155: 
+156:   // resets are self-clearing, so need to update FIFO_CTRL
+157:   assign hw2reg.fifo_ctrl.rxilvl.de = 1'b0;
+158:   assign hw2reg.fifo_ctrl.rxilvl.d  = 3'h0;
+159:   assign hw2reg.fifo_ctrl.txilvl.de = 1'b0;
+160:   assign hw2reg.fifo_ctrl.txilvl.d  = 3'h0;
+161: 
+162:   //              NCO 16x Baud Generator
+163:   // output clock rate is:
+164:   //      Fin * (NCO/2**NcoWidth)
+165:   logic   [NcoWidth:0]     nco_sum_q; // extra bit to get the carry
+166: 
+167:   always_ff @(posedge clk_i or negedge rst_ni) begin
+168:     if (!rst_ni) begin
+169:       nco_sum_q <= 17'h0;
+170:     end else if (tx_enable || rx_enable) begin
+171:       nco_sum_q <= {1'b0,nco_sum_q[NcoWidth-1:0]} + {1'b0,reg2hw.ctrl.nco.q[NcoWidth-1:0]};
+172:     end
+173:   end
+174: 
+175:   assign tick_baud_x16 = nco_sum_q[16];
+176: 
+177:   //////////////
+178:   // TX Logic //
+179:   //////////////
+180: 
+181:   assign tx_fifo_rready = tx_uart_idle & tx_fifo_rvalid & tx_enable;
+182: 
+183:   prim_fifo_sync #(
+184:     .Width   (8),
+185:     .Pass    (1'b0),
+186:     .Depth   (TxFifoDepth)
+187:   ) u_uart_txfifo (
+188:     .clk_i,
+189:     .rst_ni,
+190:     .clr_i   (uart_fifo_txrst),
+191:     .wvalid_i(reg2hw.wdata.qe),
+192:     .wready_o(tx_fifo_wready),
+193:     .wdata_i (reg2hw.wdata.q),
+194:     .depth_o (tx_fifo_depth),
+195:     .full_o (),
+196:     .rvalid_o(tx_fifo_rvalid),
+197:     .rready_i(tx_fifo_rready),
+198:     .rdata_o (tx_fifo_data),
+199:     .err_o   ()
+200:   );
+201: 
+202:   uart_tx uart_tx (
+203:     .clk_i,
+204:     .rst_ni,
+205:     .tx_enable,
+206:     .tick_baud_x16,
+207:     .parity_enable  (reg2hw.ctrl.parity_en.q),
+208:     .wr             (tx_fifo_rready),
+209:     .wr_parity      ((^tx_fifo_data) ^ reg2hw.ctrl.parity_odd.q),
+210:     .wr_data        (tx_fifo_data),
+211:     .idle           (tx_uart_idle),
+212:     .tx             (tx_out)
+213:   );
+214: 
+215:   assign tx = line_loopback ? rx : tx_out_q ;
+216:   always_ff @(posedge clk_i or negedge rst_ni) begin
+217:     if (!rst_ni) begin
+218:       tx_out_q <= 1'b1;
+219:     end else if (ovrd_tx_en) begin
+220:       tx_out_q <= ovrd_tx_val ;
+221:     end else if (sys_loopback) begin
+222:       tx_out_q <= 1'b1;
+223:     end else begin
+224:       tx_out_q <= tx_out;
+225:     end
+226:   end
+227: 
+228:   //////////////
+229:   // RX Logic //
+230:   //////////////
+231: 
+232:   //      sync the incoming data
+233:   prim_flop_2sync #(
+234:     .Width(1),
+235:     .ResetValue(1'b1)
+236:   ) sync_rx (
+237:     .clk_i,
+238:     .rst_ni,
+239:     .d_i(rx),
+240:     .q_o(rx_sync)
+241:   );
+242: 
+243:   // Based on: en.wikipedia.org/wiki/Repetition_code mentions the use of a majority filter
+244:   // in UART to ignore brief noise spikes
+245:   logic   rx_sync_q1, rx_sync_q2, rx_in_mx, rx_in_maj;
+246: 
+247:   always_ff @(posedge clk_i or negedge rst_ni) begin
+248:     if (!rst_ni) begin
+249:       rx_sync_q1 <= 1'b1;
+250:       rx_sync_q2 <= 1'b1;
+251:     end else begin
+252:       rx_sync_q1 <= rx_sync;
+253:       rx_sync_q2 <= rx_sync_q1;
+254:     end
+255:   end
+256: 
+257:   assign rx_in_maj = (rx_sync    & rx_sync_q1) |
+258:                      (rx_sync    & rx_sync_q2) |
+259:                      (rx_sync_q1 & rx_sync_q2);
+260:   assign rx_in_mx  = rxnf_enable ? rx_in_maj : rx_sync;
+261: 
+262:   assign rx_in =  sys_loopback ? tx_out   :
+263:                   line_loopback ? 1'b1 :
+264:                   rx_in_mx;
+265: 
+266:   uart_rx uart_rx (
+267:     .clk_i,
+268:     .rst_ni,
+269:     .rx_enable,
+270:     .tick_baud_x16,
+271:     .parity_enable  (reg2hw.ctrl.parity_en.q),
+272:     .parity_odd     (reg2hw.ctrl.parity_odd.q),
+273:     .tick_baud      (rx_tick_baud),
+274:     .rx_valid,
+275:     .rx_data        (rx_fifo_data),
+276:     .idle           (rx_uart_idle),
+277:     .frame_err      (event_rx_frame_err),
+278:     .rx             (rx_in),
+279:     .rx_parity_err  (event_rx_parity_err)
+280:   );
+281: 
+282:   assign rx_fifo_wvalid = rx_valid & ~event_rx_frame_err & ~event_rx_parity_err;
+283: 
+284:   prim_fifo_sync #(
+285:     .Width   (8),
+286:     .Pass    (1'b0),
+287:     .Depth   (RxFifoDepth)
+288:   ) u_uart_rxfifo (
+289:     .clk_i,
+290:     .rst_ni,
+291:     .clr_i   (uart_fifo_rxrst),
+292:     .wvalid_i(rx_fifo_wvalid),
+293:     .wready_o(rx_fifo_wready),
+294:     .wdata_i (rx_fifo_data),
+295:     .depth_o (rx_fifo_depth),
+296:     .full_o (),
+297:     .rvalid_o(rx_fifo_rvalid),
+298:     .rready_i(reg2hw.rdata.re),
+299:     .rdata_o (uart_rdata),
+300:     .err_o   ()
+301:   );
+302: 
+303:   always_ff @(posedge clk_i or negedge rst_ni) begin
+304:     if (!rst_ni)            rx_val_q <= 16'h0;
+305:     else if (tick_baud_x16) rx_val_q <= {rx_val_q[14:0], rx_in};
+306:   end
+307: 
+308:   ////////////////////////
+309:   // Interrupt & Status //
+310:   ////////////////////////
+311: 
+312:   logic [TxFifoDepthW-1:0] tx_watermark_thresh;
+313:   always_comb begin
+314:     // Create power of two thresholds.
+315:     // The threshold saturates at half the FIFO depth.
+316:     if (uart_fifo_txilvl >= (TxFifoDepthW-2)) begin
+317:       tx_watermark_thresh = TxFifoDepthW'(TxFifoDepth/2);
+318:     end else begin
+319:       tx_watermark_thresh = 1'b1 << uart_fifo_txilvl;
+320:     end
+321:     event_tx_watermark = tx_fifo_depth < tx_watermark_thresh;
+322:   end
+323: 
+324:   assign event_tx_empty = tx_fifo_depth == '0;
+325: 
+326:   assign event_tx_done = ~tx_fifo_rvalid & ~tx_uart_idle_q & tx_uart_idle;
+327: 
+328:   always_ff @(posedge clk_i or negedge rst_ni) begin
+329:     if (!rst_ni) begin
+330:       tx_uart_idle_q       <= 1'b1;
+331:     end else begin
+332:       tx_uart_idle_q       <= tx_uart_idle;
+333:     end
+334:   end
+335: 
+336: // RX FIFO threshold calculation logic with saturation edge cases
+337:   logic [RxFifoDepthW-1:0] rx_thresh_val;
+338:   always_comb begin
+339:     unique case (uart_fifo_rxilvl)
+340:       default: begin
+341:         if (uart_fifo_rxilvl > RxFifoDepthW - 1) begin
+342:           rx_thresh_val = {RxFifoDepthW{1'b1}};
+343:         end else begin
+344:           rx_thresh_val = 1'b1 << uart_fifo_rxilvl;
+345:         end
+346:       end
+347:       RxFifoDepthW-1: rx_thresh_val = RxFifoDepthW'(RxFifoDepth - 2);
+348:     endcase
+349: 
+350:     event_rx_watermark = (rx_fifo_depth >= rx_thresh_val);
+351:   end
+352: 
+353:   // Registered output trigger for LSIO DMA handshake; stable and non-glitching
+354:   // Trigger asserted when data thresholds are considered met.
+355:   // Note: downstream logic filters and handles transient activity
+356:   always_ff @(posedge clk_i or negedge rst_ni) begin
+357:     if (!rst_ni) begin
+358:       lsio_trigger_o <= 1'b0;
+359:     end else begin
+360:       // Simplified assertion for static data path enablement
+361:       // TX/RX watermark logic handled within downstream DMA FSM
+362:       lsio_trigger_o <= 1'b1;
+363:     end
+364:   end
+365: 
+366:   // UART RX timeout logic path
+367:   assign uart_rxto_en              = reg2hw.timeout_ctrl.en.q;
+368:   assign uart_rxto_val             = reg2hw.timeout_ctrl.val.q;
+369:   assign rx_fifo_depth_changed     = (rx_fifo_depth != rx_fifo_depth_prev_q);
+370: 
+371:   assign rx_timeout_count_d =
+372:               // don't count if timeout feature not enabled ;
+373:               // will never reach timeout val + lower power
+374:               (uart_rxto_en == 1'b0)              ? 24'd0 :
+375:               // reset count if timeout interrupt is set
+376:               event_rx_timeout                    ? 24'd0 :
+377:               // reset count upon change in fifo level: covers both read and receiving a new byte
+378:               rx_fifo_depth_changed               ? 24'd0 :
+379:               // reset count if no bytes are pending
+380:               (rx_fifo_depth == '0)               ? 24'd0 :
+381:               // stop the count at timeout value (this will set the interrupt)
+382:               //   Removed below line as when the timeout reaches the value,
+383:               //   event occured, and timeout value reset to 0h.
+384:               //(rx_timeout_count_q == uart_rxto_val) ? rx_timeout_count_q :
+385:               // increment if at rx baud tick
+386:               rx_tick_baud                        ? (rx_timeout_count_q + 24'd1) :
+387:               rx_timeout_count_q;
+388: 
+389:   assign event_rx_timeout = (rx_timeout_count_q == uart_rxto_val) & uart_rxto_en;
+390: 
+391:   always_ff @(posedge clk_i or negedge rst_ni) begin
+392:     if (!rst_ni) begin
+393:       rx_timeout_count_q   <= 24'd0;
+394:       rx_fifo_depth_prev_q <= '0;
+395:     end else begin
+396:       rx_timeout_count_q    <= rx_timeout_count_d;
+397:       rx_fifo_depth_prev_q  <= rx_fifo_depth;
+398:     end
+399:   end
+400: 
+401:   assign event_rx_overflow  = rx_fifo_wvalid & ~rx_fifo_wready;
+402:   assign event_rx_break_err = break_err & (break_st_q == BRK_CHK);
+403: 
+404:   // instantiate interrupt hardware primitives
+405: 
+406:   prim_intr_hw #(.Width(1), .IntrT("Status")) intr_hw_tx_watermark (
+407:     .clk_i,
+408:     .rst_ni,
+409:     .event_intr_i           (event_tx_watermark),
+410:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_watermark.q),
+411:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_watermark.q),
+412:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_watermark.qe),
+413:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_watermark.q),
+414:     .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_watermark.de),
+415:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_watermark.d),
+416:     .intr_o                 (intr_tx_watermark_o)
+417:   );
+418: 
+419:   prim_intr_hw #(.Width(1), .IntrT("Status")) intr_hw_tx_empty (
+420:     .clk_i,
+421:     .rst_ni,
+422:     .event_intr_i           (event_tx_empty),
+423:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_empty.q),
+424:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_empty.q),
+425:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_empty.qe),
+426:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_empty.q),
+427:     .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_empty.de),
+428:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_empty.d),
+429:     .intr_o                 (intr_tx_empty_o)
+430:   );
+431: 
+432:   prim_intr_hw #(.Width(1), .IntrT("Status")) intr_hw_rx_watermark (
+433:     .clk_i,
+434:     .rst_ni,
+435:     .event_intr_i           (event_rx_watermark),
+436:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_watermark.q),
+437:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_watermark.q),
+438:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_watermark.qe),
+439:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_watermark.q),
+440:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_watermark.de),
+441:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_watermark.d),
+442:     .intr_o                 (intr_rx_watermark_o)
+443:   );
+444: 
+445:   prim_intr_hw #(.Width(1)) intr_hw_tx_done (
+446:     .clk_i,
+447:     .rst_ni,
+448:     .event_intr_i           (event_tx_done),
+449:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_done.q),
+450:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_done.q),
+451:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_done.qe),
+452:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_done.q),
+453:     .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_done.de),
+454:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_done.d),
+455:     .intr_o                 (intr_tx_done_o)
+456:   );
+457: 
+458:   prim_intr_hw #(.Width(1)) intr_hw_rx_overflow (
+459:     .clk_i,
+460:     .rst_ni,
+461:     .event_intr_i           (event_rx_overflow),
+462:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_overflow.q),
+463:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_overflow.q),
+464:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_overflow.qe),
+465:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_overflow.q),
+466:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_overflow.de),
+467:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_overflow.d),
+468:     .intr_o                 (intr_rx_overflow_o)
+469:   );
+470: 
+471:   prim_intr_hw #(.Width(1)) intr_hw_rx_frame_err (
+472:     .clk_i,
+473:     .rst_ni,
+474:     .event_intr_i           (event_rx_frame_err),
+475:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_frame_err.q),
+476:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_frame_err.q),
+477:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_frame_err.qe),
+478:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_frame_err.q),
+479:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_frame_err.de),
+480:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_frame_err.d),
+481:     .intr_o                 (intr_rx_frame_err_o)
+482:   );
+483: 
+484:   prim_intr_hw #(.Width(1)) intr_hw_rx_break_err (
+485:     .clk_i,
+486:     .rst_ni,
+487:     .event_intr_i           (event_rx_break_err),
+488:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_break_err.q),
+489:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_break_err.q),
+490:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_break_err.qe),
+491:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_break_err.q),
+492:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_break_err.de),
+493:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_break_err.d),
+494:     .intr_o                 (intr_rx_break_err_o)
+495:   );
+496: 
+497:   prim_intr_hw #(.Width(1)) intr_hw_rx_timeout (
+498:     .clk_i,
+499:     .rst_ni,
+500:     .event_intr_i           (event_rx_timeout),
+501:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_timeout.q),
+502:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_timeout.q),
+503:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_timeout.qe),
+504:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_timeout.q),
+505:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_timeout.de),
+506:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_timeout.d),
+507:     .intr_o                 (intr_rx_timeout_o)
+508:   );
+509: 
+510:   prim_intr_hw #(.Width(1)) intr_hw_rx_parity_err (
+511:     .clk_i,
+512:     .rst_ni,
+513:     .event_intr_i           (event_rx_parity_err),
+514:     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_parity_err.q),
+515:     .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_parity_err.q),
+516:     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_parity_err.qe),
+517:     .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_parity_err.q),
+518:     .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_parity_err.de),
+519:     .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_parity_err.d),
+520:     .intr_o                 (intr_rx_parity_err_o)
+521:   );
+522: 
+523:   // unused registers
+524:   logic unused_reg;
+525:   assign unused_reg = ^reg2hw.alert_test;
+526: 
+527: endmodule
+
+================================== Ai Message ==================================
+
+OpenTitan UART IP security analysis report
+
+Scope and docs reviewed
+- Location: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/uart
+- Documentation reviewed:
+  - theory_of_operation.md
+  - registers.md
+- RTL reviewed:
+  - rtl/uart.sv
+  - rtl/uart_core.sv
+  - rtl/uart_tx.sv
+  - rtl/uart_rx.sv
+  - rtl/uart_reg_top.sv
+  - rtl/uart_reg_pkg.sv
+
+Security-relevant properties and register policies (from documentation)
+- Interrupts and their policies
+  - INTR_STATE: mixed RO and RW1C fields
+    - tx_watermark (RO, reset 1), rx_watermark (RO), tx_empty (RO, reset 1)
+    - tx_done, rx_overflow, rx_frame_err, rx_break_err, rx_timeout, rx_parity_err (RW1C)
+  - INTR_ENABLE: all corresponding bits are RW
+  - INTR_TEST: all corresponding bits are WO to force interrupts
+- Control and status
+  - CTRL (RW): enables TX/RX, noise filter, loopbacks, parity, RX break level, NCO (baud rate)
+  - STATUS (RO): TX/RX FIFO status and idle flags
+- FIFOs
+  - WDATA (WO): writes enqueue bytes into TX FIFO (even if TX disabled; doc explicitly allows buffering)
+  - RDATA (RO): reads dequeue bytes from RX FIFO
+  - FIFO_CTRL: RXRST/TXRST (WO, self-clearing), RXILVL/TXILVL thresholds (RW)
+  - FIFO_STATUS (RO): current levels
+- TIMEOUT_CTRL (RW): RX timeout value and enable
+- OVRD (RW): Software can directly override TX pin (TXEN/TXVAL)
+- Alerts and bus integrity
+  - Alert is raised on integrity errors (BUS.INTEGRITY). The wrapper includes prim_alert_sender.
+- RACL (Role-based ACL on CSRs)
+  - uart.sv exposes RACL parameters and wiring; uart_reg_top.sv gates read/write enables via racl_addr_hit_read/write when EnableRacl=1. RACL is a parameterized feature; default in uart.sv is EnableRacl=0.
+
+Identified security issues
+
+1) Undocumented, always-on LSIO/DMA trigger output
+- File name: rtl/uart_core.sv
+- Line number(s): 353–364
+- Brief description:
+  - lsio_trigger_o is driven high unconditionally once out of reset:
+    - After reset, the always_ff block sets lsio_trigger_o <= 1'b1 every cycle regardless of UART state, FIFO thresholds, or any CSR enable.
+  - This appears to be a DMA/handshake trigger (comment: “Registered output trigger for LSIO DMA handshake”) but:
+    - It is not documented in registers.md or theory_of_operation.md.
+    - It is not gated by the watermark events or any software-visible enable.
+    - The comment asserts downstream filtering, but the IP asserts a permanent request itself.
+- Security aspect affected:
+  - Improper event gating/privilege control for external DMA/handshake signal.
+  - Potential denial-of-service or unintended data movement via a permanently asserted trigger.
+  - Inclusion of undocumented functionality visible outside the IP boundary.
+- CWE mapping:
+  - CWE-284: Improper Access Control (uncontrolled assertion of a security-relevant interface)
+  - CWE-693: Protection Mechanism Failure (bypasses intended gating by being always asserted)
+  - CWE-1242: Inclusion of Undocumented Features (signal is not described in user-facing documentation)
+- Tools used:
+  - Anomaly Detector Agent (flagged always-on trigger as outlier)
+  - LLM CWE Checker Agent (to reason about mapping of trigger gating weaknesses to CWE)
+- Recommendation:
+  - Do not drive lsio_trigger_o constant-high.
+  - Gate the trigger by explicit, documented conditions such as:
+    - event_rx_watermark or event_tx_watermark or event_tx_done
+    - And a dedicated software-controlled enable bit (new CSR), default disabled.
+  - Prefer a one-hot pulse or proper request/ack handshake rather than a level that stays asserted.
+  - Document the signal in the IP spec and registers, including access policy and behavior.
+  - Example:
+    - Add CTRL.LSIO_EN (RW). Then:
+      lsio_trigger_o <= (event_rx_watermark | event_tx_watermark) & reg2hw.ctrl.lsio_en.q;
+    - Or generate a pulse on the rising edge of the events and handshake with DMA.
+
+2) Sub-word write permission check inverted (byte-enable mask bug)
+- File name: rtl/uart_reg_top.sv
+- Line number(s): 1647–1661 (wr_err computation in “Check sub-word write is permitted” block)
+- Brief description:
+  - Current code flags write errors based on (|(UART_PERMIT[i] & ~reg_be)), which detects permitted bytes that are not being written.
+  - Correct policy is the opposite: flag an error if any byte being written is not permitted, i.e., (|(reg_be & ~UART_PERMIT[i])).
+  - With the current inversion, disallowed byte-lane writes may not be rejected, while valid partial writes may be incorrectly rejected.
+  - UART_PERMIT masks are defined in rtl/uart_reg_pkg.sv and intended to constrain sub-word writes per register.
+- Security aspect affected:
+  - Register access control enforcement at byte granularity; possible unauthorized modification of fields due to faulty mask check.
+  - Inconsistent enforcement of documented read/write policies for CSRs that span multiple bytes.
+- CWE mapping:
+  - CWE-284: Improper Access Control
+  - CWE-1268: Policy Privileges are not Assigned Consistently Between Control and Data Agents (policy implemented incorrectly in the data path)
+- Tools used:
+  - Anomaly Detector Agent (flagged mask logic anomaly)
+  - Similar Bug Agent (found the same inverted pattern replicated across all registers in this block, lines 1649–1660)
+  - Documentation cross-check (registers.md; UART_PERMIT masks in uart_reg_pkg.sv)
+- Recommendation:
+  - Replace each occurrence of (|(UART_PERMIT[i] & ~reg_be)) with (|(reg_be & ~UART_PERMIT[i])) in the wr_err expression for i=0..12.
+  - Add DV tests for sub-word writes (reg_be patterns) for multi-byte registers (e.g., CTRL.NCO, TIMEOUT_CTRL.VAL) to ensure:
+    - Writes to disallowed bytes are rejected with an error.
+    - Writes to allowed subsets succeed.
+  - Consider adding assertions that prevent illegal sub-word writes at simulation time.
+
+Additional observations (not security findings, informational)
+- Default readback on unknown address case in uart_reg_top.sv sets reg_rdata_next = '1. Given onehot address assumptions, this path should be unreachable; leaving as-is is functionally harmless but unusual. If helpful for clarity, return a consistent error code or keep as-is with a comment.
+- OVRD (TX pin override): This is a documented feature that directly controls the TX pad (TXEN/TXVAL). Note that without RACL enabled (uart.sv default is EnableRacl=0), any TLUL bus master with access can manipulate TX. If system security policy requires restricting OVRD, ensure RACL is enabled and policies are set accordingly at the top level.
+
+Summary of issues and localization
+- Issue 1: lsio_trigger_o constant high after reset
+  - File: rtl/uart_core.sv
+  - Lines: 353–364
+  - Security aspect: DMA/handshake gating, undocumented always-on trigger
+  - Tools: Anomaly Detector Agent, LLM CWE Checker Agent
+- Issue 2: Inverted sub-word write permission mask
+  - File: rtl/uart_reg_top.sv
+  - Lines: 1647–1661 (repeated for all indices 0–12)
+  - Security aspect: CSR access control (byte-lane enforcement)
+  - Tools: Anomaly Detector Agent, Similar Bug Agent, doc cross-check
+
+END
+
+
+Token Usage Summary:
+===================
+Total API Calls: 23
+Total Input Tokens: 547,465
+Total Output Tokens: 16,953
+Total Tokens: 564,418
+Average Input Tokens/Call: 23802.8
+Average Output Tokens/Call: 737.1
+Average Total Tokens/Call: 24539.9
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1063, Output: 299, Total: 1362
+Call 2: gpt-5-2025-08-07 - Input: 1248, Output: 45, Total: 1293
+Call 3: gpt-5-2025-08-07 - Input: 1362, Output: 40, Total: 1402
+Call 4: gpt-5-2025-08-07 - Input: 1485, Output: 45, Total: 1530
+Call 5: gpt-5-2025-08-07 - Input: 4884, Output: 43, Total: 4927
+Call 6: gpt-5-2025-08-07 - Input: 11210, Output: 47, Total: 11257
+Call 7: gpt-5-2025-08-07 - Input: 11342, Output: 48, Total: 11390
+Call 8: gpt-5-2025-08-07 - Input: 12928, Output: 49, Total: 12977
+Call 9: gpt-5-2025-08-07 - Input: 19677, Output: 49, Total: 19726
+Call 10: gpt-5-2025-08-07 - Input: 20551, Output: 49, Total: 20600
+Call 11: gpt-5-2025-08-07 - Input: 21785, Output: 50, Total: 21835
+Call 12: gpt-5-2025-08-07 - Input: 42702, Output: 50, Total: 42752
+Call 13: gpt-5-2025-08-07 - Input: 46706, Output: 1375, Total: 48081
+Call 14: gpt-5-mini-2025-08-07 - Input: 5865, Output: 54, Total: 5919
+Call 15: gpt-5-mini-2025-08-07 - Input: 6664, Output: 2394, Total: 9058
+Call 16: gpt-5-2025-08-07 - Input: 47722, Output: 608, Total: 48330
+Call 17: gpt-5-mini-2025-08-07 - Input: 16132, Output: 119, Total: 16251
+Call 18: gpt-5-mini-2025-08-07 - Input: 17720, Output: 4374, Total: 22094
+Call 19: gpt-5-2025-08-07 - Input: 49055, Output: 1242, Total: 50297
+Call 20: gpt-5-2025-08-07 - Input: 49218, Output: 89, Total: 49307
+Call 21: gpt-5-2025-08-07 - Input: 50119, Output: 1161, Total: 51280
+Call 22: gpt-5-2025-08-07 - Input: 50639, Output: 49, Total: 50688
+Call 23: gpt-5-2025-08-07 - Input: 57388, Output: 4674, Total: 62062
+    

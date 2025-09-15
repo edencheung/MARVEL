@@ -1,0 +1,33 @@
+
+
+Token Usage Summary:
+===================
+Total API Calls: 17
+Total Input Tokens: 77,127
+Total Output Tokens: 14,818
+Total Tokens: 91,945
+Average Input Tokens/Call: 4536.9
+Average Output Tokens/Call: 871.6
+Average Total Tokens/Call: 5408.5
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 43, Total: 1108
+Call 2: gpt-5-2025-08-07 - Input: 1250, Output: 110, Total: 1360
+Call 3: gpt-5-2025-08-07 - Input: 1360, Output: 42, Total: 1402
+Call 4: gpt-5-2025-08-07 - Input: 1475, Output: 111, Total: 1586
+Call 5: gpt-5-2025-08-07 - Input: 1532, Output: 249, Total: 1781
+Call 6: gpt-5-2025-08-07 - Input: 4089, Output: 238, Total: 4327
+Call 7: gpt-5-2025-08-07 - Input: 4145, Output: 1233, Total: 5378
+Call 8: gpt-5-mini-2025-08-07 - Input: 2347, Output: 56, Total: 2403
+Call 9: gpt-5-mini-2025-08-07 - Input: 2475, Output: 3071, Total: 5546
+Call 10: gpt-5-2025-08-07 - Input: 6016, Output: 1108, Total: 7124
+Call 11: gpt-5-2025-08-07 - Input: 6169, Output: 1688, Total: 7857
+Call 12: gpt-5-2025-08-07 - Input: 7074, Output: 110, Total: 7184
+Call 13: gpt-5-2025-08-07 - Input: 7184, Output: 450, Total: 7634
+Call 14: gpt-5-2025-08-07 - Input: 7490, Output: 872, Total: 8362
+Call 15: gpt-5-2025-08-07 - Input: 7668, Output: 1264, Total: 8932
+Call 16: gpt-5-2025-08-07 - Input: 7822, Output: 304, Total: 8126
+Call 17: gpt-5-2025-08-07 - Input: 7966, Output: 3869, Total: 11835
+    

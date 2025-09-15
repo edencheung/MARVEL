@@ -51,17 +51,20 @@ import argparse
 from agents.cwe_agent import llm_cwe_details_retriever_tool
 from settings import *
 from utils.file_tools import list_dir, read_file, read_file_with_line_numbers
-from utils.logging import log_full_conv_message, log_main_conv_message
-from utils.rate_limit_handler import safe_openai_call
+from utils.logging import log_full_conv_message, log_main_conv_message, generate_final_report
+from utils.rate_limit_handler import safe_llm_call
 
 def build_review_graph():
     ''' Agent for review the final report and polish the summary of the security analysis '''
-    if MODEL == "openai":
-        llm = ChatOpenAI(model="o4-mini")
-    elif MODEL == "sonnet":
-        llm = ChatAnthropic(model="claude-3-7-sonnet-latest", temperature=TEMP)
-    else:
-        llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
+
+    llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
+
+    # if MODEL == "openai":
+    #     llm = ChatOpenAI(model="o4-mini")
+    # elif MODEL == "sonnet":
+    #     llm = ChatAnthropic(model="claude-3-7-sonnet-latest", temperature=TEMP)
+    # else:
+    #     llm = ChatDeepSeek(model="deepseek-chat", temperature=TEMP)
 
     review_tools = [list_dir, read_file, read_file_with_line_numbers, llm_cwe_details_retriever_tool]
     review = llm.bind_tools(review_tools)
@@ -74,7 +77,15 @@ def build_review_graph():
     "Ensure the final report includes a clear explanation of each bug, the relevant buggy code, the precise location of the issue, and the tools used to identify it."))
 
     def review_agent(state: MessagesState):
-        return {"messages": [safe_openai_call(review.invoke, [sys_msg_review_agent] + state["messages"])]}
+        response = safe_llm_call(review.invoke, [sys_msg_review_agent] + state["messages"])
+        
+        # If this is the final review (no tool calls), generate the report
+        if not response.tool_calls:
+            report_path = generate_final_report(response.content)
+            log_full_conv_message(f"Final security report generated: {report_path}")
+            log_main_conv_message(f"Final security report generated: {report_path}")
+        
+        return {"messages": [response]}
 
     def review_tools_condition(state) -> Literal["review_tools", "END"]:
         

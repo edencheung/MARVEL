@@ -1,0 +1,80 @@
+Token tracking initialized for agentic analysis
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/doc
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/doc/theory_of_operation.md
+Reading file: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/doc/registers.md
+Listing directory: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_reg_top.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_ctrl.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_kmac_if.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_input_checks.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_ctrl.sv
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_ctrl.sv for keymgr_ctrl with security objective: Secret leakage prevention during Invalid/Disabled states; key output masking enforcement; state machine transitions integrity
+Running llm cwe details retriever tool on Secret leakage prevention during Invalid/Disabled states; key output masking enforcement; state machine transitions integrity
+Running llm cwe details retriever tool on Key output masking enforcement and cryptographic key exposure
+Running llm cwe details retriever tool on State machine transitions integrity and finite state machine security
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_op_state_ctrl.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_sideload_key_ctrl.sv
+Running anomaly detector tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_cfg_en.sv
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_ctrl.sv for bug: if (invalid_stage_sel_o && (state_q == StCtrlInvalid)) begin
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_ctrl.sv for bug: if (invalid_stage_sel_o && (state_q == StCtrlInvalid)) begin
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_ctrl.sv
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_ctrl.sv for bug: if (invalid_stage_sel_o && (state_q == StCtrlInvalid)) begin
+Running similar bug agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr.sv for bug: invalid_stage_sel_o && (state_q == StCtrlInvalid)
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr.sv for bug: invalid_stage_sel_o && (state_q == StCtrlInvalid)
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr.sv
+Running similar bug tool on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr.sv for bug: invalid_stage_sel_o && (state_q == StCtrlInvalid)
+Running llm cwe checker agent on /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr.sv for keymgr with security objective: Register access policies, shadowed and regwen behavior; read-clear outputs; gating secrets to SW; alerting and fault handling; race conditions
+Running llm cwe details retriever tool on register access control policies shadowed registers regwen behavior read-clear outputs gating secrets software alerting fault handling race conditions hardware security
+Running llm cwe details retriever tool on race conditions timing attacks hardware security concurrent access
+Running llm cwe details retriever tool on information exposure through debug interfaces hardware debug registers
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_err.sv
+Reading file with line numbers: /home/eden/Desktop/Code/HACK@CHES/p2/opentitan/hw/ip/keymgr/rtl/keymgr_sideload_key.sv
+Review Agent invoked
+Agentic analysis completed
+
+
+Token Usage Summary:
+===================
+Total API Calls: 27
+Total Input Tokens: 1,551,158
+Total Output Tokens: 27,527
+Total Tokens: 1,578,685
+Average Input Tokens/Call: 57450.3
+Average Output Tokens/Call: 1019.5
+Average Total Tokens/Call: 58469.8
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 107, Total: 1172
+Call 2: gpt-5-2025-08-07 - Input: 1250, Output: 45, Total: 1295
+Call 3: gpt-5-2025-08-07 - Input: 1374, Output: 40, Total: 1414
+Call 4: gpt-5-2025-08-07 - Input: 1519, Output: 45, Total: 1564
+Call 5: gpt-5-2025-08-07 - Input: 7861, Output: 43, Total: 7904
+Call 6: gpt-5-2025-08-07 - Input: 19339, Output: 47, Total: 19386
+Call 7: gpt-5-2025-08-07 - Input: 19534, Output: 50, Total: 19584
+Call 8: gpt-5-2025-08-07 - Input: 63270, Output: 55, Total: 63325
+Call 9: gpt-5-2025-08-07 - Input: 73193, Output: 313, Total: 73506
+Call 10: gpt-5-2025-08-07 - Input: 77854, Output: 48, Total: 77902
+Call 11: gpt-5-2025-08-07 - Input: 88022, Output: 376, Total: 88398
+Call 12: gpt-5-2025-08-07 - Input: 89232, Output: 1173, Total: 90405
+Call 13: gpt-5-mini-2025-08-07 - Input: 8187, Output: 54, Total: 8241
+Call 14: gpt-5-mini-2025-08-07 - Input: 8679, Output: 4414, Total: 13093
+Call 15: gpt-5-2025-08-07 - Input: 90914, Output: 471, Total: 91385
+Call 16: gpt-5-2025-08-07 - Input: 91862, Output: 249, Total: 92111
+Call 17: gpt-5-2025-08-07 - Input: 92904, Output: 53, Total: 92957
+Call 18: gpt-5-2025-08-07 - Input: 95606, Output: 95, Total: 95701
+Call 19: gpt-5-mini-2025-08-07 - Input: 8705, Output: 53, Total: 8758
+Call 20: gpt-5-mini-2025-08-07 - Input: 10499, Output: 5064, Total: 15563
+Call 21: gpt-5-2025-08-07 - Input: 98018, Output: 1528, Total: 99546
+Call 22: gpt-5-2025-08-07 - Input: 98688, Output: 1162, Total: 99850
+Call 23: gpt-5-2025-08-07 - Input: 98984, Output: 2694, Total: 101678
+Call 24: gpt-5-2025-08-07 - Input: 99310, Output: 1503, Total: 100813
+Call 25: gpt-5-2025-08-07 - Input: 100144, Output: 247, Total: 100391
+Call 26: gpt-5-2025-08-07 - Input: 102250, Output: 1658, Total: 103908
+Call 27: gpt-5-2025-08-07 - Input: 102895, Output: 5940, Total: 108835
+    

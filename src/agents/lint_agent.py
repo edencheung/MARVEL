@@ -31,7 +31,7 @@ from langgraph.prebuilt import ToolNode
 from settings import *
 from utils.budget import update_budget
 from utils.logging import error_string, log_action_message, log_full_conv_message
-from utils.rate_limit_handler import safe_openai_call
+from utils.rate_limit_handler import safe_llm_call
 
 
 def gen_opentitan_filelist(p,m):
@@ -203,7 +203,7 @@ def build_lint_graph():
     )
 
     lint_tag_retriever = vectorstore.as_retriever(search_kwargs={"k": 20})
-    llm = ChatOpenAI(model="gpt-4.1-mini", temperature=TEMP)
+    llm = ChatOpenAI(model="gpt-5-mini", temperature=TEMP)
 
     # if MODEL == "openai":
     #     llm = ChatOpenAI(model="gpt-4.1-mini", temperature=TEMP)
@@ -225,7 +225,7 @@ def build_lint_graph():
     # Nodes of graph
     sys_msg_lint_checker_agent = SystemMessage(content="You are a helpful assistant tasked with testing RTL code for security issues using lint checks.")
     def lint_checker_agent(state: MessagesState):
-        return {"messages": [safe_openai_call(llm_lint_checker.invoke, [sys_msg_lint_checker_agent] + state["messages"])]}
+        return {"messages": [safe_llm_call(llm_lint_checker.invoke, [sys_msg_lint_checker_agent] + state["messages"])]}
 
     def lint_tools_condition(state) -> Literal["linter_tools", "END"]:
         prev_message = state["messages"][-2]
@@ -300,6 +300,6 @@ def run_linter_agent(
     # Create the message for the agent
     message = [HumanMessage(content=instruction)]
     # Run the agent
-    result = lint_graph.invoke({"messages": message})
+    result = lint_graph.invoke({"messages": message}, {"recursion_limit": 200})
 
     return result['messages'][-1].content

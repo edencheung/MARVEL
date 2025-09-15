@@ -1,0 +1,41 @@
+
+
+Token Usage Summary:
+===================
+Total API Calls: 25
+Total Input Tokens: 1,547,677
+Total Output Tokens: 17,917
+Total Tokens: 1,565,594
+Average Input Tokens/Call: 61907.1
+Average Output Tokens/Call: 716.7
+Average Total Tokens/Call: 62623.8
+
+
+Detailed Call History:
+==================================================
+Call 1: gpt-5-2025-08-07 - Input: 1065, Output: 235, Total: 1300
+Call 2: gpt-5-2025-08-07 - Input: 1250, Output: 46, Total: 1296
+Call 3: gpt-5-2025-08-07 - Input: 1372, Output: 41, Total: 1413
+Call 4: gpt-5-2025-08-07 - Input: 1506, Output: 46, Total: 1552
+Call 5: gpt-5-2025-08-07 - Input: 7347, Output: 44, Total: 7391
+Call 6: gpt-5-2025-08-07 - Input: 20051, Output: 48, Total: 20099
+Call 7: gpt-5-2025-08-07 - Input: 20236, Output: 52, Total: 20288
+Call 8: gpt-5-2025-08-07 - Input: 48861, Output: 113, Total: 48974
+Call 9: gpt-5-2025-08-07 - Input: 50706, Output: 248, Total: 50954
+Call 10: gpt-5-2025-08-07 - Input: 53454, Output: 51, Total: 53505
+Call 11: gpt-5-2025-08-07 - Input: 79582, Output: 52, Total: 79634
+Call 12: gpt-5-2025-08-07 - Input: 81608, Output: 52, Total: 81660
+Call 13: gpt-5-2025-08-07 - Input: 88135, Output: 52, Total: 88187
+Call 14: gpt-5-2025-08-07 - Input: 91310, Output: 52, Total: 91362
+Call 15: gpt-5-2025-08-07 - Input: 93732, Output: 54, Total: 93786
+Call 16: gpt-5-2025-08-07 - Input: 98159, Output: 54, Total: 98213
+Call 17: gpt-5-2025-08-07 - Input: 106006, Output: 85, Total: 106091
+Call 18: gpt-5-mini-2025-08-07 - Input: 21800, Output: 56, Total: 21856
+Call 19: gpt-5-mini-2025-08-07 - Input: 26546, Output: 5011, Total: 31557
+Call 20: gpt-5-2025-08-07 - Input: 108035, Output: 131, Total: 108166
+Call 21: gpt-5-2025-08-07 - Input: 108997, Output: 1193, Total: 110190
+Call 22: gpt-5-2025-08-07 - Input: 109173, Output: 91, Total: 109264
+Call 23: gpt-5-2025-08-07 - Input: 109340, Output: 108, Total: 109448
+Call 24: gpt-5-2025-08-07 - Input: 109548, Output: 2280, Total: 111828
+Call 25: gpt-5-2025-08-07 - Input: 109858, Output: 7722, Total: 117580
+    

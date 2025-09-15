@@ -1,7 +1,7 @@
 import argparse
 
 
-SOC_BASE_DIR = "/home/ubuntu/hackdate"
+SOC_BASE_DIR = "/home/eden/Desktop/Code/HACK@CHES/p2/opentitan"
 
 # # IP to analyze. If not specified analyzes whole SOC
 # IP = 'all'
